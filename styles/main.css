@@ -125,6 +125,13 @@ body.is-booting .arrival__skip {
   line-height: 0.94;
   letter-spacing: -0.04em;
   font-weight: 600;
+  opacity: 0;
+  transform: translateY(8px);
+  filter: blur(4px);
+}
+
+body:not(.is-booting) .app-shell[data-ready='true'] .arrival__title {
+  animation: arrivalTitleReveal 720ms cubic-bezier(0.22, 1, 0.36, 1) 90ms forwards;
 }
 
 .arrival__line {
@@ -133,6 +140,7 @@ body.is-booting .arrival__skip {
   font-size: 1.15rem;
   line-height: 1.7;
   color: #584b42;
+  transition: opacity 220ms ease;
 }
 
 .arrival__skip {
@@ -645,6 +653,22 @@ body.content-revealed .main-content {
     flex: 1 1 auto;
     justify-content: center;
     text-align: center;
+  }
+}
+
+@keyframes arrivalTitleReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+    letter-spacing: -0.02em;
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    letter-spacing: -0.04em;
   }
 }
 
