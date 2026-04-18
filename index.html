@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Check-In Space</title>
+    <meta
+      name="description"
+      content="A small private shared space for quiet check-ins, notes, and gentle signals."
+    />
+    <meta name="theme-color" content="#e8e0d4" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+
+    <main class="app-shell" data-ready="false">
+      <section class="arrival" id="arrivalSection" aria-live="polite">
+        <div class="arrival__inner">
+          <p class="arrival__eyebrow">A small place to return to</p>
+          <h1 class="arrival__title" id="arrivalGreeting">Hey there</h1>
+          <p class="arrival__line" id="arrivalLine">Finding your place...</p>
+          <button class="arrival__skip" id="skipArrivalButton" type="button">
+            Continue
+          </button>
+        </div>
+      </section>
+
+      <section class="main-content" id="mainContent" aria-hidden="true">
+        <header class="section hero-copy">
+          <p class="section__label">Shared check-in space</p>
+          <p class="hero-copy__text" id="heroStatus">
+            Quietly held.
+          </p>
+        </header>
+
+        <section class="section quick-actions" aria-labelledby="quickActionsTitle">
+          <div class="section-heading">
+            <p class="section__label">Signal</p>
+            <h2 id="quickActionsTitle">A few small ways to reach across.</h2>
+          </div>
+
+          <div class="quick-actions__grid">
+            <button class="action-card action-card--primary" id="thinkingButton" type="button">
+              <span class="action-card__label">Thinking of you</span>
+              <span class="action-card__body">A quiet lamp-on moment.</span>
+            </button>
+
+            <button class="action-card" id="toggleNoteButton" type="button" aria-expanded="false" aria-controls="noteComposer">
+              <span class="action-card__label">Leave a note</span>
+              <span class="action-card__body">Something a little fuller, kept here.</span>
+            </button>
+
+            <button class="action-card action-card--urgent" id="urgentButton" type="button">
+              <span class="action-card__label">Can you talk?</span>
+              <span class="action-card__body">A softer urgent path.</span>
+            </button>
+          </div>
+
+          <div class="note-composer" id="noteComposer" hidden>
+            <label class="note-composer__label" for="noteInput">Leave a note</label>
+            <textarea
+              id="noteInput"
+              class="note-composer__input"
+              maxlength="300"
+              rows="5"
+              placeholder="Write something small, honest, or just true."
+            ></textarea>
+            <div class="note-composer__meta">
+              <span id="noteCount">0 / 300</span>
+              <div class="note-composer__actions">
+                <button class="ghost-button" id="cancelNoteButton" type="button">Cancel</button>
+                <button class="solid-button" id="submitNoteButton" type="button">Send note</button>
+              </div>
+            </div>
+            <p class="inline-message" id="noteMessage" aria-live="polite"></p>
+          </div>
+
+          <p class="inline-message" id="actionMessage" aria-live="polite"></p>
+        </section>
+
+        <section class="push-interlude" aria-live="polite">
+          <button id="enablePushButton" type="button" class="push-pill">
+          Enable gentle notifications
+          </button>
+          <p id="pushStatus" class="push-status"></p>
+        </section>
+
+        <section class="section feed-section" aria-labelledby="checkInsTitle">
+          <div class="section-heading">
+            <p class="section__label">Check-ins</p>
+            <h2 id="checkInsTitle">Small signals that made it through.</h2>
+          </div>
+          <div class="check-ins-feed" id="checkInsFeed">
+            <article class="feed-item feed-item--placeholder">
+              <p class="feed-item__text">Nothing here yet. The first quiet signal will appear here.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="fact-interlude" id="factInterlude" hidden aria-live="polite">
+          <p class="fact-interlude__line" id="factInterludeLine"></p>
+        </section>
+
+        <section class="section feed-section" aria-labelledby="notesTitle">
+          <div class="section-heading">
+            <p class="section__label">Notes</p>
+            <h2 id="notesTitle">A fuller little record.</h2>
+          </div>
+          <div class="notes-feed" id="notesFeed">
+            <article class="note-card note-card--placeholder">
+              <p class="note-card__meta">Waiting softly</p>
+              <p class="note-card__content">Notes will collect here in time.</p>
+            </article>
+          </div>
+        </section>
+
+        <footer class="section quiet-footer">
+          <p id="footerLine">Still here.</p>
+        </footer>
+      </section>
+    </main>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="dialog-shell" id="urgentDialog" hidden>
+      <div class="dialog-backdrop" data-close-urgent="true"></div>
+      <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="urgentDialogTitle">
+        <p class="section__label">Can you talk?</p>
+        <h2 id="urgentDialogTitle">Let them know you need them?</h2>
+        <p class="dialog-card__body">
+          This stays out of the shared feed. It only sends the signal.
+        </p>
+        <div class="dialog-card__actions">
+          <button class="ghost-button" id="cancelUrgentButton" type="button">Not now</button>
+          <button class="solid-button solid-button--urgent" id="confirmUrgentButton" type="button">Send signal</button>
+        </div>
+      </div>
+    </div>
+
+    <template id="checkInItemTemplate">
+      <article class="feed-item">
+        <div class="feed-item__marker"></div>
+        <div>
+          <p class="feed-item__text"></p>
+          <p class="feed-item__meta"></p>
+        </div>
+      </article>
+    </template>
+
+    <template id="noteCardTemplate">
+      <article class="note-card">
+        <div class="note-card__header">
+          <div>
+            <p class="note-card__name"></p>
+            <p class="note-card__meta"></p>
+          </div>
+        </div>
+        <p class="note-card__content"></p>
+        <div class="note-card__reactions"></div>
+      </article>
+    </template>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

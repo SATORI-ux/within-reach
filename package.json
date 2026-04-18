@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "supabase": "^2.92.1",
+    "web-push": "^3.6.7"
+  }
+}
