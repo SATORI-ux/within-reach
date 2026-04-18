@@ -126,12 +126,12 @@ body.is-booting .arrival__skip {
   letter-spacing: -0.04em;
   font-weight: 600;
   opacity: 0;
-  transform: translateY(8px);
-  filter: blur(4px);
+  transform: translateY(18px) scale(0.985);
+  filter: blur(10px);
 }
 
 body:not(.is-booting) .app-shell[data-ready='true'] .arrival__title {
-  animation: arrivalTitleReveal 720ms cubic-bezier(0.22, 1, 0.36, 1) 90ms forwards;
+  animation: arrivalTitleReveal 920ms cubic-bezier(0.16, 1, 0.3, 1) 70ms forwards;
 }
 
 .arrival__line {
@@ -659,14 +659,21 @@ body.content-revealed .main-content {
 @keyframes arrivalTitleReveal {
   0% {
     opacity: 0;
-    transform: translateY(8px);
-    filter: blur(4px);
-    letter-spacing: -0.02em;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(10px);
+    letter-spacing: -0.01em;
+  }
+
+  62% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.003);
+    filter: blur(0);
+    letter-spacing: -0.045em;
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     filter: blur(0);
     letter-spacing: -0.04em;
   }
