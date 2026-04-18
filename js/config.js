@@ -43,6 +43,7 @@ export const AMBIENT_LINES_PERSONALIZED = {
     'A quiet thread pulled you here.',
   ],
   jeszi: [
+    'Welcome 🌸 Kawaii Queen 🌸',
     'Joey left room for you here.',
     'A familiar signal found you.',
     'Something soft was waiting on the other side.',
