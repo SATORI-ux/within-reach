@@ -53,7 +53,12 @@ Deno.serve(async (req) => {
     }
 
     if (!resolvedUserSlug) {
-      return new Response(JSON.stringify({ error: 'Invalid tile key.' }), {
+      return new Response(JSON.stringify({
+        error: 'Invalid tile key.',
+        received_key: key,
+        tile_lookup_error: tileError?.message ?? null,
+        tile_lookup_found: !!tile?.user_slug
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
