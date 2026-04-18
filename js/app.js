@@ -27,12 +27,13 @@ function getCookie(name) {
 }
 
 function setTileKeyPersistence(tileKey) {
-  if (!tileKey) return;
+  const normalizedKey = (tileKey || '').trim();
+  if (!normalizedKey) return;
 
-  localStorage.setItem(SESSION_KEY, tileKey);
+  localStorage.setItem(SESSION_KEY, normalizedKey);
 
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(tileKey)}; Max-Age=${SESSION_COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(normalizedKey)}; Max-Age=${SESSION_COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
 }
 
 function clearTileKeyPersistence() {
@@ -41,15 +42,15 @@ function clearTileKeyPersistence() {
 }
 
 function getStoredTileKey() {
-  const cookieKey = getCookie(SESSION_COOKIE_NAME);
+  const cookieKey = getCookie(SESSION_COOKIE_NAME).trim();
   if (cookieKey) return cookieKey;
 
-  return localStorage.getItem(SESSION_KEY) || '';
+  return (localStorage.getItem(SESSION_KEY) || '').trim();
 }
 
 function getTileKey() {
   const params = new URLSearchParams(window.location.search);
-  const incomingKey = params.get('key');
+  const incomingKey = (params.get('key') || '').trim();
 
   if (incomingKey) {
     setTileKeyPersistence(incomingKey);
@@ -59,6 +60,10 @@ function getTileKey() {
   }
 
   return getStoredTileKey();
+}
+
+function finishBoot() {
+  document.body.classList.remove('is-booting');
 }
 
 async function withTimeout(promise, ms, message) {
@@ -254,46 +259,48 @@ async function bootstrap() {
     renderMissingKeyState();
     renderCheckIns([]);
     renderNotes([], '');
+    finishBoot();
     scheduleReveal();
     return;
   }
-
-  scheduleReveal();
-
+    
   try {
     state.visitor = await withTimeout(
       resolveVisitor(state.tileKey),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
-
+  
     applyAccent(state.visitor.user_slug);
     renderArrival(state.visitor);
+    finishBoot();
     setPushStatus('');
-
+    scheduleReveal();
+  
     await withTimeout(
       refreshFeed(),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Could not load this space right now.'
     );
-
+  
     setActionsDisabled(false);
   } catch (error) {
     console.error(error);
-
+  
     const message = error?.message || 'Could not open this space right now.';
     const shouldClearStoredKey = /invalid tile key/i.test(message);
-
+  
     if (shouldClearStoredKey) {
       clearTileKeyPersistence();
       renderMissingKeyState();
       renderCheckIns([]);
       renderNotes([], '');
     }
-
+  
+    finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
-    reveal();
+    scheduleReveal();
   }
 }
 

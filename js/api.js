@@ -10,6 +10,10 @@ function assertConfig() {
   }
 }
 
+function finishBoot() {
+  document.body.classList.remove('is-booting');
+}
+
 function buildHeaders() {
   return {
     'Content-Type': 'application/json',

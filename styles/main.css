@@ -112,6 +112,13 @@ button {
   color: rgba(77, 66, 58, 0.62);
 }
 
+body.is-booting .arrival__title,
+body.is-booting .arrival__line,
+body.is-booting .arrival__skip {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .arrival__title {
   margin: 0;
   font-size: clamp(2.8rem, 9vw, 5.4rem);
