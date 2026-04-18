@@ -18,6 +18,7 @@ import {
 const SESSION_KEY = 'check-in-space.tile-key';
 const SESSION_COOKIE_NAME = 'check_in_space_tile_key';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
+const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
 
 function getCookie(name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -58,6 +59,22 @@ function getTileKey() {
   }
 
   return getStoredTileKey();
+}
+
+async function withTimeout(promise, ms, message) {
+  let timeoutId;
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(message));
+    }, ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 function setActionsDisabled(disabled) {
@@ -209,23 +226,42 @@ async function bootstrap() {
     return;
   }
 
+  scheduleReveal();
+
   try {
-    state.visitor = await resolveVisitor(state.tileKey);
+    state.visitor = await withTimeout(
+      resolveVisitor(state.tileKey),
+      VISITOR_RESOLVE_TIMEOUT_MS,
+      'Still finding your place...'
+    );
+
     applyAccent(state.visitor.user_slug);
     renderArrival(state.visitor);
     setPushStatus('');
-    scheduleReveal();
-    await refreshFeed();
+
+    await withTimeout(
+      refreshFeed(),
+      VISITOR_RESOLVE_TIMEOUT_MS,
+      'Could not load this space right now.'
+    );
+
     setActionsDisabled(false);
   } catch (error) {
     console.error(error);
-    clearTileKeyPersistence();
-    renderMissingKeyState();
-    renderCheckIns([]);
-    renderNotes([], '');
-    setActionMessage(error.message || 'Could not open this space right now.', true);
+
+    const message = error?.message || 'Could not open this space right now.';
+    const shouldClearStoredKey = /invalid tile key/i.test(message);
+
+    if (shouldClearStoredKey) {
+      clearTileKeyPersistence();
+      renderMissingKeyState();
+      renderCheckIns([]);
+      renderNotes([], '');
+    }
+
+    setActionMessage(message, true);
     setPushStatus('');
-    scheduleReveal();
+    reveal();
   }
 }
 
