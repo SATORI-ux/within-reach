@@ -133,7 +133,16 @@ function setNoteReactionButtonsDisabled(noteId, disabled) {
 function setPushStatus(message, isError = false) {
   if (!pushStatusEl) return;
   pushStatusEl.textContent = message;
-  pushStatusEl.style.color = isError ? '#8a4f4f' : 'var(--text-soft)';
+  pushStatusEl.style.color = isError ? '#8a4f4f' : 'rgba(77, 66, 58, 0.58)';
+}
+
+function setPushEnabledState(enabled) {
+  if (!enablePushButton) return;
+
+  enablePushButton.disabled = enabled;
+  enablePushButton.textContent = enabled
+    ? 'Gentle notifications on'
+    : 'Enable gentle notifications';
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -259,6 +268,7 @@ async function bootstrap() {
     renderMissingKeyState();
     renderCheckIns([]);
     renderNotes([], '');
+    setPushEnabledState(false);
     finishBoot();
     scheduleReveal();
     return;
@@ -275,6 +285,7 @@ async function bootstrap() {
     renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
+    setPushEnabledState(Notification.permission === 'granted');
     scheduleReveal();
   
     await withTimeout(
@@ -300,6 +311,7 @@ async function bootstrap() {
     finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
+    setPushEnabledState(false);
     scheduleReveal();
   }
 }
@@ -443,13 +455,20 @@ async function handleEnablePush() {
 
   try {
     await enablePushNotifications();
-    setPushStatus('Gentle notifications enabled.');
+    setPushEnabledState(true);
+    setPushStatus('Quietly enabled.');
+    window.setTimeout(() => {
+      setPushStatus('');
+    }, 2400);
   } catch (error) {
     console.error(error);
+    setPushEnabledState(false);
     setPushStatus(error.message || 'Could not enable notifications.', true);
   } finally {
     state.busy.push = false;
-    if (enablePushButton) enablePushButton.disabled = false;
+    if (enablePushButton && enablePushButton.textContent !== 'Gentle notifications on') {
+      enablePushButton.disabled = false;
+    }
   }
 }
 
