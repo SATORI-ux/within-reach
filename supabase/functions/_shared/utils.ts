@@ -71,6 +71,23 @@ export function getAdminClient(): SupabaseClient {
   });
 }
 
+export async function getPushEnabledForUser(
+  client: SupabaseClient,
+  userSlug: string,
+): Promise<boolean> {
+  const { count, error } = await client
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_slug', userSlug)
+    .eq('is_active', true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (count ?? 0) > 0;
+}
+
 export async function readJson<T>(req: Request): Promise<T> {
   return (await req.json()) as T;
 }

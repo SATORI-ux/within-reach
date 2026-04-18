@@ -285,7 +285,7 @@ async function bootstrap() {
     renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
-    setPushEnabledState(Notification.permission === 'granted');
+    setPushEnabledState(false);
     scheduleReveal();
   
     await withTimeout(
