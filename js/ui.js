@@ -46,7 +46,7 @@ function setFactInterlude(fact) {
   } else {
     factInterludeEl.setAttribute('hidden', '');
   }
-  factInterludeLineEl.textContent = hasFact ? `~ ${fact}` : '';
+  factInterludeLineEl.textContent = hasFact ? `~ ${fact} ~` : '';
 }
 
 export function setReady() {
