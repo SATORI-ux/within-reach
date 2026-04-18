@@ -26,14 +26,33 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    let resolvedUserSlug: string | null = null
+
     const { data: tile, error: tileError } = await supabase
       .from('tile_keys')
       .select('user_slug')
       .eq('tile_key', key)
       .eq('is_active', true)
-      .single()
+      .maybeSingle()
 
-    if (tileError || !tile) {
+    if (!tileError && tile?.user_slug) {
+      resolvedUserSlug = tile.user_slug
+    }
+
+    if (!resolvedUserSlug) {
+      const { data: session, error: sessionError } = await supabase
+        .from('device_sessions')
+        .select('user_slug')
+        .eq('session_token', key)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (!sessionError && session?.user_slug) {
+        resolvedUserSlug = session.user_slug
+      }
+    }
+
+    if (!resolvedUserSlug) {
       return new Response(JSON.stringify({ error: 'Invalid tile key.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -44,7 +63,7 @@ Deno.serve(async (req) => {
       .from('push_subscriptions')
       .upsert(
         {
-          user_slug: tile.user_slug,
+          user_slug: resolvedUserSlug,
           endpoint: subscription.endpoint,
           subscription_json: subscription,
           is_active: true,
@@ -60,7 +79,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ ok: true, user_slug: tile.user_slug }), {
+    return new Response(JSON.stringify({ ok: true, user_slug: resolvedUserSlug }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
