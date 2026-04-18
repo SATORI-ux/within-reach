@@ -1,10 +1,10 @@
 import {
-  createNotificationStub,
   getAdminClient,
   handleOptions,
   json,
   readJson,
   requirePost,
+  sendPushToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
 
@@ -24,7 +24,14 @@ Deno.serve(async (req) => {
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
 
-    const notification = createNotificationStub('gentle', visitor.user_slug);
+    const notification = await sendPushToCounterpart(
+      client,
+      visitor,
+      'gentle',
+      'A small check-in arrived.',
+      `${visitor.display_name} was thinking of you.`,
+      '/within-reach/'
+    );
 
     const { data: created, error: insertError } = await client
       .from('check_ins')
@@ -58,7 +65,13 @@ Deno.serve(async (req) => {
         accent_color: visitor.accent_color,
         created_at: created.created_at,
       },
-      notification: notification.result,
+      notification: {
+        success: notification.success,
+        result: notification.result,
+        delivered: notification.delivered,
+        failed: notification.failed,
+        attempted: notification.attempted,
+      },
     });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'Unable to send check-in.' }, 400);

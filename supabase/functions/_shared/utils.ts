@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import webpush from 'npm:web-push';
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,12 +10,27 @@ export const corsHeaders = {
 
 export const ALLOWED_REACTIONS = ['❤️', '✨', '🥹', '🌙', '🐞', '🌸'];
 
-type VisitorRow = {
+export type VisitorRow = {
   user_slug: string;
   display_name: string;
   accent_color: string | null;
   is_active: boolean;
 };
+
+type DeviceSessionRow = {
+  user_slug: string;
+  is_active: boolean;
+};
+
+type PushSendResult = {
+  success: boolean;
+  result: string;
+  delivered: number;
+  failed: number;
+  attempted: number;
+};
+
+let vapidConfigured = false;
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -59,15 +75,10 @@ export async function readJson<T>(req: Request): Promise<T> {
   return (await req.json()) as T;
 }
 
-export async function validateTileKey(
+async function getActiveTileVisitor(
   client: SupabaseClient,
-  tileKey: string,
-): Promise<VisitorRow> {
-  const key = tileKey?.trim();
-  if (!key) {
-    throw new Error('Missing tile key.');
-  }
-
+  key: string,
+): Promise<VisitorRow | null> {
   const { data, error } = await client
     .from('tile_keys')
     .select('user_slug, display_name, accent_color, is_active')
@@ -79,10 +90,74 @@ export async function validateTileKey(
   }
 
   if (!data || !data.is_active) {
-    throw new Error('That tile key is not active.');
+    return null;
   }
 
   return data;
+}
+
+async function getVisitorFromSession(
+  client: SupabaseClient,
+  key: string,
+): Promise<VisitorRow | null> {
+  const { data: session, error: sessionError } = await client
+    .from('device_sessions')
+    .select('user_slug, is_active')
+    .eq('session_token', key)
+    .maybeSingle<DeviceSessionRow>();
+
+  if (sessionError) {
+    throw new Error(sessionError.message);
+  }
+
+  if (!session || !session.is_active) {
+    return null;
+  }
+
+  const { data: tile, error: tileError } = await client
+    .from('tile_keys')
+    .select('user_slug, display_name, accent_color, is_active')
+    .eq('user_slug', session.user_slug)
+    .maybeSingle();
+
+  if (tileError) {
+    throw new Error(tileError.message);
+  }
+
+  if (!tile || !tile.is_active) {
+    return null;
+  }
+
+  return tile;
+}
+
+export async function resolveVisitorKey(
+  client: SupabaseClient,
+  visitorKey: string,
+): Promise<VisitorRow> {
+  const key = visitorKey?.trim();
+  if (!key) {
+    throw new Error('Missing tile key.');
+  }
+
+  const tileVisitor = await getActiveTileVisitor(client, key);
+  if (tileVisitor) {
+    return tileVisitor;
+  }
+
+  const sessionVisitor = await getVisitorFromSession(client, key);
+  if (sessionVisitor) {
+    return sessionVisitor;
+  }
+
+  throw new Error('That tile key is not active.');
+}
+
+export async function validateTileKey(
+  client: SupabaseClient,
+  tileKey: string,
+): Promise<VisitorRow> {
+  return await resolveVisitorKey(client, tileKey);
 }
 
 export function sanitizeNoteContent(content: string): string {
@@ -93,6 +168,101 @@ export function createNotificationStub(kind: 'gentle' | 'urgent', fromUserSlug: 
   return {
     success: false,
     result: `stub:${kind}:no-provider:${fromUserSlug}`,
+  };
+}
+
+function getCounterpartSlug(userSlug: string): string | null {
+  if (userSlug === 'joey') return 'jeszi';
+  if (userSlug === 'jeszi') return 'joey';
+  return null;
+}
+
+function ensureVapidConfigured() {
+  if (vapidConfigured) return;
+
+  const subject = Deno.env.get('WEB_PUSH_VAPID_SUBJECT');
+  const publicKey = Deno.env.get('WEB_PUSH_VAPID_PUBLIC_KEY');
+  const privateKey = Deno.env.get('WEB_PUSH_VAPID_PRIVATE_KEY');
+
+  if (!subject || !publicKey || !privateKey) {
+    throw new Error('Missing WEB_PUSH_VAPID_SUBJECT, WEB_PUSH_VAPID_PUBLIC_KEY, or WEB_PUSH_VAPID_PRIVATE_KEY.');
+  }
+
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+  vapidConfigured = true;
+}
+
+export async function sendPushToCounterpart(
+  client: SupabaseClient,
+  fromVisitor: VisitorRow,
+  kind: 'gentle' | 'urgent',
+  title: string,
+  body: string,
+  url = '/within-reach/',
+): Promise<PushSendResult> {
+  const counterpartSlug = getCounterpartSlug(fromVisitor.user_slug);
+
+  if (!counterpartSlug) {
+    return {
+      success: false,
+      result: `push:${kind}:no-counterpart:${fromVisitor.user_slug}`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  const { data: subscriptions, error } = await client
+    .from('push_subscriptions')
+    .select('id, endpoint, subscription_json')
+    .eq('user_slug', counterpartSlug)
+    .eq('is_active', true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!subscriptions?.length) {
+    return {
+      success: false,
+      result: `push:${kind}:no-subscriptions:${counterpartSlug}`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  ensureVapidConfigured();
+
+  let delivered = 0;
+  let failed = 0;
+
+  for (const row of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        row.subscription_json,
+        JSON.stringify({
+          title,
+          body,
+          data: { url, kind, from_user_slug: fromVisitor.user_slug },
+        }),
+      );
+      delivered += 1;
+    } catch (pushError) {
+      failed += 1;
+      console.error('Push send failed', {
+        endpoint: row.endpoint,
+        message: pushError instanceof Error ? pushError.message : String(pushError),
+      });
+    }
+  }
+
+  return {
+    success: delivered > 0,
+    result: `push:${kind}:attempted=${subscriptions.length}:delivered=${delivered}:failed=${failed}`,
+    delivered,
+    failed,
+    attempted: subscriptions.length,
   };
 }
 
