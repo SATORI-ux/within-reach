@@ -77,6 +77,38 @@ async function withTimeout(promise, ms, message) {
   }
 }
 
+const thinkingButton = document.querySelector('#thinkingButton');
+const toggleNoteButton = document.querySelector('#toggleNoteButton');
+const urgentButton = document.querySelector('#urgentButton');
+const noteComposer = document.querySelector('#noteComposer');
+const noteInput = document.querySelector('#noteInput');
+const noteCount = document.querySelector('#noteCount');
+const submitNoteButton = document.querySelector('#submitNoteButton');
+const cancelNoteButton = document.querySelector('#cancelNoteButton');
+const skipArrivalButton = document.querySelector('#skipArrivalButton');
+const urgentDialog = document.querySelector('#urgentDialog');
+const cancelUrgentButton = document.querySelector('#cancelUrgentButton');
+const confirmUrgentButton = document.querySelector('#confirmUrgentButton');
+const notesFeed = document.querySelector('#notesFeed');
+const enablePushButton = document.querySelector('#enablePushButton');
+const pushStatusEl = document.querySelector('#pushStatus');
+
+const state = {
+  tileKey: '',
+  visitor: null,
+  checkIns: [],
+  notes: [],
+  revealTimer: null,
+  revealed: false,
+  busy: {
+    checkIn: false,
+    note: false,
+    urgent: false,
+    push: false,
+    reactions: new Set(),
+  },
+};
+
 function setActionsDisabled(disabled) {
   thinkingButton.disabled = disabled;
   toggleNoteButton.disabled = disabled;
