@@ -16,51 +16,48 @@ import {
 } from './ui.js';
 
 const SESSION_KEY = 'check-in-space.tile-key';
+const SESSION_COOKIE_NAME = 'check_in_space_tile_key';
+const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
-const thinkingButton = document.querySelector('#thinkingButton');
-const toggleNoteButton = document.querySelector('#toggleNoteButton');
-const urgentButton = document.querySelector('#urgentButton');
-const noteComposer = document.querySelector('#noteComposer');
-const noteInput = document.querySelector('#noteInput');
-const noteCount = document.querySelector('#noteCount');
-const submitNoteButton = document.querySelector('#submitNoteButton');
-const cancelNoteButton = document.querySelector('#cancelNoteButton');
-const skipArrivalButton = document.querySelector('#skipArrivalButton');
-const urgentDialog = document.querySelector('#urgentDialog');
-const cancelUrgentButton = document.querySelector('#cancelUrgentButton');
-const confirmUrgentButton = document.querySelector('#confirmUrgentButton');
-const notesFeed = document.querySelector('#notesFeed');
-const enablePushButton = document.querySelector('#enablePushButton');
-const pushStatusEl = document.querySelector('#pushStatus');
+function getCookie(name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escapedName}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : '';
+}
 
-const state = {
-  tileKey: '',
-  visitor: null,
-  checkIns: [],
-  notes: [],
-  revealTimer: null,
-  revealed: false,
-  busy: {
-    checkIn: false,
-    note: false,
-    urgent: false,
-    push: false,
-    reactions: new Set(),
-  },
-};
+function setTileKeyPersistence(tileKey) {
+  if (!tileKey) return;
+
+  localStorage.setItem(SESSION_KEY, tileKey);
+
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(tileKey)}; Max-Age=${SESSION_COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
+}
+
+function clearTileKeyPersistence() {
+  localStorage.removeItem(SESSION_KEY);
+  document.cookie = `${SESSION_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
+}
+
+function getStoredTileKey() {
+  const cookieKey = getCookie(SESSION_COOKIE_NAME);
+  if (cookieKey) return cookieKey;
+
+  return localStorage.getItem(SESSION_KEY) || '';
+}
 
 function getTileKey() {
   const params = new URLSearchParams(window.location.search);
   const incomingKey = params.get('key');
 
   if (incomingKey) {
-    sessionStorage.setItem(SESSION_KEY, incomingKey);
+    setTileKeyPersistence(incomingKey);
     const cleanUrl = `${window.location.pathname}${window.location.hash}`;
     window.history.replaceState({}, '', cleanUrl || '/');
     return incomingKey;
   }
 
-  return sessionStorage.getItem(SESSION_KEY) || '';
+  return getStoredTileKey();
 }
 
 function setActionsDisabled(disabled) {
@@ -222,6 +219,7 @@ async function bootstrap() {
     setActionsDisabled(false);
   } catch (error) {
     console.error(error);
+    clearTileKeyPersistence();
     renderMissingKeyState();
     renderCheckIns([]);
     renderNotes([], '');
