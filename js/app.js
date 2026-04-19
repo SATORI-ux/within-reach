@@ -460,6 +460,7 @@ async function bootstrap() {
     renderMissingKeyState();
     renderCheckIns([]);
     renderNotes([], '');
+    state.visitor = null;
     setPushEnabledState(false);
     finishBoot();
     syncFeedHistoryControls();
@@ -478,7 +479,7 @@ async function bootstrap() {
     renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
-    setPushEnabledState(false);
+    setPushEnabledState(Boolean(state.visitor?.push_enabled));
     scheduleReveal();
 
     await withTimeout(
@@ -501,6 +502,7 @@ async function bootstrap() {
       renderNotes([], '');
     }
 
+    state.visitor = null;
     finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
@@ -658,6 +660,9 @@ async function handleEnablePush() {
 
   try {
     await enablePushNotifications();
+    if (state.visitor) {
+  state.visitor.push_enabled = true;
+    }
     setPushEnabledState(true);
     setPushStatus('Quietly enabled.');
     window.setTimeout(() => {
@@ -665,6 +670,9 @@ async function handleEnablePush() {
     }, 2400);
   } catch (error) {
     console.error(error);
+    if (state.visitor) {
+  state.visitor.push_enabled = false;
+    }
     setPushEnabledState(false);
     setPushStatus(error.message || 'Could not enable notifications.', true);
   } finally {
