@@ -12,6 +12,7 @@ import {
   setNoteMessage,
   setReady,
   showToast,
+  updateFeedHistoryControls,
   updateRenderedNoteReactions,
 } from './ui.js';
 
@@ -97,6 +98,10 @@ const confirmUrgentButton = document.querySelector('#confirmUrgentButton');
 const notesFeed = document.querySelector('#notesFeed');
 const enablePushButton = document.querySelector('#enablePushButton');
 const pushStatusEl = document.querySelector('#pushStatus');
+const loadOlderCheckInsButton = document.querySelector('#loadOlderCheckInsButton');
+const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton');
+const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
+const collapseNotesButton = document.querySelector('#collapseNotesButton');
 
 const state = {
   tileKey: '',
@@ -105,6 +110,22 @@ const state = {
   notes: [],
   revealTimer: null,
   revealed: false,
+  feed: {
+    checkIns: {
+      limit: 8,
+      hasMore: false,
+      nextBeforeId: null,
+      loadingOlder: false,
+      expanded: false,
+    },
+    notes: {
+      limit: 5,
+      hasMore: false,
+      nextBeforeId: null,
+      loadingOlder: false,
+      expanded: false,
+    },
+  },
   busy: {
     checkIn: false,
     note: false,
@@ -143,6 +164,82 @@ function setPushEnabledState(enabled) {
   enablePushButton.textContent = enabled
     ? 'Gentle notifications on'
     : 'Enable gentle notifications';
+}
+
+function getVisibleCheckIns() {
+  if (state.feed.checkIns.expanded) return state.checkIns;
+  return state.checkIns.slice(0, state.feed.checkIns.limit);
+}
+
+function getVisibleNotes() {
+  if (state.feed.notes.expanded) return state.notes;
+  return state.notes.slice(0, state.feed.notes.limit);
+}
+
+function hasCollapsedCheckInsHistory() {
+  return state.checkIns.length > state.feed.checkIns.limit;
+}
+
+function hasCollapsedNotesHistory() {
+  return state.notes.length > state.feed.notes.limit;
+}
+
+function syncFeedHistoryControls() {
+  updateFeedHistoryControls({
+    checkIns: {
+      hasMore: state.feed.checkIns.hasMore || (!state.feed.checkIns.expanded && hasCollapsedCheckInsHistory()),
+      loadingOlder: state.feed.checkIns.loadingOlder,
+      expanded: state.feed.checkIns.expanded,
+    },
+    notes: {
+      hasMore: state.feed.notes.hasMore || (!state.feed.notes.expanded && hasCollapsedNotesHistory()),
+      loadingOlder: state.feed.notes.loadingOlder,
+      expanded: state.feed.notes.expanded,
+    },
+  });
+}
+
+function renderCurrentCheckIns() {
+  renderCheckIns(getVisibleCheckIns());
+  syncFeedHistoryControls();
+}
+
+function renderCurrentNotes() {
+  renderNotes(getVisibleNotes(), state.visitor?.user_slug);
+  syncFeedHistoryControls();
+}
+
+function renderCurrentFeeds() {
+  renderCheckIns(getVisibleCheckIns());
+  renderNotes(getVisibleNotes(), state.visitor?.user_slug);
+  syncFeedHistoryControls();
+}
+
+function applyInitialFeedPayload(feed) {
+  state.checkIns = feed.check_ins || [];
+  state.notes = feed.notes || [];
+
+  state.feed.checkIns.hasMore = Boolean(feed.check_ins_page?.has_more);
+  state.feed.checkIns.nextBeforeId = feed.check_ins_page?.next_before_id ?? null;
+  state.feed.checkIns.expanded = false;
+
+  state.feed.notes.hasMore = Boolean(feed.notes_page?.has_more);
+  state.feed.notes.nextBeforeId = feed.notes_page?.next_before_id ?? null;
+  state.feed.notes.expanded = false;
+
+  renderCurrentFeeds();
+}
+
+function updateLocalCheckInsPageState() {
+  state.feed.checkIns.nextBeforeId = state.checkIns.length
+    ? state.checkIns[state.checkIns.length - 1].id
+    : null;
+}
+
+function updateLocalNotesPageState() {
+  state.feed.notes.nextBeforeId = state.notes.length
+    ? state.notes[state.notes.length - 1].id
+    : null;
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -249,11 +346,106 @@ function closeUrgentDialog() {
 async function refreshFeed() {
   if (!state.tileKey) return;
 
-  const feed = await getFeed(state.tileKey);
-  state.checkIns = feed.check_ins || [];
-  state.notes = feed.notes || [];
-  renderCheckIns(state.checkIns);
-  renderNotes(state.notes, state.visitor?.user_slug);
+  const feed = await getFeed(state.tileKey, {
+    check_ins_limit: state.feed.checkIns.limit,
+    notes_limit: state.feed.notes.limit,
+  });
+
+  applyInitialFeedPayload(feed);
+}
+
+async function handleLoadOlderCheckIns() {
+  if (!state.tileKey) return;
+  if (state.feed.checkIns.loadingOlder) return;
+
+  const hasHiddenLoaded = hasCollapsedCheckInsHistory();
+
+  if (!state.feed.checkIns.expanded && hasHiddenLoaded) {
+    state.feed.checkIns.expanded = true;
+    renderCurrentCheckIns();
+    return;
+  }
+
+  if (!state.feed.checkIns.hasMore || !state.feed.checkIns.nextBeforeId) return;
+
+  state.feed.checkIns.loadingOlder = true;
+  syncFeedHistoryControls();
+
+  try {
+    const feed = await getFeed(state.tileKey, {
+      check_ins_limit: state.feed.checkIns.limit,
+      check_ins_before_id: state.feed.checkIns.nextBeforeId,
+      notes_limit: 1,
+    });
+
+    const olderCheckIns = feed.check_ins || [];
+
+    state.feed.checkIns.expanded = true;
+    state.checkIns = [...state.checkIns, ...olderCheckIns];
+    state.feed.checkIns.hasMore = Boolean(feed.check_ins_page?.has_more);
+    state.feed.checkIns.nextBeforeId = feed.check_ins_page?.next_before_id ?? null;
+
+    renderCurrentCheckIns();
+  } catch (error) {
+    console.error(error);
+    setActionMessage(error.message || 'Could not load older check-ins.', true);
+  } finally {
+    state.feed.checkIns.loadingOlder = false;
+    syncFeedHistoryControls();
+  }
+}
+
+async function handleLoadOlderNotes() {
+  if (!state.tileKey) return;
+  if (state.feed.notes.loadingOlder) return;
+
+  const hasHiddenLoaded = hasCollapsedNotesHistory();
+
+  if (!state.feed.notes.expanded && hasHiddenLoaded) {
+    state.feed.notes.expanded = true;
+    renderCurrentNotes();
+    return;
+  }
+
+  if (!state.feed.notes.hasMore || !state.feed.notes.nextBeforeId) return;
+
+  state.feed.notes.loadingOlder = true;
+  syncFeedHistoryControls();
+
+  try {
+    const feed = await getFeed(state.tileKey, {
+      check_ins_limit: 1,
+      notes_limit: state.feed.notes.limit,
+      notes_before_id: state.feed.notes.nextBeforeId,
+    });
+
+    const olderNotes = feed.notes || [];
+
+    state.feed.notes.expanded = true;
+    state.notes = [...state.notes, ...olderNotes];
+    state.feed.notes.hasMore = Boolean(feed.notes_page?.has_more);
+    state.feed.notes.nextBeforeId = feed.notes_page?.next_before_id ?? null;
+
+    renderCurrentNotes();
+  } catch (error) {
+    console.error(error);
+    setActionMessage(error.message || 'Could not load older notes.', true);
+  } finally {
+    state.feed.notes.loadingOlder = false;
+    syncFeedHistoryControls();
+  }
+}
+
+function handleCollapseCheckIns() {
+  if (!state.feed.checkIns.expanded) return;
+  state.feed.checkIns.expanded = false;
+  renderCurrentCheckIns();
+}
+
+function handleCollapseNotes() {
+  if (!state.feed.notes.expanded) return;
+  state.feed.notes.expanded = false;
+  renderCurrentNotes();
 }
 
 async function bootstrap() {
@@ -270,48 +462,50 @@ async function bootstrap() {
     renderNotes([], '');
     setPushEnabledState(false);
     finishBoot();
+    syncFeedHistoryControls();
     scheduleReveal();
     return;
   }
-    
+
   try {
     state.visitor = await withTimeout(
       resolveVisitor(state.tileKey),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
-  
+
     applyAccent(state.visitor.user_slug);
     renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
     setPushEnabledState(false);
     scheduleReveal();
-  
+
     await withTimeout(
       refreshFeed(),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Could not load this space right now.'
     );
-  
+
     setActionsDisabled(false);
   } catch (error) {
     console.error(error);
-  
+
     const message = error?.message || 'Could not open this space right now.';
     const shouldClearStoredKey = /invalid tile key/i.test(message);
-  
+
     if (shouldClearStoredKey) {
       clearTileKeyPersistence();
       renderMissingKeyState();
       renderCheckIns([]);
       renderNotes([], '');
     }
-  
+
     finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
     setPushEnabledState(false);
+    syncFeedHistoryControls();
     scheduleReveal();
   }
 }
@@ -327,7 +521,12 @@ async function handleCheckIn() {
     const result = await sendCheckIn(state.tileKey);
     if (result.check_in) {
       state.checkIns = [result.check_in, ...state.checkIns];
-      renderCheckIns(state.checkIns);
+
+      const exceededLimit = state.checkIns.length > state.feed.checkIns.limit;
+      state.feed.checkIns.hasMore = state.feed.checkIns.hasMore || exceededLimit;
+
+      updateLocalCheckInsPageState();
+      renderCurrentCheckIns();
     }
 
     showToast(
@@ -366,7 +565,12 @@ async function handleSubmitNote() {
     const result = await addNote(state.tileKey, content);
     if (result.note) {
       state.notes = [result.note, ...state.notes];
-      renderNotes(state.notes, state.visitor?.user_slug);
+
+      const exceededLimit = state.notes.length > state.feed.notes.limit;
+      state.feed.notes.hasMore = state.feed.notes.hasMore || exceededLimit;
+
+      updateLocalNotesPageState();
+      renderCurrentNotes();
     }
 
     closeComposer();
@@ -445,7 +649,6 @@ async function handleUrgentConfirm() {
   }
 }
 
-
 async function handleEnablePush() {
   if (state.busy.push) return;
 
@@ -489,8 +692,25 @@ urgentButton.addEventListener('click', openUrgentDialog);
 cancelUrgentButton.addEventListener('click', closeUrgentDialog);
 confirmUrgentButton.addEventListener('click', handleUrgentConfirm);
 notesFeed.addEventListener('click', handleReactionClick);
+
 if (enablePushButton) {
   enablePushButton.addEventListener('click', handleEnablePush);
+}
+
+if (loadOlderCheckInsButton) {
+  loadOlderCheckInsButton.addEventListener('click', handleLoadOlderCheckIns);
+}
+
+if (collapseCheckInsButton) {
+  collapseCheckInsButton.addEventListener('click', handleCollapseCheckIns);
+}
+
+if (loadOlderNotesButton) {
+  loadOlderNotesButton.addEventListener('click', handleLoadOlderNotes);
+}
+
+if (collapseNotesButton) {
+  collapseNotesButton.addEventListener('click', handleCollapseNotes);
 }
 
 urgentDialog.addEventListener('click', (event) => {

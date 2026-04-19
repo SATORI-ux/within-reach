@@ -27,6 +27,11 @@ const appShellEl = document.querySelector('.app-shell');
 const mainContentEl = document.querySelector('#mainContent');
 const arrivalSectionEl = document.querySelector('#arrivalSection');
 
+const loadOlderCheckInsButton = document.querySelector('#loadOlderCheckInsButton');
+const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton');
+const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
+const collapseNotesButton = document.querySelector('#collapseNotesButton');
+
 function pseudoRandomIndex(seedValue, length) {
   const seed = Number(seedValue) || 0;
   return Math.abs(seed) % length;
@@ -41,12 +46,98 @@ function setFactInterlude(fact) {
 
   const hasFact = Boolean(fact);
   factInterludeEl.hidden = !hasFact;
+
   if (hasFact) {
     factInterludeEl.removeAttribute('hidden');
   } else {
     factInterludeEl.setAttribute('hidden', '');
   }
+
   factInterludeLineEl.textContent = hasFact ? `~ ${fact} ~` : '';
+}
+
+function renderEmptyCheckIns() {
+  checkInsFeedEl.innerHTML = `
+    <article class="feed-item feed-item--placeholder">
+      <p class="feed-item__text">Nothing here yet. The first quiet signal will appear here.</p>
+    </article>
+  `;
+}
+
+function renderEmptyNotes() {
+  notesFeedEl.innerHTML = `
+    <article class="note-card note-card--placeholder">
+      <p class="note-card__meta">Waiting softly</p>
+      <p class="note-card__content">Notes will collect here in time.</p>
+    </article>
+  `;
+}
+
+function buildReactionButton({ noteId, emoji, summary, viewerSlug }) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'reaction-chip';
+  button.dataset.noteId = String(noteId);
+  button.dataset.reaction = emoji;
+  button.innerHTML = `<span>${emoji}</span><span>${summary?.count || 0}</span>`;
+
+  if (summary?.reacted_by_viewer || summary?.users?.includes(viewerSlug)) {
+    button.classList.add('is-active');
+  }
+
+  return button;
+}
+
+function renderReactionSet(reactionsEl, noteId, reactions, viewerSlug) {
+  reactionsEl.innerHTML = '';
+
+  REACTIONS.forEach((emoji) => {
+    const summary = reactions?.find((reaction) => reaction.reaction === emoji);
+    reactionsEl.appendChild(
+      buildReactionButton({
+        noteId,
+        emoji,
+        summary,
+        viewerSlug,
+      })
+    );
+  });
+}
+
+function formatTimestamp(input) {
+  const date = new Date(input);
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function updateSingleFeedControls({
+  loadButton,
+  collapseButton,
+  hasMore = false,
+  loadingOlder = false,
+  expanded = false,
+  defaultLabel = 'Show older',
+  loadingLabel = 'Loading...',
+  collapseAriaLabel = 'Return to recent items',
+}) {
+  if (loadButton) {
+    loadButton.hidden = !hasMore;
+    loadButton.disabled = loadingOlder;
+    loadButton.textContent = loadingOlder ? loadingLabel : defaultLabel;
+  }
+
+  if (collapseButton) {
+    collapseButton.hidden = !expanded;
+    collapseButton.disabled = loadingOlder;
+    collapseButton.setAttribute('aria-label', collapseAriaLabel);
+    if (!collapseButton.textContent.trim()) {
+      collapseButton.textContent = '×';
+    }
+  }
 }
 
 export function setReady() {
@@ -95,6 +186,7 @@ export function renderMissingKeyState() {
   arrivalGreetingEl.textContent = 'A small place to return to';
   arrivalLineEl.textContent = 'Tap your tile again to enter this shared space.';
   setFactInterlude('');
+  footerLineEl.textContent = 'Still here.';
   heroStatusEl.textContent = 'Waiting softly.';
 }
 
@@ -102,11 +194,7 @@ export function renderCheckIns(checkIns = []) {
   checkInsFeedEl.innerHTML = '';
 
   if (!checkIns.length) {
-    checkInsFeedEl.innerHTML = `
-      <article class="feed-item feed-item--placeholder">
-        <p class="feed-item__text">Nothing here yet. The first quiet signal will appear here.</p>
-      </article>
-    `;
+    renderEmptyCheckIns();
     return;
   }
 
@@ -131,12 +219,7 @@ export function renderNotes(notes = [], viewerSlug) {
   notesFeedEl.innerHTML = '';
 
   if (!notes.length) {
-    notesFeedEl.innerHTML = `
-      <article class="note-card note-card--placeholder">
-        <p class="note-card__meta">Waiting softly</p>
-        <p class="note-card__content">Notes will collect here in time.</p>
-      </article>
-    `;
+    renderEmptyNotes();
     return;
   }
 
@@ -156,47 +239,10 @@ export function renderNotes(notes = [], viewerSlug) {
     const accent = note.accent_color || ACCENT_BY_USER[note.from_user_slug] || '#6e8d62';
     card.style.setProperty('--note-accent', accent);
 
-    REACTIONS.forEach((emoji) => {
-      const summary = note.reactions?.find((reaction) => reaction.reaction === emoji);
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'reaction-chip';
-      button.dataset.noteId = String(note.id);
-      button.dataset.reaction = emoji;
-      button.innerHTML = `<span>${emoji}</span><span>${summary?.count || 0}</span>`;
-
-      if (summary?.reacted_by_viewer || summary?.users?.includes(viewerSlug)) {
-        button.classList.add('is-active');
-      }
-
-      reactionsEl.appendChild(button);
-    });
+    renderReactionSet(reactionsEl, note.id, note.reactions || [], viewerSlug);
 
     notesFeedEl.appendChild(fragment);
   });
-}
-
-export function prependCheckIn(item) {
-  const existing = Array.from(checkInsFeedEl.children);
-  const wrapper = document.createElement('div');
-  renderCheckIns([item]);
-  const firstItem = checkInsFeedEl.firstElementChild;
-
-  if (!firstItem) return;
-
-  wrapper.appendChild(firstItem.cloneNode(true));
-  checkInsFeedEl.innerHTML = '';
-  checkInsFeedEl.appendChild(wrapper.firstElementChild);
-  existing.forEach((node) => checkInsFeedEl.appendChild(node));
-}
-
-export function prependNote(note, viewerSlug) {
-  const currentNotes = readRenderedNotes();
-  renderNotes([note, ...currentNotes], viewerSlug);
-}
-
-function readRenderedNotes() {
-  return [];
 }
 
 export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
@@ -204,32 +250,35 @@ export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
   if (!card) return;
 
   const reactionsEl = card.querySelector('.note-card__reactions');
-  reactionsEl.innerHTML = '';
+  if (!reactionsEl) return;
 
-  REACTIONS.forEach((emoji) => {
-    const summary = reactions.find((reaction) => reaction.reaction === emoji);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'reaction-chip';
-    button.dataset.noteId = String(noteId);
-    button.dataset.reaction = emoji;
-    button.innerHTML = `<span>${emoji}</span><span>${summary?.count || 0}</span>`;
-
-    if (summary?.reacted_by_viewer || summary?.users?.includes(viewerSlug)) {
-      button.classList.add('is-active');
-    }
-
-    reactionsEl.appendChild(button);
-  });
+  renderReactionSet(reactionsEl, noteId, reactions || [], viewerSlug);
 }
 
-export function formatTimestamp(input) {
-  const date = new Date(input);
-  return date.toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+export function updateFeedHistoryControls({
+  checkIns = {},
+  notes = {},
+} = {}) {
+  updateSingleFeedControls({
+    loadButton: loadOlderCheckInsButton,
+    collapseButton: collapseCheckInsButton,
+    hasMore: Boolean(checkIns.hasMore),
+    loadingOlder: Boolean(checkIns.loadingOlder),
+    expanded: Boolean(checkIns.expanded),
+    defaultLabel: 'Show older check-ins',
+    loadingLabel: 'Loading older check-ins...',
+    collapseAriaLabel: 'Return to recent check-ins',
+  });
+
+  updateSingleFeedControls({
+    loadButton: loadOlderNotesButton,
+    collapseButton: collapseNotesButton,
+    hasMore: Boolean(notes.hasMore),
+    loadingOlder: Boolean(notes.loadingOlder),
+    expanded: Boolean(notes.expanded),
+    defaultLabel: 'Show older notes',
+    loadingLabel: 'Loading older notes...',
+    collapseAriaLabel: 'Return to recent notes',
   });
 }
 
@@ -263,8 +312,4 @@ export function setNoteMessage(message, isError = false) {
 export function clearMessages() {
   setActionMessage('');
   setNoteMessage('');
-}
-
-export function getArrivalSkipTargets() {
-  return [document, window, document.body];
 }

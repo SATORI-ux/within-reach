@@ -47,7 +47,7 @@ export const AMBIENT_LINES_PERSONALIZED = {
     'Joey left room for you here.',
     'A familiar signal found you.',
     'Something soft was waiting on the other side.',
-    'You made your way back to his corner.',
+    'You made your way back to this little corner.',
     'A quiet thread pulled you here.',
   ],
 };
@@ -92,3 +92,4 @@ export const FOOTER_LINES = [
 ];
 
 export const VAPID_PUBLIC_KEY = 'BFtJms2W7rtiu8GqF9rvu8SllB2V5530N7DeB3esHyJTrBdp9LFaxhT1RxB62UgcSec274FS8XM1YBlOVyEaosA';
+ 

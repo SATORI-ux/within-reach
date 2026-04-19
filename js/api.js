@@ -10,10 +10,6 @@ function assertConfig() {
   }
 }
 
-function finishBoot() {
-  document.body.classList.remove('is-booting');
-}
-
 function buildHeaders() {
   return {
     'Content-Type': 'application/json',
@@ -50,8 +46,11 @@ export function resolveVisitor(tileKey) {
   return callFunction('resolve-visitor', { tile_key: tileKey });
 }
 
-export function getFeed(tileKey) {
-  return callFunction('get-feed', { tile_key: tileKey });
+export function getFeed(tileKey, options = {}) {
+  return callFunction('get-feed', {
+    tile_key: tileKey,
+    ...options,
+  });
 }
 
 export function sendCheckIn(tileKey) {
@@ -73,7 +72,6 @@ export function reactNote(tileKey, noteId, reaction) {
 export function sendUrgentSignal(tileKey) {
   return callFunction('send-urgent-signal', { tile_key: tileKey });
 }
-
 
 export function savePushSubscription(tileKey, subscription) {
   return callFunction('save-push-subscription', {
