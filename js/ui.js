@@ -8,9 +8,12 @@ import {
   FOOTER_LINES,
   FUNNY_FACTS_SHARED,
   GREETING_BY_USER,
+  HIDDEN_LETTER_PATH,
   IS_PRIVATE_BUILD,
   LANDING_SECONDARY_LINE_WEIGHTING,
   REACTIONS,
+  SECRET_CLUE_FRAGMENT_CHANCE,
+  SECRET_CLUE_FRAGMENTS,
 } from './config.js';
 
 const emptyPrivateCopy = {
@@ -42,6 +45,11 @@ const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton')
 const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
 const collapseNotesButton = document.querySelector('#collapseNotesButton');
 
+const CLUE_FRAGMENT_INDEX_KEY = 'within-reach.secret-clue-fragment-index';
+const FOOTER_HOLD_DURATION_MS = 1200;
+let hiddenDoorUnlocked = false;
+let footerHoldTimer = null;
+
 function pseudoRandomIndex(seedValue, length) {
   const seed = Number(seedValue) || 0;
   return Math.abs(seed) % length;
@@ -69,6 +77,30 @@ function getDebugSecondaryLine(privateCopy) {
   return null;
 }
 
+function getNextClueFragment() {
+  const currentIndex = Number(window.localStorage.getItem(CLUE_FRAGMENT_INDEX_KEY) || 0);
+  const fragmentIndex = Math.abs(currentIndex) % SECRET_CLUE_FRAGMENTS.length;
+  const fragment = SECRET_CLUE_FRAGMENTS[fragmentIndex];
+  window.localStorage.setItem(CLUE_FRAGMENT_INDEX_KEY, String(currentIndex + 1));
+
+  return fragment;
+}
+
+function getFactWithClueFragment(force = false) {
+  if (!IS_PRIVATE_BUILD || (!force && Math.random() >= SECRET_CLUE_FRAGMENT_CHANCE)) return null;
+
+  const fragment = getNextClueFragment();
+  if (!fragment) return null;
+
+  const fact = pickRandom(getSharedFacts());
+  if (!fact) return null;
+
+  return {
+    fact,
+    fragment,
+  };
+}
+
 async function getWeightedLandingSecondaryLine() {
   const privateCopy = await privateCopyPromise;
   const debugLine = getDebugSecondaryLine(privateCopy);
@@ -86,7 +118,7 @@ async function getWeightedLandingSecondaryLine() {
   return '';
 }
 
-function setFactInterlude(fact) {
+function setFactInterlude(fact, fragment = '') {
   if (!factInterludeEl || !factInterludeLineEl) return;
 
   const hasFact = Boolean(fact);
@@ -98,7 +130,28 @@ function setFactInterlude(fact) {
     factInterludeEl.setAttribute('hidden', '');
   }
 
-  factInterludeLineEl.textContent = hasFact ? `~ ${fact} ~` : '';
+  factInterludeLineEl.textContent = hasFact ? `~ ${fact} ~${fragment ? ` ${fragment}` : ''}` : '';
+}
+
+function openHiddenLetter() {
+  if (!hiddenDoorUnlocked) return;
+
+  window.location.href = new URL(HIDDEN_LETTER_PATH, window.location.href).href;
+}
+
+function clearFooterHoldTimer() {
+  if (!footerHoldTimer) return;
+  window.clearTimeout(footerHoldTimer);
+  footerHoldTimer = null;
+}
+
+function startFooterHold() {
+  if (!hiddenDoorUnlocked || footerHoldTimer) return;
+
+  footerHoldTimer = window.setTimeout(() => {
+    footerHoldTimer = null;
+    openHiddenLetter();
+  }, FOOTER_HOLD_DURATION_MS);
 }
 
 function renderEmptyCheckIns() {
@@ -179,7 +232,7 @@ function updateSingleFeedControls({
     collapseButton.hidden = !expanded;
     collapseButton.disabled = loadingOlder;
     collapseButton.setAttribute('aria-label', collapseAriaLabel);
-    collapseButton.textContent = 'Recent';
+    collapseButton.textContent = 'x';
   }
 }
 
@@ -204,10 +257,29 @@ export function applyAccent(userSlug) {
   document.documentElement.style.setProperty('--accent-soft', `${accent}22`);
 }
 
+export function setHiddenDoorUnlocked(unlocked) {
+  const debugUnlock = new URLSearchParams(window.location.search).get('debugUnlockDoor') === 'true';
+  hiddenDoorUnlocked = IS_PRIVATE_BUILD && (Boolean(unlocked) || debugUnlock);
+}
+
+export function bindHiddenDoor() {
+  if (!footerLineEl) return;
+
+  footerLineEl.addEventListener('pointerdown', startFooterHold);
+  footerLineEl.addEventListener('pointerup', clearFooterHoldTimer);
+  footerLineEl.addEventListener('pointercancel', clearFooterHoldTimer);
+  footerLineEl.addEventListener('pointerleave', clearFooterHoldTimer);
+  footerLineEl.addEventListener('contextmenu', (event) => {
+    if (hiddenDoorUnlocked) event.preventDefault();
+  });
+}
+
 export async function renderArrival(visitor) {
   const personalizedLines = AMBIENT_LINES_PERSONALIZED[visitor.user_slug] || [];
   const ambientLine = pickRandom([...AMBIENT_LINES_SHARED, ...personalizedLines]);
-  const secondaryLine = ENABLE_FUNNY_FACTS ? await getWeightedLandingSecondaryLine() : '';
+  const debugType = new URLSearchParams(window.location.search).get('debugSecondary');
+  const clueLine = ENABLE_FUNNY_FACTS ? getFactWithClueFragment(debugType === 'clue') : null;
+  const secondaryLine = clueLine ? clueLine.fact : ENABLE_FUNNY_FACTS ? await getWeightedLandingSecondaryLine() : '';
   const greeting = GREETING_BY_USER[visitor.user_slug] || `Hey ${visitor.display_name}`;
 
   arrivalSectionEl.hidden = false;
@@ -217,7 +289,7 @@ export async function renderArrival(visitor) {
   arrivalGreetingEl.textContent = greeting;
   arrivalLineEl.textContent = ambientLine;
   arrivalLineEl.hidden = !ambientLine;
-  setFactInterlude(secondaryLine);
+  setFactInterlude(secondaryLine, clueLine?.fragment || '');
   footerLineEl.textContent = pickRandom(FOOTER_LINES);
   heroStatusEl.textContent = `${visitor.display_name} arrived through a quiet little doorway.`;
 }

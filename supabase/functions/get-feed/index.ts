@@ -8,6 +8,7 @@ import {
   validateTileKey,
   withNoteReactions,
 } from '../_shared/utils.ts';
+import { getSecretState } from '../_shared/secret.ts';
 
 type Payload = {
   tile_key?: string;
@@ -140,6 +141,7 @@ Deno.serve(async (req) => {
         display_name: visitor.display_name,
         accent_color: visitor.accent_color,
       },
+      secret_state: await getSecretState(client, visitor.user_slug),
       check_ins: checkIns,
       check_ins_page: checkInsPage,
       notes: withNoteReactions(notes, reactionMap),

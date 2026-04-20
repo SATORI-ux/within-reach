@@ -9,9 +9,16 @@ import {
   sendCheckIn,
   sendUrgentSignal,
 } from './api.js';
-import { ARRIVAL_REVEAL_DELAY_MS, DEBUG_UI_MESSAGES, MAX_NOTE_LENGTH, VAPID_PUBLIC_KEY } from './config.js';
+import {
+  ARRIVAL_REVEAL_DELAY_MS,
+  DEBUG_UI_MESSAGES,
+  IS_PRIVATE_BUILD,
+  MAX_NOTE_LENGTH,
+  VAPID_PUBLIC_KEY,
+} from './config.js';
 import {
   applyAccent,
+  bindHiddenDoor,
   clearMessages,
   renderArrival,
   renderCheckIns,
@@ -19,6 +26,7 @@ import {
   renderNotes,
   revealMainContent,
   setActionMessage,
+  setHiddenDoorUnlocked,
   setNoteMessage,
   setReady,
   showToast,
@@ -29,6 +37,7 @@ import {
 const SESSION_KEY = 'check-in-space.tile-key';
 const SESSION_COOKIE_NAME = 'check_in_space_tile_key';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
+const SECRET_DEBUG_PROGRESS_KEY = 'within-reach.debug-secret-progress';
 const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
 
 function getCookie(name) {
@@ -93,6 +102,103 @@ function clearUrgentRoute() {
   const cleanSearch = params.toString();
   const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
   window.history.replaceState({}, '', cleanUrl || '/');
+}
+
+function getSecretDebugProgress() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (!params.has('debugSecretThoughts') || !params.has('debugSecretDays')) return null;
+
+  const thoughts = Number(params.get('debugSecretThoughts'));
+  const days = Number(params.get('debugSecretDays'));
+
+  if (!Number.isFinite(thoughts) || !Number.isFinite(days)) return null;
+
+  const seedThoughts = Math.max(0, Math.floor(thoughts));
+  const firstThoughtDaysAgo = Math.max(0, Math.floor(days));
+  let storedProgress = null;
+
+  try {
+    storedProgress = JSON.parse(localStorage.getItem(SECRET_DEBUG_PROGRESS_KEY) || 'null');
+  } catch {
+    localStorage.removeItem(SECRET_DEBUG_PROGRESS_KEY);
+  }
+
+  if (
+    storedProgress?.seed_thoughts === seedThoughts &&
+    storedProgress?.first_thought_days_ago === firstThoughtDaysAgo &&
+    Number.isFinite(storedProgress?.prior_thought_count)
+  ) {
+    return {
+      prior_thought_count: Math.max(0, Math.floor(storedProgress.prior_thought_count)),
+      first_thought_days_ago: firstThoughtDaysAgo,
+      seed_thoughts: seedThoughts,
+    };
+  }
+
+  return {
+    prior_thought_count: seedThoughts,
+    first_thought_days_ago: firstThoughtDaysAgo,
+    seed_thoughts: seedThoughts,
+  };
+}
+
+function advanceSecretDebugProgress(debugSecretProgress, secretState) {
+  if (!debugSecretProgress) return;
+
+  const effectiveThoughtCount =
+    secretState?.debug?.effective_thought_count ?? debugSecretProgress.prior_thought_count + 1;
+
+  localStorage.setItem(
+    SECRET_DEBUG_PROGRESS_KEY,
+    JSON.stringify({
+      seed_thoughts: debugSecretProgress.seed_thoughts,
+      first_thought_days_ago: debugSecretProgress.first_thought_days_ago,
+      prior_thought_count: Math.max(0, Math.floor(effectiveThoughtCount)),
+    })
+  );
+}
+
+function getSecretDebugMessage(secretState) {
+  const debug = secretState?.debug;
+  if (!debug) return '';
+
+  const count = debug.effective_thought_count ?? 'unknown';
+  const days = debug.first_thought_days_ago ?? 'unknown';
+
+  if (!debug.enabled) {
+    return 'Debug unlock spoof was sent, but SECRET_DEBUG_UNLOCKS is not enabled for the Edge Function.';
+  }
+
+  if (debug.reason === 'wrong-target-user') {
+    return `Debug unlock did not run for this tile. Target is ${debug.target_user_slug}; current tile is ${debug.user_slug}.`;
+  }
+
+  if (debug.reason === 'below-thought-target') {
+    return `Debug unlock stayed locked: effective thoughts ${count}/${debug.thought_target}.`;
+  }
+
+  if (debug.reason === 'below-minimum-days') {
+    return `Debug unlock stayed locked: effective days ${days}/${debug.minimum_days}.`;
+  }
+
+  if (debug.reason === 'unlocked') {
+    return IS_PRIVATE_BUILD
+      ? 'Debug unlock succeeded. Long-press the quiet footer line.'
+      : 'Debug unlock succeeded on the server, but this page is not running as the private build.';
+  }
+
+  if (debug.reason === 'already-unlocked') {
+    return IS_PRIVATE_BUILD
+      ? 'The hidden door is already unlocked. Long-press the quiet footer line.'
+      : 'The hidden door is already unlocked on the server, but this page is not running as the private build.';
+  }
+
+    if (debug.reason === 'secret-state-error') {
+    return 'Debug unlock could not read or update hidden-door state. The check-in was still saved.';
+  }
+
+  return `Debug unlock result: ${debug.reason}.`;
 }
 
 function finishBoot() {
@@ -261,6 +367,7 @@ function renderCurrentFeeds() {
 function applyInitialFeedPayload(feed) {
   state.checkIns = feed.check_ins || [];
   state.notes = feed.notes || [];
+  setHiddenDoorUnlocked(feed.secret_state?.unlocked);
 
   state.feed.checkIns.hasMore = Boolean(feed.check_ins_page?.has_more);
   state.feed.checkIns.nextBeforeId = feed.check_ins_page?.next_before_id ?? null;
@@ -592,6 +699,7 @@ function handleCollapseNotes() {
 async function bootstrap() {
   setReady();
   setActionsDisabled(true);
+  bindHiddenDoor();
   bindRevealSkip();
   updateNoteCount();
 
@@ -668,7 +776,14 @@ async function handleCheckIn() {
   thinkingButton.disabled = true;
 
   try {
-    const result = await sendCheckIn(state.tileKey);
+    const debugSecretProgress = getSecretDebugProgress();
+    const result = await sendCheckIn(
+      state.tileKey,
+      debugSecretProgress ? { debug_secret_progress: debugSecretProgress } : {}
+    );
+    setHiddenDoorUnlocked(result.secret_state?.unlocked);
+    advanceSecretDebugProgress(debugSecretProgress, result.secret_state);
+
     if (result.check_in) {
       state.checkIns = [result.check_in, ...state.checkIns];
 
@@ -679,11 +794,17 @@ async function handleCheckIn() {
       renderCurrentCheckIns();
     }
 
+    const visibleThoughtCount = result.secret_state?.debug?.effective_thought_count ?? result.total_count;
+    const debugMessage = getSecretDebugMessage(result.secret_state);
+    const countDebugMessage = result.debug
+      ? ` Check-in ${result.debug.created_check_in_id} counted ${result.debug.counted_total} for ${result.debug.counted_user_slug}.`
+      : '';
+
     showToast(
-      `${state.visitor.display_name} · ${result.total_count} thoughts of you`,
+      `${state.visitor.display_name} · ${visibleThoughtCount} thoughts of you`,
       state.visitor.accent_color
     );
-    setActionMessage('');
+    setActionMessage(`${debugMessage}${countDebugMessage}`.trim());
   } catch (error) {
     console.error(error);
     setActionMessage(error.message || 'Could not send that check-in.', true);

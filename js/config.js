@@ -66,6 +66,15 @@ export const LANDING_SECONDARY_LINE_WEIGHTING = {
   secret: 0.05,
 };
 
+export const SECRET_CLUE_FRAGMENT_CHANCE = 0.02;
+export const SECRET_CLUE_FRAGMENTS = [
+  'there is',
+  'a note here',
+  'if you keep',
+  'returning.',
+];
+export const HIDDEN_LETTER_PATH = './kept.html';
+
 export const FUNNY_FACTS_SHARED = {
   outOfTheBox: [
     'Sea otters have favorite rocks.',
@@ -134,7 +143,7 @@ export const CHECK_IN_TEMPLATES = [
   '{name} left a quiet check-in.',
   'A small signal from {name}.',
   '{name} found their way back here.',
-  '{name} dropped in for a moment.',
+  '{name} passed through here for a moment.',
   '{name} sent a little thought your way.',
   'A familiar check-in from {name}.',
   '{name} left a soft trace here.',

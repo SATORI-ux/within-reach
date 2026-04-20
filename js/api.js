@@ -53,8 +53,11 @@ export function getFeed(tileKey, options = {}) {
   });
 }
 
-export function sendCheckIn(tileKey) {
-  return callFunction('send-check-in', { tile_key: tileKey });
+export function sendCheckIn(tileKey, options = {}) {
+  return callFunction('send-check-in', {
+    tile_key: tileKey,
+    ...options,
+  });
 }
 
 export function addNote(tileKey, content) {

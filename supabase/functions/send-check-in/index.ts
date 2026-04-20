@@ -7,9 +7,14 @@ import {
   sendPushToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
+import { updateSecretUnlockAfterThought } from '../_shared/secret.ts';
 
 type Payload = {
   tile_key?: string;
+  debug_secret_progress?: {
+    prior_thought_count?: number;
+    first_thought_days_ago?: number;
+  };
 };
 
 Deno.serve(async (req) => {
@@ -56,8 +61,52 @@ Deno.serve(async (req) => {
       throw new Error(countError.message);
     }
 
+    let secretState = {
+      unlocked: false,
+      unlocked_at: null,
+    };
+
+    try {
+      secretState = await updateSecretUnlockAfterThought(
+        client,
+        visitor.user_slug,
+        created.created_at,
+        body.debug_secret_progress,
+      );
+    } catch (secretError) {
+      console.error('Secret unlock update failed', {
+        user_slug: visitor.user_slug,
+        message: secretError instanceof Error ? secretError.message : String(secretError),
+      });
+
+      if (body.debug_secret_progress) {
+        secretState = {
+          unlocked: false,
+          unlocked_at: null,
+          debug: {
+            requested: true,
+            enabled: Deno.env.get('SECRET_DEBUG_UNLOCKS') === 'true',
+            target_user_slug: Deno.env.get('SECRET_TARGET_USER_SLUG') || 'jeszi',
+            user_slug: visitor.user_slug,
+            thought_target: Number(Deno.env.get('SECRET_THOUGHT_TARGET')) || 150,
+            minimum_days: Number(Deno.env.get('SECRET_MINIMUM_DAYS')) || 90,
+            reason: 'secret-state-error',
+          },
+        };
+      }
+    }
+
     return json({
       total_count: count ?? 0,
+      secret_state: secretState,
+      debug: body.debug_secret_progress
+        ? {
+          resolved_user_slug: visitor.user_slug,
+          created_check_in_id: created.id,
+          counted_user_slug: visitor.user_slug,
+          counted_total: count ?? 0,
+        }
+        : undefined,
       check_in: {
         id: created.id,
         from_user_slug: created.from_user_slug,

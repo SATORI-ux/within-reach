@@ -62,4 +62,16 @@ For local debugging in Vite private mode, force the secondary line type with `de
 npm.cmd run dev -- --mode private
 ```
 
-Then open a tile URL with `debugSecondary=secret`, `debugSecondary=fact`, `debugSecondary=personal`, or `debugSecondary=none`.
+Then open a tile URL with `debugSecondary=secret`, `debugSecondary=fact`, `debugSecondary=personal`, `debugSecondary=clue`, or `debugSecondary=none`.
+
+To test the hidden footer door locally in private mode before the server-side unlock conditions are met, add `debugUnlockDoor=true` and long-press the quiet footer line.
+
+The private hidden letter route is `kept.html`. Keep the real file local and private; it is ignored by Git and is included in private builds only when present.
+
+The server-side unlock state requires the `secret_unlocks` table. Apply `sql/secret_unlocks.sql` to an existing Supabase database before deploying the updated Edge Functions.
+
+To test the real server unlock path without waiting, set `SECRET_DEBUG_UNLOCKS=true` for the Edge Function environment. Then open the private build with `debugSecretThoughts` and `debugSecretDays`, and press `Thinking of you`.
+
+For example, `debugSecretThoughts=149&debugSecretDays=91` simulates 149 prior thoughts and a first thought 91 days ago; the button press becomes the 150th qualifying thought and should unlock. `debugSecretThoughts=149&debugSecretDays=89` should not unlock.
+
+When debug params are present, the browser advances the simulated prior count after each successful press. To reset that local debug counter, run `localStorage.removeItem('within-reach.debug-secret-progress')` in the browser console.
