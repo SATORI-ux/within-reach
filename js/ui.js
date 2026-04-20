@@ -134,9 +134,7 @@ function updateSingleFeedControls({
     collapseButton.hidden = !expanded;
     collapseButton.disabled = loadingOlder;
     collapseButton.setAttribute('aria-label', collapseAriaLabel);
-    if (!collapseButton.textContent.trim()) {
-      collapseButton.textContent = '×';
-    }
+    collapseButton.textContent = 'Recent';
   }
 }
 

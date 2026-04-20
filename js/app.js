@@ -249,12 +249,33 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+function supportsPushNotifications() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+async function getCurrentPushSubscription() {
+  if (!supportsPushNotifications()) return null;
+
+  const registration = await navigator.serviceWorker.getRegistration();
+  return registration ? await registration.pushManager.getSubscription() : null;
+}
+
+async function syncPushButtonWithCurrentDevice() {
+  try {
+    const subscription = await getCurrentPushSubscription();
+    setPushEnabledState(Boolean(subscription));
+  } catch (error) {
+    console.warn('Could not read current push subscription.', error);
+    setPushEnabledState(false);
+  }
+}
+
 async function enablePushNotifications() {
   if (!state.tileKey) {
     throw new Error('No tile key is active for this session.');
   }
 
-  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+  if (!supportsPushNotifications()) {
     throw new Error('Push notifications are not supported on this browser/device.');
   }
 
@@ -479,7 +500,7 @@ async function bootstrap() {
     renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
-    setPushEnabledState(Boolean(state.visitor?.push_enabled));
+    await syncPushButtonWithCurrentDevice();
     scheduleReveal();
 
     await withTimeout(
@@ -661,7 +682,7 @@ async function handleEnablePush() {
   try {
     await enablePushNotifications();
     if (state.visitor) {
-  state.visitor.push_enabled = true;
+      state.visitor.push_enabled = true;
     }
     setPushEnabledState(true);
     setPushStatus('Quietly enabled.');
@@ -671,7 +692,7 @@ async function handleEnablePush() {
   } catch (error) {
     console.error(error);
     if (state.visitor) {
-  state.visitor.push_enabled = false;
+      state.visitor.push_enabled = false;
     }
     setPushEnabledState(false);
     setPushStatus(error.message || 'Could not enable notifications.', true);
