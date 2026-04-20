@@ -48,6 +48,12 @@ create table if not exists public.urgent_signals (
   status text not null default 'pending' check (status in ('pending', 'acknowledged'))
 );
 
+create table if not exists public.urgent_contacts (
+  user_slug text primary key references public.tile_keys(user_slug) on update cascade,
+  phone_e164 text not null check (phone_e164 ~ '^\+[1-9][0-9]{7,14}$'),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.secret_unlocks (
   user_slug text primary key references public.tile_keys(user_slug) on update cascade,
   first_thought_at timestamptz not null,
@@ -96,4 +102,5 @@ alter table public.check_ins enable row level security;
 alter table public.notes enable row level security;
 alter table public.note_reactions enable row level security;
 alter table public.urgent_signals enable row level security;
+alter table public.urgent_contacts enable row level security;
 alter table public.secret_unlocks enable row level security;

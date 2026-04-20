@@ -241,7 +241,7 @@ export async function sendPushToCounterpart(
   kind: 'gentle' | 'urgent',
   title: string,
   body: string,
-  url = '/',
+  url = 'https://kept.satori-ux.com/',
   options: PushOptions = {},
 ): Promise<PushSendResult> {
   const counterpartSlug = getCounterpartSlug(fromVisitor.user_slug);

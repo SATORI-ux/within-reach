@@ -10,7 +10,7 @@ self.addEventListener('push', (event) => {
   let payload = {
     title: 'A small check-in arrived.',
     body: 'Someone was thinking of you.',
-    data: { url: './' },
+    data: { url: 'https://kept.satori-ux.com/' },
   };
 
   try {
@@ -20,7 +20,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      data: payload.data || { url: './' },
+      data: payload.data || { url: 'https://kept.satori-ux.com/' },
       tag: payload.tag,
       renotify: Boolean(payload.renotify),
       requireInteraction: Boolean(payload.requireInteraction),

@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       'gentle',
       'A small check-in arrived.',
       `${visitor.display_name} was thinking of you.`,
-      '/'
+      'https://kept.satori-ux.com/'
     );
 
     const { data: created, error: insertError } = await client

@@ -28,7 +28,7 @@ function buildUrgentUrl(basePath: string, recipientKey: string, signalId: string
   url.searchParams.set('urgent', '1');
   url.searchParams.set('signal', signalId);
 
-  return `${url.pathname}${url.search}${url.hash}`;
+  return url.href;
 }
 
 Deno.serve(async (req) => {
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       throw new Error(insertError?.message || 'Could not create urgent signal.');
     }
 
-    const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || '/';
+    const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || 'https://kept.satori-ux.com/';
     const urgentUrl = buildUrgentUrl(appPath, recipientKey, created.signal_id);
 
     const pushNotification = await sendPushToCounterpart(
