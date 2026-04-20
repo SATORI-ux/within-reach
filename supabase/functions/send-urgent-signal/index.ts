@@ -23,7 +23,7 @@ function normalizePreferredResponse(value: string | undefined): PreferredRespons
 }
 
 function buildUrgentUrl(basePath: string, recipientKey: string, signalId: string): string {
-  const url = new URL(basePath, 'https://within-reach.local');
+  const url = new URL(basePath, 'https://kept.satori-ux.com');
   url.searchParams.set('key', recipientKey);
   url.searchParams.set('urgent', '1');
   url.searchParams.set('signal', signalId);
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       throw new Error(insertError?.message || 'Could not create urgent signal.');
     }
 
-    const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || '/within-reach/';
+    const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || '/';
     const urgentUrl = buildUrgentUrl(appPath, recipientKey, created.signal_id);
 
     const pushNotification = await sendPushToCounterpart(

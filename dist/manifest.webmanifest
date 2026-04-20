@@ -1,20 +1,20 @@
 {
   "name": "Within Reach",
   "short_name": "Within Reach",
-  "id": "/within-reach/",
-  "start_url": "/within-reach/",
-  "scope": "/within-reach/",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#e8e0d4",
   "theme_color": "#e8e0d4",
   "icons": [
     {
-      "src": "/within-reach/assets/icons/icon-192.png",
+      "src": "/assets/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/within-reach/assets/icons/icon-512.png",
+      "src": "/assets/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       'gentle',
       'A small check-in arrived.',
       `${visitor.display_name} was thinking of you.`,
-      '/within-reach/'
+      '/'
     );
 
     const { data: created, error: insertError } = await client

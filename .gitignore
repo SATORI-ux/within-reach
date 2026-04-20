@@ -22,3 +22,5 @@ dist/
 #private build items
 js/private-copy.js
 kept.html
+
+.vercel

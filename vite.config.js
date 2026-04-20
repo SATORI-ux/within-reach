@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    base: '/within-reach/',
+    base: '/',
     resolve: {
       alias: {
         './private-copy.js': fileURLToPath(
