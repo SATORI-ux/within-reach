@@ -3,12 +3,22 @@ import {
   AMBIENT_LINES_PERSONALIZED,
   AMBIENT_LINES_SHARED,
   CHECK_IN_TEMPLATES,
+  ENABLE_SECRET_SECTION,
   ENABLE_FUNNY_FACTS,
   FOOTER_LINES,
-  FUNNY_FACTS,
+  FUNNY_FACTS_SHARED,
   GREETING_BY_USER,
+  IS_PRIVATE_BUILD,
+  LANDING_SECONDARY_LINE_WEIGHTING,
   REACTIONS,
 } from './config.js';
+
+const emptyPrivateCopy = {
+  FUNNY_FACTS_PERSONAL: [],
+  FUNNY_FACTS_SECRET: [],
+};
+
+const privateCopyPromise = IS_PRIVATE_BUILD ? import('./private-copy.js') : Promise.resolve(emptyPrivateCopy);
 
 const arrivalGreetingEl = document.querySelector('#arrivalGreeting');
 const arrivalLineEl = document.querySelector('#arrivalLine');
@@ -38,7 +48,42 @@ function pseudoRandomIndex(seedValue, length) {
 }
 
 function pickRandom(items) {
+  if (!items.length) return '';
   return items[Math.floor(Math.random() * items.length)];
+}
+
+function getSharedFacts() {
+  return Object.values(FUNNY_FACTS_SHARED).flat();
+}
+
+function getDebugSecondaryLine(privateCopy) {
+  if (!IS_PRIVATE_BUILD) return null;
+
+  const debugType = new URLSearchParams(window.location.search).get('debugSecondary');
+
+  if (debugType === 'none') return '';
+  if (debugType === 'fact' || debugType === 'shared') return pickRandom(getSharedFacts());
+  if (debugType === 'personal') return pickRandom(privateCopy.FUNNY_FACTS_PERSONAL);
+  if (debugType === 'secret' && ENABLE_SECRET_SECTION) return pickRandom(privateCopy.FUNNY_FACTS_SECRET);
+
+  return null;
+}
+
+async function getWeightedLandingSecondaryLine() {
+  const privateCopy = await privateCopyPromise;
+  const debugLine = getDebugSecondaryLine(privateCopy);
+
+  if (debugLine !== null) return debugLine;
+
+  const roll = Math.random();
+  const { none, shared, personal } = LANDING_SECONDARY_LINE_WEIGHTING;
+
+  if (roll < none) return '';
+  if (roll < none + shared) return pickRandom(getSharedFacts());
+  if (roll < none + shared + personal) return pickRandom(privateCopy.FUNNY_FACTS_PERSONAL);
+  if (ENABLE_SECRET_SECTION) return pickRandom(privateCopy.FUNNY_FACTS_SECRET);
+
+  return '';
 }
 
 function setFactInterlude(fact) {
@@ -159,10 +204,10 @@ export function applyAccent(userSlug) {
   document.documentElement.style.setProperty('--accent-soft', `${accent}22`);
 }
 
-export function renderArrival(visitor) {
+export async function renderArrival(visitor) {
   const personalizedLines = AMBIENT_LINES_PERSONALIZED[visitor.user_slug] || [];
   const ambientLine = pickRandom([...AMBIENT_LINES_SHARED, ...personalizedLines]);
-  const fact = ENABLE_FUNNY_FACTS ? pickRandom(FUNNY_FACTS) : '';
+  const secondaryLine = ENABLE_FUNNY_FACTS ? await getWeightedLandingSecondaryLine() : '';
   const greeting = GREETING_BY_USER[visitor.user_slug] || `Hey ${visitor.display_name}`;
 
   arrivalSectionEl.hidden = false;
@@ -171,7 +216,8 @@ export function renderArrival(visitor) {
 
   arrivalGreetingEl.textContent = greeting;
   arrivalLineEl.textContent = ambientLine;
-  setFactInterlude(fact);
+  arrivalLineEl.hidden = !ambientLine;
+  setFactInterlude(secondaryLine);
   footerLineEl.textContent = pickRandom(FOOTER_LINES);
   heroStatusEl.textContent = `${visitor.display_name} arrived through a quiet little doorway.`;
 }
@@ -183,6 +229,7 @@ export function renderMissingKeyState() {
 
   arrivalGreetingEl.textContent = 'A small place to return to';
   arrivalLineEl.textContent = 'Tap your tile again to enter this shared space.';
+  arrivalLineEl.hidden = false;
   setFactInterlude('');
   footerLineEl.textContent = 'Still here.';
   heroStatusEl.textContent = 'Waiting softly.';

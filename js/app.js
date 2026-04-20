@@ -618,7 +618,7 @@ async function bootstrap() {
     );
 
     applyAccent(state.visitor.user_slug);
-    renderArrival(state.visitor);
+    await renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
     await syncPushButtonWithCurrentDevice();

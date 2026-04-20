@@ -1,6 +1,13 @@
 export const SUPABASE_URL = 'https://lxpoanjmobqpcqdbdcgk.supabase.co';
 export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_PSLuNWv6OqCqRSIPBAIGpA_g7BwlBUO';
 
+export const IS_PRIVATE_BUILD =
+  import.meta.env?.VITE_WITHIN_REACH_BUILD === 'private' ||
+  import.meta.env?.VITE_PRIVATE_BUILD === 'true' ||
+  import.meta.env?.MODE === 'private';
+export const ENABLE_SECRET_SECTION =
+  IS_PRIVATE_BUILD && import.meta.env?.VITE_ENABLE_SECRET_SECTION !== 'false';
+
 export const ENABLE_FUNNY_FACTS = true;
 export const ARRIVAL_REVEAL_DELAY_MS = 2600;
 export const MAX_NOTE_LENGTH = 300;
@@ -52,20 +59,73 @@ export const AMBIENT_LINES_PERSONALIZED = {
   ],
 };
 
-export const FUNNY_FACTS = [
-  'Ladybugs can smell with their feet.',
-  'Sharks existed before trees.',
-  'Bananas are berries. Somehow.',
-  'Wombats make cube-shaped poop.',
-  'Octopuses have three hearts.',
-  'Honey never really spoils.',
-  'Sea otters hold hands when they sleep.',
-  'A group of crows is called a murder, which feels excessive.',
-  'Pineapples take a long time to grow for something that chaotic.',
-  'The dot over a lowercase i is called a tittle.',
-  'Koalas have fingerprints very similar to humans.',
-  'Sloths can hold their breath longer than dolphins.',
-];
+export const LANDING_SECONDARY_LINE_WEIGHTING = {
+  none: 0.2,
+  shared: 0.6,
+  personal: 0.15,
+  secret: 0.05,
+};
+
+export const FUNNY_FACTS_SHARED = {
+  outOfTheBox: [
+    'Sea otters have favorite rocks.',
+    'Some cats are allergic to humans.',
+    'A cloud can weigh more than a million pounds.',
+    'Rats laugh when they are tickled.',
+    'Honeybees can recognize human faces.',
+    'There are mushrooms that glow in the dark.',
+    'Sea otters hold hands so they do not drift apart.',
+    'A shrimp\'s heart is in its head.',
+    'Butterflies can taste with their feet.',
+    'Cows tend to have best friends.',
+  ],
+  animalOddities: [
+    'Octopuses have three hearts.',
+    'Koalas have fingerprints very similar to humans.',
+    'Sloths can hold their breath longer than dolphins.',
+    'Wombats make cube-shaped poop.',
+    'Crows can remember human faces.',
+    'Some frogs freeze and thaw back out later.',
+    'Elephants can recognize themselves in mirrors.',
+    'Penguins sometimes propose with pebbles.',
+    'Dolphins use signature whistles a bit like names.',
+    'Ladybugs can smell with their feet.',
+  ],
+  languageOddities: [
+    'The dot over a lowercase i is called a tittle.',
+    'Eavesdrop comes from standing under the eaves to overhear people.',
+    'Bookkeeper is one of the few common words with three double letters in a row.',
+    'The longest English word typed with only the top row is typewriter.',
+    'Queue is mostly just one letter waiting politely.',
+    'The word salary traces back to salt.',
+    'Moonbow is a real word. It is a rainbow made by moonlight.',
+    'Petrichor is the smell after rain.',
+    'Apricity means the warmth of the sun in winter.',
+    'Liminal used to belong mostly to thresholds before the internet got hold of it.',
+  ],
+  spaceAndScale: [
+    'Sharks existed before trees.',
+    'The light from the sun takes about eight minutes to reach Earth.',
+    'Venus spins the opposite direction of most planets.',
+    'A day on Venus is longer than its year.',
+    'The North Star will not always be the North Star.',
+    'Saturn would float in water if you had a bathtub large enough.',
+    'The moon has moonquakes.',
+    'A teaspoon of neutron star would weigh an absurd amount.',
+    'There are more possible chess games than atoms in the observable universe.',
+    'The universe is still expanding, which feels a little rude to certainty.',
+  ],
+  dryAsides: [
+    'A surprising amount of life is held together by tiny rituals.',
+    'Not every strange detail needs a larger lesson.',
+    'Some facts arrive like trivia. Some arrive like evidence.',
+    'The world keeps making odd little choices without consulting anyone.',
+    'There is no reason a crow should feel this symbolic, and yet.',
+    'Some details are too specific not to matter to somebody.',
+    'The universe has a habit of being quietly excessive.',
+    'A lot of existence is just unlikely things continuing anyway.',
+  ],
+};
 
 export const CHECK_IN_TEMPLATES = [
   '{name} was thinking of you.',

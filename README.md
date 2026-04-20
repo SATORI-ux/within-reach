@@ -40,3 +40,26 @@ The goal is to make connection feel immediate, quiet, and intentional without tu
 ```bash
 npm install
 npm run dev
+```
+
+## Build flags
+
+The public build keeps the ordinary arrival line behavior. The private build can use the weighted landing secondary-line system from the copy pass:
+
+```bash
+VITE_WITHIN_REACH_BUILD=private
+```
+
+For compatibility, `VITE_PRIVATE_BUILD=true` also enables the private build path. Secret hint lines are only eligible in a private build, and can be disabled with:
+
+```bash
+VITE_ENABLE_SECRET_SECTION=false
+```
+
+For local debugging in Vite private mode, force the secondary line type with `debugSecondary`:
+
+```bash
+npm.cmd run dev -- --mode private
+```
+
+Then open a tile URL with `debugSecondary=secret`, `debugSecondary=fact`, `debugSecondary=personal`, or `debugSecondary=none`.
