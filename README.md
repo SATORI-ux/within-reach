@@ -3,6 +3,7 @@
 A private two-person ambient check-in app built for long-distance closeness.
 
 Within Reach is a lightweight web experience designed around small gestures:
+
 - quick check-ins
 - short notes
 - soft ambient messages
@@ -35,43 +36,68 @@ The goal is to make connection feel immediate, quiet, and intentional without tu
 - Supabase Edge Functions
 - GitHub Pages
 
-## Local development
+## Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build flags
-
-The public build keeps the ordinary arrival line behavior. The private build can use the weighted landing secondary-line system from the copy pass:
+PowerShell may block `npm.ps1` on some Windows systems. If that happens, use:
 
 ```bash
-VITE_WITHIN_REACH_BUILD=private
+npm.cmd run dev
 ```
 
-For compatibility, `VITE_PRIVATE_BUILD=true` also enables the private build path. Secret hint lines are only eligible in a private build, and can be disabled with:
+## Build
 
 ```bash
-VITE_ENABLE_SECRET_SECTION=false
+npm run build
 ```
 
-For local debugging in Vite private mode, force the secondary line type with `debugSecondary`:
+or on Windows if PowerShell blocks npm scripts:
 
 ```bash
-npm.cmd run dev -- --mode private
+npm.cmd run build
 ```
 
-Then open a tile URL with `debugSecondary=secret`, `debugSecondary=fact`, `debugSecondary=personal`, `debugSecondary=clue`, or `debugSecondary=none`.
+The GitHub Pages workflow installs dependencies, runs the Vite build, and deploys the generated `dist` folder.
 
-To test the hidden footer door locally in private mode before the server-side unlock conditions are met, add `debugUnlockDoor=true` and long-press the quiet footer line.
+## Supabase Setup
 
-The private hidden letter route is `kept.html`. Keep the real file local and private; it is ignored by Git and is included in private builds only when present.
+The app uses Supabase tables and Edge Functions for identity validation, feed reads, check-ins, notes, reactions, push subscriptions, and urgent signals.
 
-The server-side unlock state requires the `secret_unlocks` table. Apply `sql/secret_unlocks.sql` to an existing Supabase database before deploying the updated Edge Functions.
+Apply the SQL files in `sql/` to the project database as needed, then deploy the Edge Functions in `supabase/functions/`.
 
-To test the real server unlock path without waiting, set `SECRET_DEBUG_UNLOCKS=true` for the Edge Function environment. Then open the private build with `debugSecretThoughts` and `debugSecretDays`, and press `Thinking of you`.
+For the current private-state support, apply:
 
-For example, `debugSecretThoughts=149&debugSecretDays=91` simulates 149 prior thoughts and a first thought 91 days ago; the button press becomes the 150th qualifying thought and should unlock. `debugSecretThoughts=149&debugSecretDays=89` should not unlock.
+```text
+sql/secret_unlocks.sql
+```
 
-When debug params are present, the browser advances the simulated prior count after each successful press. To reset that local debug counter, run `localStorage.removeItem('within-reach.debug-secret-progress')` in the browser console.
+Deploy changed functions with the Supabase CLI, for example:
+
+```bash
+npx supabase functions deploy get-feed
+npx supabase functions deploy send-check-in
+```
+
+## Private Build Notes
+
+The repository contains public-safe scaffolding for a private build, but private copy and private destination content should remain local-only.
+
+Do not commit local private content files. The project `.gitignore` excludes those files so the public repository can keep the app structure without exposing personal material.
+
+The public build uses a harmless empty private-copy module. Private builds can substitute local-only content during build time.
+
+## Deployment Notes
+
+The public GitHub Pages deployment is built from source by the workflow. Avoid relying on manually edited files in `dist`; regenerate them with the build command instead.
+
+Before pushing, check:
+
+```bash
+git status --short
+```
+
+Make sure no local private content files are staged.
