@@ -1,4 +1,14 @@
-import { addNote, getFeed, reactNote, resolveVisitor, savePushSubscription, sendCheckIn, sendUrgentSignal } from './api.js';
+import {
+  acknowledgeUrgentSignal,
+  addNote,
+  getFeed,
+  getUrgentSignal,
+  reactNote,
+  resolveVisitor,
+  savePushSubscription,
+  sendCheckIn,
+  sendUrgentSignal,
+} from './api.js';
 import { ARRIVAL_REVEAL_DELAY_MS, DEBUG_UI_MESSAGES, MAX_NOTE_LENGTH, VAPID_PUBLIC_KEY } from './config.js';
 import {
   applyAccent,
@@ -55,12 +65,34 @@ function getTileKey() {
 
   if (incomingKey) {
     setTileKeyPersistence(incomingKey);
-    const cleanUrl = `${window.location.pathname}${window.location.hash}`;
+    params.delete('key');
+    const cleanSearch = params.toString();
+    const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
     window.history.replaceState({}, '', cleanUrl || '/');
     return incomingKey;
   }
 
   return getStoredTileKey();
+}
+
+function getUrgentRoute() {
+  const params = new URLSearchParams(window.location.search);
+  const isUrgent = params.get('urgent') === '1';
+  const signalId = (params.get('signal') || '').trim();
+
+  if (!isUrgent || !signalId) return null;
+
+  return { signalId };
+}
+
+function clearUrgentRoute() {
+  const params = new URLSearchParams(window.location.search);
+  params.delete('urgent');
+  params.delete('signal');
+
+  const cleanSearch = params.toString();
+  const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', cleanUrl || '/');
 }
 
 function finishBoot() {
@@ -95,6 +127,15 @@ const skipArrivalButton = document.querySelector('#skipArrivalButton');
 const urgentDialog = document.querySelector('#urgentDialog');
 const cancelUrgentButton = document.querySelector('#cancelUrgentButton');
 const confirmUrgentButton = document.querySelector('#confirmUrgentButton');
+const urgentPreferredResponse = document.querySelector('#urgentPreferredResponse');
+const urgentState = document.querySelector('#urgentState');
+const urgentStateTitle = document.querySelector('#urgentStateTitle');
+const urgentStateGuidance = document.querySelector('#urgentStateGuidance');
+const urgentStateTime = document.querySelector('#urgentStateTime');
+const urgentCallLink = document.querySelector('#urgentCallLink');
+const urgentTextLink = document.querySelector('#urgentTextLink');
+const ackUrgentButton = document.querySelector('#ackUrgentButton');
+const urgentStateMessage = document.querySelector('#urgentStateMessage');
 const notesFeed = document.querySelector('#notesFeed');
 const enablePushButton = document.querySelector('#enablePushButton');
 const pushStatusEl = document.querySelector('#pushStatus');
@@ -106,6 +147,7 @@ const collapseNotesButton = document.querySelector('#collapseNotesButton');
 const state = {
   tileKey: '',
   visitor: null,
+  urgentSignal: null,
   checkIns: [],
   notes: [],
   revealTimer: null,
@@ -130,6 +172,7 @@ const state = {
     checkIn: false,
     note: false,
     urgent: false,
+    urgentAck: false,
     push: false,
     reactions: new Set(),
   },
@@ -249,6 +292,81 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+function formatUrgentTimestamp(input) {
+  const date = new Date(input);
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function preferredResponseGuidance(signal) {
+  const name = signal.from_display_name || 'Someone';
+
+  if (signal.preferred_response === 'call') {
+    return `${name} would prefer a call right now.`;
+  }
+
+  if (signal.preferred_response === 'text') {
+    return `A text would help ${name} right now.`;
+  }
+
+  return `Call or text, whichever is easiest.`;
+}
+
+function setUrgentStateMessage(message, isError = false) {
+  urgentStateMessage.textContent = message;
+  urgentStateMessage.style.color = isError ? '#8a4f4f' : 'var(--text-soft)';
+}
+
+function setResponseLink(link, href, visible) {
+  link.hidden = !visible;
+  link.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  link.href = visible ? href : '#';
+}
+
+function renderUrgentSignal(signal) {
+  state.urgentSignal = signal;
+
+  if (!signal || signal.status === 'acknowledged') {
+    urgentState.hidden = true;
+    setUrgentStateMessage('');
+    return;
+  }
+
+  const phone = signal.contact_phone || '';
+  const allowsCall = signal.preferred_response === 'call' || signal.preferred_response === 'either';
+  const allowsText = signal.preferred_response === 'text' || signal.preferred_response === 'either';
+
+  urgentState.hidden = false;
+  urgentState.classList.remove('is-acknowledged');
+  urgentStateTitle.textContent = `${signal.from_display_name || 'Someone'} needs you.`;
+  urgentStateGuidance.textContent = preferredResponseGuidance(signal);
+  urgentStateTime.textContent = `Sent ${formatUrgentTimestamp(signal.created_at)}`;
+
+  setResponseLink(urgentCallLink, `tel:${phone}`, Boolean(phone && allowsCall));
+  setResponseLink(urgentTextLink, `sms:${phone}`, Boolean(phone && allowsText));
+
+  ackUrgentButton.disabled = false;
+  setUrgentStateMessage('');
+  urgentState.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function loadUrgentRoute(route) {
+  if (!route || !state.tileKey) return;
+
+  try {
+    const result = await getUrgentSignal(state.tileKey, route.signalId);
+    renderUrgentSignal(result.signal);
+  } catch (error) {
+    console.error(error);
+    clearUrgentRoute();
+    setActionMessage(error.message || 'Could not open that signal.', true);
+  }
+}
+
 function supportsPushNotifications() {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
@@ -362,6 +480,8 @@ function openUrgentDialog() {
 
 function closeUrgentDialog() {
   urgentDialog.hidden = true;
+  const defaultChoice = urgentPreferredResponse?.querySelector('input[value="either"]');
+  if (defaultChoice) defaultChoice.checked = true;
 }
 
 async function refreshFeed() {
@@ -476,6 +596,7 @@ async function bootstrap() {
   updateNoteCount();
 
   state.tileKey = getTileKey();
+  const urgentRoute = getUrgentRoute();
 
   if (!state.tileKey) {
     renderMissingKeyState();
@@ -501,7 +622,13 @@ async function bootstrap() {
     finishBoot();
     setPushStatus('');
     await syncPushButtonWithCurrentDevice();
-    scheduleReveal();
+
+    if (urgentRoute) {
+      reveal();
+      await loadUrgentRoute(urgentRoute);
+    } else {
+      scheduleReveal();
+    }
 
     await withTimeout(
       refreshFeed(),
@@ -658,7 +785,10 @@ async function handleUrgentConfirm() {
   cancelUrgentButton.disabled = true;
 
   try {
-    await sendUrgentSignal(state.tileKey);
+    const preferredResponse =
+      urgentPreferredResponse?.querySelector('input[name="preferredResponse"]:checked')?.value || 'either';
+
+    await sendUrgentSignal(state.tileKey, preferredResponse);
     closeUrgentDialog();
     setActionMessage('Signal sent.');
     showToast('Signal sent.', state.visitor?.accent_color);
@@ -669,6 +799,33 @@ async function handleUrgentConfirm() {
     state.busy.urgent = false;
     confirmUrgentButton.disabled = false;
     cancelUrgentButton.disabled = false;
+  }
+}
+
+async function handleUrgentAck() {
+  if (!state.tileKey || !state.urgentSignal || state.busy.urgentAck) return;
+
+  state.busy.urgentAck = true;
+  ackUrgentButton.disabled = true;
+  setUrgentStateMessage('');
+
+  try {
+    const result = await acknowledgeUrgentSignal(state.tileKey, state.urgentSignal.signal_id);
+    state.urgentSignal = {
+      ...state.urgentSignal,
+      ...result.signal,
+    };
+    urgentState.classList.add('is-acknowledged');
+    urgentState.hidden = true;
+    clearUrgentRoute();
+    setActionMessage('Signal received.');
+    showToast('Signal received.', state.visitor?.accent_color);
+  } catch (error) {
+    console.error(error);
+    setUrgentStateMessage(error.message || 'Could not acknowledge the signal.', true);
+    ackUrgentButton.disabled = false;
+  } finally {
+    state.busy.urgentAck = false;
   }
 }
 
@@ -720,6 +877,7 @@ noteInput.addEventListener('input', updateNoteCount);
 urgentButton.addEventListener('click', openUrgentDialog);
 cancelUrgentButton.addEventListener('click', closeUrgentDialog);
 confirmUrgentButton.addEventListener('click', handleUrgentConfirm);
+ackUrgentButton.addEventListener('click', handleUrgentAck);
 notesFeed.addEventListener('click', handleReactionClick);
 
 if (enablePushButton) {

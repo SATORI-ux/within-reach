@@ -10,8 +10,8 @@
     />
     <meta name="theme-color" content="#e8e0d4" />
     <link rel="manifest" href="/within-reach/assets/manifest-DlNXiBrh.webmanifest" />
-    <script type="module" crossorigin src="/within-reach/assets/index-DM-QBwSR.js"></script>
-    <link rel="stylesheet" crossorigin href="/within-reach/assets/index-xyHCRNZX.css">
+    <script type="module" crossorigin src="/within-reach/assets/index-BTJ3NLj9.js"></script>
+    <link rel="stylesheet" crossorigin href="/within-reach/assets/index-DeCiztCt.css">
   </head>
   <body class="is-booting">
     <div class="grain"></div>
@@ -35,6 +35,21 @@
             Quietly held.
           </p>
         </header>
+
+        <section class="urgent-state" id="urgentState" aria-labelledby="urgentStateTitle" hidden>
+          <p class="section__label">Private signal</p>
+          <h2 id="urgentStateTitle">Someone needs you.</h2>
+          <p class="urgent-state__guidance" id="urgentStateGuidance"></p>
+          <p class="urgent-state__time" id="urgentStateTime"></p>
+          <div class="urgent-state__actions" id="urgentStateResponseActions">
+            <a class="solid-button solid-button--urgent urgent-state__link" id="urgentCallLink" href="#">Call now</a>
+            <a class="ghost-button urgent-state__link" id="urgentTextLink" href="#">Text now</a>
+          </div>
+          <div class="urgent-state__ack">
+            <button class="solid-button solid-button--urgent" id="ackUrgentButton" type="button">I'm here</button>
+            <p class="inline-message" id="urgentStateMessage" aria-live="polite"></p>
+          </div>
+        </section>
 
         <section class="section quick-actions" aria-labelledby="quickActionsTitle">
           <div class="section-heading">
@@ -141,6 +156,21 @@
         <p class="dialog-card__body">
           This stays out of the shared feed. It only sends a private signal.
         </p>
+        <fieldset class="urgent-choice-group" id="urgentPreferredResponse">
+          <legend>How should they reach you?</legend>
+          <label class="urgent-choice">
+            <input type="radio" name="preferredResponse" value="call" />
+            <span>Call me</span>
+          </label>
+          <label class="urgent-choice">
+            <input type="radio" name="preferredResponse" value="text" />
+            <span>Text me</span>
+          </label>
+          <label class="urgent-choice">
+            <input type="radio" name="preferredResponse" value="either" checked />
+            <span>Either is okay</span>
+          </label>
+        </fieldset>
         <div class="dialog-card__actions">
           <button class="ghost-button" id="cancelUrgentButton" type="button">Not now</button>
           <button class="solid-button solid-button--urgent" id="confirmUrgentButton" type="button">Send signal</button>

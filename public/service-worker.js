@@ -21,6 +21,9 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(payload.title, {
       body: payload.body,
       data: payload.data || { url: './' },
+      tag: payload.tag,
+      renotify: Boolean(payload.renotify),
+      requireInteraction: Boolean(payload.requireInteraction),
       icon: './assets/icons/icon-192.png',
       badge: './assets/icons/icon-192.png',
     })
@@ -30,12 +33,14 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification?.data?.url || './';
+  const targetUrl = new URL(event.notification?.data?.url || './', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ('focus' in client) return client.focus();
+        if ('focus' in client && 'navigate' in client) {
+          return client.navigate(targetUrl).then((focusedClient) => focusedClient.focus());
+        }
       }
       if (clients.openWindow) return clients.openWindow(targetUrl);
       return undefined;

@@ -36,11 +36,16 @@ create table if not exists public.note_reactions (
 
 create table if not exists public.urgent_signals (
   id bigint generated always as identity primary key,
+  signal_id uuid not null default gen_random_uuid() unique,
   from_user_slug text not null references public.tile_keys(user_slug) on update cascade,
+  preferred_response text not null default 'either' check (preferred_response in ('call', 'text', 'either')),
   created_at timestamptz not null default now(),
   notification_sent boolean not null default false,
   notification_result text,
-  confirmed_by_user boolean not null default false
+  confirmed_by_user boolean not null default false,
+  acknowledged_at timestamptz,
+  acknowledged_by text references public.tile_keys(user_slug) on update cascade,
+  status text not null default 'pending' check (status in ('pending', 'acknowledged'))
 );
 
 create or replace view public.check_in_feed as
@@ -74,6 +79,8 @@ create index if not exists idx_notes_created_at on public.notes (created_at desc
 create index if not exists idx_notes_from_user_slug on public.notes (from_user_slug);
 create index if not exists idx_note_reactions_note_id on public.note_reactions (note_id);
 create index if not exists idx_urgent_signals_created_at on public.urgent_signals (created_at desc);
+create index if not exists idx_urgent_signals_signal_id on public.urgent_signals (signal_id);
+create index if not exists idx_urgent_signals_status on public.urgent_signals (status);
 
 alter table public.tile_keys enable row level security;
 alter table public.check_ins enable row level security;

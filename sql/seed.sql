@@ -24,5 +24,5 @@ order by n.created_at desc
 limit 1
 on conflict do nothing;
 
-insert into public.urgent_signals (from_user_slug, notification_sent, notification_result, confirmed_by_user)
-values ('joey', false, 'seed', true);
+insert into public.urgent_signals (from_user_slug, preferred_response, notification_sent, notification_result, confirmed_by_user)
+values ('joey', 'either', false, 'seed', true);

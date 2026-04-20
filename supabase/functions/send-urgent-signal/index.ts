@@ -1,97 +1,34 @@
 import {
+  getCounterpartSlug,
   getAdminClient,
+  getTileKeyForUser,
   handleOptions,
   json,
   readJson,
   requirePost,
   sendPushToCounterpart,
   validateTileKey,
-  type VisitorRow,
 } from '../_shared/utils.ts';
 
 type Payload = {
   tile_key?: string;
+  preferred_response?: string;
 };
 
-type SmsResult = {
-  success: boolean;
-  result: string;
-};
+type PreferredResponse = 'call' | 'text' | 'either';
 
-function getCounterpartSlug(userSlug: string): string | null {
-  if (userSlug === 'joey') return 'jeszi';
-  if (userSlug === 'jeszi') return 'joey';
-  return null;
+function normalizePreferredResponse(value: string | undefined): PreferredResponse {
+  if (value === 'call' || value === 'text' || value === 'either') return value;
+  return 'either';
 }
 
-async function sendUrgentSmsToCounterpart(client: ReturnType<typeof getAdminClient>, visitor: VisitorRow): Promise<SmsResult> {
-  const counterpartSlug = getCounterpartSlug(visitor.user_slug);
+function buildUrgentUrl(basePath: string, recipientKey: string, signalId: string): string {
+  const url = new URL(basePath, 'https://within-reach.local');
+  url.searchParams.set('key', recipientKey);
+  url.searchParams.set('urgent', '1');
+  url.searchParams.set('signal', signalId);
 
-  if (!counterpartSlug) {
-    return {
-      success: false,
-      result: `sms:no-counterpart:${visitor.user_slug}`,
-    };
-  }
-
-  const { data: contact, error: contactError } = await client
-    .from('urgent_contacts')
-    .select('phone_e164, sms_enabled')
-    .eq('user_slug', counterpartSlug)
-    .maybeSingle();
-
-  if (contactError) {
-    throw new Error(contactError.message);
-  }
-
-  if (!contact || !contact.sms_enabled || !contact.phone_e164) {
-    return {
-      success: false,
-      result: `sms:not-enabled:${counterpartSlug}`,
-    };
-  }
-
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromNumber = Deno.env.get('TWILIO_FROM_NUMBER');
-
-  if (!accountSid || !authToken || !fromNumber) {
-    return {
-      success: false,
-      result: 'sms:missing-provider-config',
-    };
-  }
-
-  const body = `${visitor.display_name} needs you. Open Within Reach when you can.`;
-  const basicAuth = btoa(`${accountSid}:${authToken}`);
-  const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-    },
-    body: new URLSearchParams({
-      To: contact.phone_e164,
-      From: fromNumber,
-      Body: body,
-    }),
-  });
-
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    return {
-      success: false,
-      result: `sms:failed:${response.status}:${responseText}`,
-    };
-  }
-
-  return {
-    success: true,
-    result: `sms:sent:${counterpartSlug}`,
-  };
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 Deno.serve(async (req) => {
@@ -105,35 +42,82 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
+    const preferredResponse = normalizePreferredResponse(body.preferred_response);
+    const counterpartSlug = getCounterpartSlug(visitor.user_slug);
+
+    if (!counterpartSlug) {
+      throw new Error('No counterpart is configured for this signal.');
+    }
+
+    const recipientKey = await getTileKeyForUser(client, counterpartSlug);
+    if (!recipientKey) {
+      throw new Error('The recipient tile key is not active.');
+    }
+
+    const { data: created, error: insertError } = await client
+      .from('urgent_signals')
+      .insert({
+        from_user_slug: visitor.user_slug,
+        preferred_response: preferredResponse,
+        confirmed_by_user: true,
+        status: 'pending',
+      })
+      .select('signal_id, from_user_slug, preferred_response, status, created_at')
+      .single();
+
+    if (insertError || !created) {
+      throw new Error(insertError?.message || 'Could not create urgent signal.');
+    }
+
+    const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || '/within-reach/';
+    const urgentUrl = buildUrgentUrl(appPath, recipientKey, created.signal_id);
 
     const pushNotification = await sendPushToCounterpart(
       client,
       visitor,
       'urgent',
-      'Can you talk?',
-      `${visitor.display_name} needs you.`,
-      '/within-reach/'
+      'Within Reach',
+      `${visitor.display_name} needs you. Open Within Reach when you can.`,
+      urgentUrl,
+      {
+        tag: 'urgent-signal',
+        renotify: true,
+        requireInteraction: true,
+        urgency: 'high',
+        data: {
+          type: 'urgent_signal',
+          signalId: created.signal_id,
+          preferredResponse,
+          requiresAck: true,
+        },
+      },
     );
 
-    const smsNotification = await sendUrgentSmsToCounterpart(client, visitor);
+    const notificationSent = pushNotification.success;
+    const notificationResult = pushNotification.result;
 
-    const notificationSent = pushNotification.success || smsNotification.success;
-    const notificationResult = [pushNotification.result, smsNotification.result].join(' | ');
+    const { error: updateError } = await client
+      .from('urgent_signals')
+      .update({
+        notification_sent: notificationSent,
+        notification_result: notificationResult,
+      })
+      .eq('signal_id', created.signal_id);
 
-    const { error } = await client.from('urgent_signals').insert({
-      from_user_slug: visitor.user_slug,
-      notification_sent: notificationSent,
-      notification_result: notificationResult,
-      confirmed_by_user: true,
-    });
-
-    if (error) {
-      throw new Error(error.message);
+    if (updateError) {
+      throw new Error(updateError.message);
     }
 
     return json({
-      success: true,
-      message: 'Signal sent.',
+      ok: true,
+      signal: {
+        signal_id: created.signal_id,
+        from_user_slug: created.from_user_slug,
+        from_display_name: visitor.display_name,
+        preferred_response: created.preferred_response,
+        status: created.status,
+        created_at: created.created_at,
+      },
       notification: {
         sent: notificationSent,
         result: notificationResult,
@@ -144,7 +128,6 @@ Deno.serve(async (req) => {
           failed: pushNotification.failed,
           attempted: pushNotification.attempted,
         },
-        sms: smsNotification,
       },
     });
   } catch (error) {

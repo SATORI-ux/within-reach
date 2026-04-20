@@ -30,6 +30,14 @@ type PushSendResult = {
   attempted: number;
 };
 
+type PushOptions = {
+  data?: Record<string, unknown>;
+  tag?: string;
+  renotify?: boolean;
+  requireInteraction?: boolean;
+  urgency?: 'very-low' | 'low' | 'normal' | 'high';
+};
+
 let vapidConfigured = false;
 
 export function json(data: unknown, status = 200): Response {
@@ -188,10 +196,28 @@ export function createNotificationStub(kind: 'gentle' | 'urgent', fromUserSlug: 
   };
 }
 
-function getCounterpartSlug(userSlug: string): string | null {
+export function getCounterpartSlug(userSlug: string): string | null {
   if (userSlug === 'joey') return 'jeszi';
   if (userSlug === 'jeszi') return 'joey';
   return null;
+}
+
+export async function getTileKeyForUser(
+  client: SupabaseClient,
+  userSlug: string,
+): Promise<string | null> {
+  const { data, error } = await client
+    .from('tile_keys')
+    .select('tile_key')
+    .eq('user_slug', userSlug)
+    .eq('is_active', true)
+    .maybeSingle<{ tile_key: string }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.tile_key ?? null;
 }
 
 function ensureVapidConfigured() {
@@ -216,6 +242,7 @@ export async function sendPushToCounterpart(
   title: string,
   body: string,
   url = '/within-reach/',
+  options: PushOptions = {},
 ): Promise<PushSendResult> {
   const counterpartSlug = getCounterpartSlug(fromVisitor.user_slug);
 
@@ -261,8 +288,17 @@ export async function sendPushToCounterpart(
         JSON.stringify({
           title,
           body,
-          data: { url, kind, from_user_slug: fromVisitor.user_slug },
+          tag: options.tag,
+          renotify: options.renotify,
+          requireInteraction: options.requireInteraction,
+          data: {
+            url,
+            kind,
+            from_user_slug: fromVisitor.user_slug,
+            ...(options.data || {}),
+          },
         }),
+        options.urgency ? { urgency: options.urgency } : undefined,
       );
       delivered += 1;
     } catch (pushError) {

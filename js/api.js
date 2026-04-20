@@ -69,8 +69,25 @@ export function reactNote(tileKey, noteId, reaction) {
   });
 }
 
-export function sendUrgentSignal(tileKey) {
-  return callFunction('send-urgent-signal', { tile_key: tileKey });
+export function sendUrgentSignal(tileKey, preferredResponse = 'either') {
+  return callFunction('send-urgent-signal', {
+    tile_key: tileKey,
+    preferred_response: preferredResponse,
+  });
+}
+
+export function getUrgentSignal(tileKey, signalId) {
+  return callFunction('get-urgent-signal', {
+    tile_key: tileKey,
+    signal_id: signalId,
+  });
+}
+
+export function acknowledgeUrgentSignal(tileKey, signalId) {
+  return callFunction('acknowledge-urgent-signal', {
+    tile_key: tileKey,
+    signal_id: signalId,
+  });
 }
 
 export function savePushSubscription(tileKey, subscription) {

@@ -13,5 +13,11 @@ verify_jwt = false
 [functions.send-urgent-signal]
 verify_jwt = false
 
+[functions.get-urgent-signal]
+verify_jwt = false
+
+[functions.acknowledge-urgent-signal]
+verify_jwt = false
+
 [functions.get-feed]
 verify_jwt = false

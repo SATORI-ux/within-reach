@@ -378,6 +378,30 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[functions.resolve-visitor]
+verify_jwt = false
+
+[functions.send-check-in]
+verify_jwt = false
+
+[functions.add-note]
+verify_jwt = false
+
+[functions.react-note]
+verify_jwt = false
+
+[functions.send-urgent-signal]
+verify_jwt = false
+
+[functions.get-urgent-signal]
+verify_jwt = false
+
+[functions.acknowledge-urgent-signal]
+verify_jwt = false
+
+[functions.get-feed]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
