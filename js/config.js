@@ -1,6 +1,13 @@
 export const SUPABASE_URL = 'https://lxpoanjmobqpcqdbdcgk.supabase.co';
 export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_PSLuNWv6OqCqRSIPBAIGpA_g7BwlBUO';
 
+function parsePrivateLines(value) {
+  return String(value || '')
+    .split('||')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 export const IS_PRIVATE_BUILD =
   import.meta.env?.VITE_WITHIN_REACH_BUILD === 'private' ||
   import.meta.env?.VITE_PRIVATE_BUILD === 'true' ||
@@ -56,6 +63,11 @@ export const AMBIENT_LINES_PERSONALIZED = {
     'You made your way back to this little corner.',
     'A quiet thread pulled you here.',
   ],
+};
+
+export const ENV_PRIVATE_ARRIVAL_LINES = {
+  joey: parsePrivateLines(import.meta.env?.VITE_PRIVATE_ARRIVAL_LINES_JOEY),
+  jeszi: parsePrivateLines(import.meta.env?.VITE_PRIVATE_ARRIVAL_LINES_JESZI),
 };
 
 export const LANDING_SECONDARY_LINE_WEIGHTING = {

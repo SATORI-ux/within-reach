@@ -6,6 +6,7 @@ import {
   CHECK_IN_TEMPLATES,
   ENABLE_SECRET_SECTION,
   ENABLE_FUNNY_FACTS,
+  ENV_PRIVATE_ARRIVAL_LINES,
   FOOTER_LINES,
   FUNNY_FACTS_SHARED,
   GREETING_BY_USER,
@@ -74,7 +75,9 @@ function pickRandom(items) {
 async function getArrivalAmbientLine(visitor) {
   const privateCopy = await privateCopyPromise;
   const publicLines = AMBIENT_LINES_PERSONALIZED[visitor.user_slug] || [];
-  const privateLines = privateCopy.ARRIVAL_LINES_PERSONALIZED?.[visitor.user_slug] || [];
+  const filePrivateLines = privateCopy.ARRIVAL_LINES_PERSONALIZED?.[visitor.user_slug] || [];
+  const envPrivateLines = ENV_PRIVATE_ARRIVAL_LINES[visitor.user_slug] || [];
+  const privateLines = [...filePrivateLines, ...envPrivateLines];
   const buckets = [
     {
       name: 'shared',
