@@ -1071,18 +1071,22 @@ a.ghost-button {
   }
 
   .note-card__reactions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.28rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.2rem;
   }
 
   .reaction-chip {
-    padding: 0.34rem 0.46rem;
-    font-size: 0.78rem;
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 0.12rem;
+    padding: 0.3rem 0.18rem;
+    font-size: 0.68rem;
     white-space: nowrap;
   }
 
   .reaction-chip span:first-child {
-    font-size: 0.92rem;
+    font-size: 0.8rem;
   }
 }
 
