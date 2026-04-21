@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quietly Kept</title>
+    <meta
+      name="description"
+      content="A protected note kept inside Within Reach."
+    />
+    <meta name="theme-color" content="#e8e0d4" />
+    <style>
+      :root {
+        --bg: #f2ede4;
+        --surface: rgba(255, 252, 246, 0.84);
+        --surface-strong: rgba(255, 250, 243, 0.96);
+        --line: rgba(84, 65, 50, 0.12);
+        --text: #3e332a;
+        --text-soft: #6f6257;
+        --accent: #6e8d62;
+        --shadow: 0 18px 60px rgba(57, 44, 35, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Georgia, 'Times New Roman', serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(203, 184, 161, 0.34), transparent 36%),
+          linear-gradient(180deg, #f3efe7 0%, #f0e9de 46%, #ece4d7 100%);
+      }
+
+      .grain {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.08;
+        background-image:
+          radial-gradient(circle at 20% 20%, rgba(60, 45, 32, 0.16) 0, transparent 1.2px),
+          radial-gradient(circle at 80% 60%, rgba(60, 45, 32, 0.12) 0, transparent 1px),
+          radial-gradient(circle at 40% 80%, rgba(60, 45, 32, 0.12) 0, transparent 1px);
+        background-size: 14px 14px, 18px 18px, 20px 20px;
+      }
+
+      main {
+        position: relative;
+        width: min(100% - 1.4rem, 760px);
+        margin: 0 auto;
+        padding: 3.5rem 0 4rem;
+      }
+
+      .eyebrow,
+      .section-label {
+        margin: 0 0 0.8rem;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 0.77rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(77, 66, 58, 0.62);
+      }
+
+      .hero {
+        padding: 0 0.2rem 1.6rem;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 11ch;
+        font-size: clamp(3rem, 12vw, 6.2rem);
+        line-height: 0.94;
+        letter-spacing: -0.04em;
+        font-weight: 600;
+      }
+
+      .opening {
+        max-width: 36rem;
+        margin: 1.2rem 0 0;
+        font-size: 1.12rem;
+        line-height: 1.8;
+        color: #584b42;
+      }
+
+      section {
+        margin-top: 1.25rem;
+        padding: 1.25rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(8px);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(1.35rem, 4vw, 1.9rem);
+        line-height: 1.2;
+        font-weight: 500;
+      }
+
+      p {
+        line-height: 1.76;
+      }
+
+      .stack > * + * {
+        margin-top: 0.85rem;
+      }
+
+      .name-pair {
+        display: grid;
+        gap: 0.85rem;
+        margin-top: 1rem;
+      }
+
+      .name-card {
+        padding: 1rem;
+        border: 1px solid rgba(84, 65, 50, 0.09);
+        border-radius: 8px;
+        background: var(--surface-strong);
+      }
+
+      .name-card h3 {
+        margin: 0;
+        font-size: 1.16rem;
+        font-weight: 500;
+      }
+
+      .name-card p {
+        margin: 0.45rem 0 0;
+        color: var(--text-soft);
+      }
+
+      .media-slot {
+        display: grid;
+        place-items: center;
+        min-height: 220px;
+        margin-top: 1rem;
+        padding: 1rem;
+        border: 1px solid rgba(84, 65, 50, 0.12);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255, 252, 247, 0.82), rgba(255, 250, 243, 0.96));
+        color: rgba(77, 66, 58, 0.58);
+        text-align: center;
+      }
+
+      .video-slot {
+        aspect-ratio: 16 / 9;
+        min-height: auto;
+      }
+
+      .image-grid {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .image-slot {
+        min-height: 160px;
+      }
+
+      .image-slot img,
+      .video-slot video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+
+      .quiet-ending {
+        text-align: center;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        color: rgba(77, 66, 58, 0.6);
+      }
+
+      .status-card {
+        text-align: center;
+      }
+
+      .status-card p {
+        color: var(--text-soft);
+      }
+
+      .status-card a {
+        color: var(--accent);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (min-width: 680px) {
+        main {
+          padding-top: 4.5rem;
+        }
+
+        .name-pair,
+        .image-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain"></div>
+
+    <main>
+      <section class="status-card" id="statusCard" aria-live="polite">
+        <p class="section-label">Quietly kept</p>
+        <h1 id="statusTitle">Opening the kept page.</h1>
+        <p id="statusBody">Checking whether this doorway is available to you.</p>
+      </section>
+
+      <article id="privatePage" hidden>
+        <header class="hero">
+          <p class="eyebrow" id="heroEyebrow">Quietly kept</p>
+          <h1 id="heroTitle">A note that stayed.</h1>
+          <p class="opening" id="heroOpening"></p>
+        </header>
+
+        <section aria-labelledby="letterTitle">
+          <p class="section-label" id="letterLabel">For you</p>
+          <h2 id="letterTitle">There has been a note here.</h2>
+          <div class="stack" id="letterBody"></div>
+        </section>
+
+        <section aria-labelledby="meaningTitle" id="meaningSection" hidden>
+          <p class="section-label" id="meaningLabel">The two words</p>
+          <h2 id="meaningTitle">What this holds.</h2>
+          <div class="name-pair" id="meaningCards"></div>
+          <div class="stack" id="meaningBody"></div>
+        </section>
+
+        <section aria-labelledby="videoTitle" id="videoSection" hidden>
+          <p class="section-label" id="videoLabel">A moving piece</p>
+          <h2 id="videoTitle">A small video can live here.</h2>
+          <div class="media-slot video-slot" id="videoSlot"></div>
+        </section>
+
+        <section aria-labelledby="imagesTitle" id="imagesSection" hidden>
+          <p class="section-label" id="imagesLabel">Kept images</p>
+          <h2 id="imagesTitle">A few still things.</h2>
+          <div class="image-grid" id="imagesGrid"></div>
+        </section>
+
+        <footer class="quiet-ending">
+          <p id="closingLine">Still here.</p>
+        </footer>
+      </article>
+    </main>
+
+    <script type="module" src="./js/private-page.js"></script>
+  </body>
+</html>

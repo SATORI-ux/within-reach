@@ -402,6 +402,9 @@ verify_jwt = false
 [functions.get-feed]
 verify_jwt = false
 
+[functions.get-private-page]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

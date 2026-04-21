@@ -84,11 +84,75 @@ npx supabase functions deploy send-check-in
 
 ## Private Build Notes
 
-The repository contains public-safe scaffolding for a private build, but private copy and private destination content should remain local-only.
+The repository contains public-safe scaffolding for a private build.
 
-Do not commit local private content files. The project `.gitignore` excludes those files so the public repository can keep the app structure without exposing personal material.
+Public-safe code and layout can live in GitHub, while protected private page content should live in Supabase. The private route at `kept.html` is now designed to fetch structured content from `public.private_pages` through the `get-private-page` Edge Function after the hidden door has been unlocked.
 
-The public build uses a harmless empty private-copy module. Private builds can substitute local-only content during build time.
+This separation lets you:
+
+- keep one repo synced to GitHub
+- keep the public Vercel project building from the same codebase
+- keep a second protected Vercel project for private previews
+- edit public UI without storing personal copy directly in the repo
+
+Apply the private-page schema before using the protected route:
+
+```text
+sql/private_pages.sql
+```
+
+Deploy the matching Edge Function:
+
+```bash
+npx supabase functions deploy get-private-page
+```
+
+Example `content` shape for `public.private_pages`:
+
+```json
+{
+  "hero": {
+    "eyebrow": "Quietly kept",
+    "title": "A note that stayed.",
+    "opening": "You found the small tucked-away place."
+  },
+  "letter": {
+    "label": "For you",
+    "title": "There has been a note here.",
+    "paragraphs": [
+      "Paragraph one.",
+      "Paragraph two."
+    ]
+  },
+  "meaning": {
+    "label": "The two words",
+    "title": "Constantia and Solacium",
+    "cards": [
+      { "title": "Constantia", "body": "Steadiness and endurance." },
+      { "title": "Solacium", "body": "Comfort and refuge." }
+    ],
+    "paragraphs": [
+      "Together, they belong to each other."
+    ]
+  },
+  "video": {
+    "label": "A moving piece",
+    "title": "A small video can live here.",
+    "placeholder": "Video placeholder"
+  },
+  "images": {
+    "label": "Kept images",
+    "title": "A few still things.",
+    "items": [
+      { "placeholder": "Image placeholder" },
+      { "placeholder": "Image placeholder" }
+    ]
+  },
+  "closing_line": "Still here."
+}
+```
+
+The public build still uses a harmless empty private-copy module for the shared landing page's optional private-weighted lines.
 
 ## Deployment Notes
 

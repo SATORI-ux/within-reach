@@ -99,3 +99,9 @@ export function savePushSubscription(tileKey, subscription) {
     subscription,
   });
 }
+
+export function getPrivatePage(tileKey) {
+  return callFunction('get-private-page', {
+    tile_key: tileKey,
+  });
+}
