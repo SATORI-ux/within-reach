@@ -17,6 +17,7 @@ import {
 } from './config.js';
 
 const emptyPrivateCopy = {
+  ARRIVAL_LINES_PERSONALIZED: {},
   FUNNY_FACTS_PERSONAL: [],
   FUNNY_FACTS_SECRET: [],
 };
@@ -58,6 +59,13 @@ function pseudoRandomIndex(seedValue, length) {
 function pickRandom(items) {
   if (!items.length) return '';
   return items[Math.floor(Math.random() * items.length)];
+}
+
+async function getArrivalAmbientLine(visitor) {
+  const privateCopy = await privateCopyPromise;
+  const publicLines = AMBIENT_LINES_PERSONALIZED[visitor.user_slug] || [];
+  const privateLines = privateCopy.ARRIVAL_LINES_PERSONALIZED?.[visitor.user_slug] || [];
+  return pickRandom([...AMBIENT_LINES_SHARED, ...publicLines, ...privateLines]);
 }
 
 function getSharedFacts() {
@@ -275,8 +283,7 @@ export function bindHiddenDoor() {
 }
 
 export async function renderArrival(visitor) {
-  const personalizedLines = AMBIENT_LINES_PERSONALIZED[visitor.user_slug] || [];
-  const ambientLine = pickRandom([...AMBIENT_LINES_SHARED, ...personalizedLines]);
+  const ambientLine = await getArrivalAmbientLine(visitor);
   const debugType = new URLSearchParams(window.location.search).get('debugSecondary');
   const clueLine = ENABLE_FUNNY_FACTS ? getFactWithClueFragment(debugType === 'clue') : null;
   const secondaryLine = clueLine ? clueLine.fact : ENABLE_FUNNY_FACTS ? await getWeightedLandingSecondaryLine() : '';

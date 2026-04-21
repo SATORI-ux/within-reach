@@ -315,6 +315,10 @@ function setPushEnabledState(enabled) {
     : 'Enable gentle notifications';
 }
 
+function syncPushUiWithVisitorTruth() {
+  setPushEnabledState(Boolean(state.visitor?.push_enabled));
+}
+
 function getVisibleCheckIns() {
   if (state.feed.checkIns.expanded) return state.checkIns;
   return state.checkIns.slice(0, state.feed.checkIns.limit);
@@ -485,13 +489,57 @@ async function getCurrentPushSubscription() {
   return registration ? await registration.pushManager.getSubscription() : null;
 }
 
-async function syncPushButtonWithCurrentDevice() {
+async function inspectCurrentDevicePushSubscription() {
   try {
     const subscription = await getCurrentPushSubscription();
-    setPushEnabledState(Boolean(subscription));
+    return {
+      hasDeviceSubscription: Boolean(subscription),
+      permission: Notification.permission,
+    };
   } catch (error) {
     console.warn('Could not read current push subscription.', error);
-    setPushEnabledState(false);
+    return {
+      hasDeviceSubscription: false,
+      permission: Notification.permission,
+      error,
+    };
+  }
+}
+
+async function logPushTruthMismatch() {
+  if (!state.visitor) return;
+
+  const deviceState = await inspectCurrentDevicePushSubscription();
+  const visitorPushEnabled = Boolean(state.visitor.push_enabled);
+
+  if (deviceState.hasDeviceSubscription !== visitorPushEnabled) {
+    console.warn('Push truth mismatch detected.', {
+      userSlug: state.visitor.user_slug,
+      visitorPushEnabled,
+      hasDeviceSubscription: deviceState.hasDeviceSubscription,
+      permission: deviceState.permission,
+    });
+  }
+}
+
+async function refreshVisitorPushTruth() {
+  if (!state.tileKey || !state.visitor) return null;
+
+  try {
+    const refreshedVisitor = await withTimeout(
+      resolveVisitor(state.tileKey),
+      VISITOR_RESOLVE_TIMEOUT_MS,
+      'Still finding your place...'
+    );
+    state.visitor = {
+      ...state.visitor,
+      ...refreshedVisitor,
+    };
+    syncPushUiWithVisitorTruth();
+    return state.visitor;
+  } catch (error) {
+    console.warn('Could not refresh visitor push truth.', error);
+    return null;
   }
 }
 
@@ -711,7 +759,7 @@ async function bootstrap() {
     renderCheckIns([]);
     renderNotes([], '');
     state.visitor = null;
-    setPushEnabledState(false);
+    syncPushUiWithVisitorTruth();
     finishBoot();
     syncFeedHistoryControls();
     scheduleReveal();
@@ -729,7 +777,8 @@ async function bootstrap() {
     await renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
-    await syncPushButtonWithCurrentDevice();
+    syncPushUiWithVisitorTruth();
+    void logPushTruthMismatch();
 
     if (urgentRoute) {
       reveal();
@@ -762,7 +811,7 @@ async function bootstrap() {
     finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
-    setPushEnabledState(false);
+    syncPushUiWithVisitorTruth();
     syncFeedHistoryControls();
     scheduleReveal();
   }
@@ -959,20 +1008,18 @@ async function handleEnablePush() {
 
   try {
     await enablePushNotifications();
-    if (state.visitor) {
+    const refreshedVisitor = await refreshVisitorPushTruth();
+    if (!refreshedVisitor && state.visitor) {
       state.visitor.push_enabled = true;
     }
-    setPushEnabledState(true);
+    syncPushUiWithVisitorTruth();
     setPushStatus('Quietly enabled.');
     window.setTimeout(() => {
       setPushStatus('');
     }, 2400);
   } catch (error) {
     console.error(error);
-    if (state.visitor) {
-      state.visitor.push_enabled = false;
-    }
-    setPushEnabledState(false);
+    syncPushUiWithVisitorTruth();
     setPushStatus(error.message || 'Could not enable notifications.', true);
   } finally {
     state.busy.push = false;

@@ -50,7 +50,6 @@ export const AMBIENT_LINES_PERSONALIZED = {
     'A quiet thread pulled you here.',
   ],
   jeszi: [
-    'Welcome 🌸 Kawaii Queen 🌸',
     'Joey left room for you here.',
     'A familiar signal found you.',
     'Something soft was waiting on the other side.',
@@ -84,7 +83,7 @@ export const FUNNY_FACTS_SHARED = {
     'Honeybees can recognize human faces.',
     'There are mushrooms that glow in the dark.',
     'Sea otters hold hands so they do not drift apart.',
-    'A shrimp\'s heart is in its head.',
+    "A shrimp's heart is in its head.",
     'Butterflies can taste with their feet.',
     'Cows tend to have best friends.',
   ],
@@ -161,4 +160,3 @@ export const FOOTER_LINES = [
 ];
 
 export const VAPID_PUBLIC_KEY = 'BFtJms2W7rtiu8GqF9rvu8SllB2V5530N7DeB3esHyJTrBdp9LFaxhT1RxB62UgcSec274FS8XM1YBlOVyEaosA';
- 
