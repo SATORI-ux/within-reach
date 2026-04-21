@@ -9,12 +9,36 @@
       content="A small private shared space for quiet check-ins, notes, and gentle signals."
     />
     <meta name="theme-color" content="#e8e0d4" />
-    <link rel="manifest" href="/assets/manifest-a-bKHd93.webmanifest" />
-    <script type="module" crossorigin src="/assets/main-BZwKd27W.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-DH3whoxy.css">
+    <script>
+      (() => {
+        const storageKey = 'withinReachAppearance';
+        const saved = window.localStorage.getItem(storageKey);
+        const theme =
+          saved === 'dark' || saved === 'light'
+            ? saved
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+
+        document.documentElement.dataset.theme = theme;
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) {
+          themeMeta.setAttribute('content', theme === 'dark' ? '#231d1a' : '#e8e0d4');
+        }
+      })();
+    </script>
+    <link rel="manifest" href="/assets/manifest-a-bKHd93.webmanifest" />
+    <script type="module" crossorigin src="/assets/main-BCpEqsUl.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/main-CIA29OSH.css">
   </head>
   <body class="is-booting">
     <div class="grain"></div>
+    <div class="page-chrome">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+        <span class="theme-toggle__icon" data-theme-toggle-icon></span>
+        <span class="sr-only" data-theme-toggle-text>Switch to dark mode</span>
+      </button>
+    </div>
 
     <main class="app-shell" data-ready="false">
       <section class="arrival" id="arrivalSection" aria-live="polite">

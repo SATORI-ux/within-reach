@@ -61,27 +61,11 @@ or on Windows if PowerShell blocks npm scripts:
 npm.cmd run build
 ```
 
-The GitHub Pages workflow builds in strict public mode and deploys the generated `dist` folder.
-
-Public builds now fail closed. Private-only routes and copy stay out of the build unless `VITE_ENABLE_PRIVATE_BUILD=true` is set on purpose.
-
-If you intentionally need the protected private build, use a separate explicit opt-in:
-
-```bash
-$env:VITE_ENABLE_PRIVATE_BUILD='true'; npm.cmd run build:private
-```
-
 ## Supabase Setup
 
 The app uses Supabase tables and Edge Functions for identity validation, feed reads, check-ins, notes, reactions, push subscriptions, and urgent signals.
 
 Apply the SQL files in `sql/` to the project database as needed, then deploy the Edge Functions in `supabase/functions/`.
-
-For the current private-state support, apply:
-
-```text
-sql/secret_unlocks.sql
-```
 
 Deploy changed functions with the Supabase CLI, for example:
 
@@ -92,12 +76,10 @@ npx supabase functions deploy send-check-in
 
 ## Deployment Notes
 
-The public GitHub Pages deployment is built from source by the workflow in strict public mode. Avoid relying on manually edited files in `dist`; regenerate them with the build command instead.
+The GitHub Pages deployment is built from source by the workflow. Avoid relying on manually edited files in `dist`; regenerate them with the build command instead.
 
 Before pushing, check:
 
 ```bash
 git status --short
 ```
-
-Keep local private content out of git. The repo already ignores `js/private-copy.js`, and the public build now requires an explicit private opt-in flag before private surfaces can be bundled.

@@ -1,4 +1,5 @@
 import { getPrivatePage } from './api.js';
+import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
 const SESSION_KEY = 'check-in-space.tile-key';
 const SESSION_COOKIE_NAME = 'check_in_space_tile_key';
@@ -7,6 +8,7 @@ const statusCard = document.querySelector('#statusCard');
 const statusTitle = document.querySelector('#statusTitle');
 const statusBody = document.querySelector('#statusBody');
 const privatePage = document.querySelector('#privatePage');
+const themeToggle = document.querySelector('#themeToggle');
 
 const heroEyebrow = document.querySelector('#heroEyebrow');
 const heroTitle = document.querySelector('#heroTitle');
@@ -190,6 +192,8 @@ function renderPage(content) {
 }
 
 async function bootstrap() {
+  setDocumentTheme(document.documentElement.dataset.theme);
+  initializeThemeToggle(themeToggle);
   const tileKey = getTileKey();
 
   if (!tileKey) {

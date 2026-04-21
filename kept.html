@@ -9,16 +9,71 @@
       content="A protected note kept inside Within Reach."
     />
     <meta name="theme-color" content="#e8e0d4" />
+    <script>
+      (() => {
+        const storageKey = 'withinReachAppearance';
+        const saved = window.localStorage.getItem(storageKey);
+        const theme =
+          saved === 'dark' || saved === 'light'
+            ? saved
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+
+        document.documentElement.dataset.theme = theme;
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) {
+          themeMeta.setAttribute('content', theme === 'dark' ? '#231d1a' : '#e8e0d4');
+        }
+      })();
+    </script>
     <style>
       :root {
         --bg: #f2ede4;
+        --bg-top-glow: rgba(203, 184, 161, 0.34);
+        --bg-start: #f3efe7;
+        --bg-mid: #f0e9de;
+        --bg-end: #ece4d7;
         --surface: rgba(255, 252, 246, 0.84);
         --surface-strong: rgba(255, 250, 243, 0.96);
         --line: rgba(84, 65, 50, 0.12);
         --text: #3e332a;
         --text-soft: #6f6257;
+        --text-muted: rgba(77, 66, 58, 0.62);
+        --text-faint: rgba(77, 66, 58, 0.58);
         --accent: #6e8d62;
+        --chrome-border: rgba(84, 65, 50, 0.1);
+        --chrome-fill: rgba(255, 252, 247, 0.68);
+        --chrome-fill-hover: rgba(255, 252, 247, 0.82);
+        --chrome-icon: rgba(70, 58, 49, 0.82);
+        --focus-ring: rgba(110, 141, 98, 0.14);
         --shadow: 0 18px 60px rgba(57, 44, 35, 0.12);
+        --grain-strong: rgba(60, 45, 32, 0.16);
+        --grain-soft: rgba(60, 45, 32, 0.12);
+      }
+
+      :root[data-theme='dark'] {
+        --bg: #231d1a;
+        --bg-top-glow: rgba(140, 112, 90, 0.18);
+        --bg-start: #2b231f;
+        --bg-mid: #251f1c;
+        --bg-end: #1e1916;
+        --surface: rgba(52, 43, 38, 0.84);
+        --surface-strong: rgba(61, 51, 45, 0.96);
+        --line: rgba(209, 193, 177, 0.12);
+        --text: #eee3d6;
+        --text-soft: #c3b2a2;
+        --text-muted: rgba(211, 196, 181, 0.7);
+        --text-faint: rgba(211, 196, 181, 0.62);
+        --accent: #7a9871;
+        --chrome-border: rgba(209, 193, 177, 0.14);
+        --chrome-fill: rgba(71, 59, 52, 0.58);
+        --chrome-fill-hover: rgba(80, 67, 60, 0.76);
+        --chrome-icon: rgba(241, 229, 215, 0.82);
+        --focus-ring: rgba(122, 152, 113, 0.2);
+        --shadow: 0 22px 70px rgba(12, 9, 8, 0.34);
+        --grain-strong: rgba(255, 242, 230, 0.06);
+        --grain-soft: rgba(255, 242, 230, 0.04);
       }
 
       * {
@@ -35,8 +90,8 @@
         font-family: Georgia, 'Times New Roman', serif;
         color: var(--text);
         background:
-          radial-gradient(circle at top, rgba(203, 184, 161, 0.34), transparent 36%),
-          linear-gradient(180deg, #f3efe7 0%, #f0e9de 46%, #ece4d7 100%);
+          radial-gradient(circle at top, var(--bg-top-glow), transparent 36%),
+          linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 46%, var(--bg-end) 100%);
       }
 
       .grain {
@@ -45,10 +100,80 @@
         pointer-events: none;
         opacity: 0.08;
         background-image:
-          radial-gradient(circle at 20% 20%, rgba(60, 45, 32, 0.16) 0, transparent 1.2px),
-          radial-gradient(circle at 80% 60%, rgba(60, 45, 32, 0.12) 0, transparent 1px),
-          radial-gradient(circle at 40% 80%, rgba(60, 45, 32, 0.12) 0, transparent 1px);
+          radial-gradient(circle at 20% 20%, var(--grain-strong) 0, transparent 1.2px),
+          radial-gradient(circle at 80% 60%, var(--grain-soft) 0, transparent 1px),
+          radial-gradient(circle at 40% 80%, var(--grain-soft) 0, transparent 1px);
         background-size: 14px 14px, 18px 18px, 20px 20px;
+      }
+
+      .page-chrome {
+        position: fixed;
+        top: 0.95rem;
+        left: 50%;
+        z-index: 20;
+        width: min(100% - 1.4rem, 760px);
+        transform: translateX(-50%);
+        display: flex;
+        justify-content: flex-end;
+        pointer-events: none;
+      }
+
+      .theme-toggle {
+        pointer-events: auto;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.8rem;
+        height: 2.8rem;
+        border: 1px solid var(--chrome-border);
+        border-radius: 999px;
+        background: var(--chrome-fill);
+        color: var(--chrome-icon);
+        box-shadow: 0 12px 30px rgba(25, 18, 14, 0.08);
+        backdrop-filter: blur(14px);
+        cursor: pointer;
+        transition: background 180ms ease, border-color 180ms ease, transform 180ms ease, color 180ms ease;
+      }
+
+      .theme-toggle:hover {
+        background: var(--chrome-fill-hover);
+        transform: translateY(-1px);
+      }
+
+      .theme-toggle:focus-visible {
+        outline: none;
+        box-shadow:
+          0 12px 30px rgba(25, 18, 14, 0.08),
+          0 0 0 4px var(--focus-ring);
+      }
+
+      .theme-toggle__icon {
+        display: inline-flex;
+        width: 1.15rem;
+        height: 1.15rem;
+      }
+
+      .theme-toggle__icon svg {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.65;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       main {
@@ -65,7 +190,7 @@
         font-size: 0.77rem;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: rgba(77, 66, 58, 0.62);
+        color: var(--text-muted);
       }
 
       .hero {
@@ -86,7 +211,7 @@
         margin: 1.2rem 0 0;
         font-size: 1.12rem;
         line-height: 1.8;
-        color: #584b42;
+        color: var(--text-soft);
       }
 
       section {
@@ -122,7 +247,7 @@
 
       .name-card {
         padding: 1rem;
-        border: 1px solid rgba(84, 65, 50, 0.09);
+        border: 1px solid var(--chrome-border);
         border-radius: 8px;
         background: var(--surface-strong);
       }
@@ -144,11 +269,11 @@
         min-height: 220px;
         margin-top: 1rem;
         padding: 1rem;
-        border: 1px solid rgba(84, 65, 50, 0.12);
+        border: 1px solid var(--line);
         border-radius: 8px;
         background:
-          linear-gradient(180deg, rgba(255, 252, 247, 0.82), rgba(255, 250, 243, 0.96));
-        color: rgba(77, 66, 58, 0.58);
+          linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 78%, transparent), var(--surface-strong));
+        color: var(--text-faint);
         text-align: center;
       }
 
@@ -180,7 +305,7 @@
         background: transparent;
         border: 0;
         box-shadow: none;
-        color: rgba(77, 66, 58, 0.6);
+        color: var(--text-faint);
       }
 
       .status-card {
@@ -209,10 +334,32 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
+
+      @media (max-width: 640px) {
+        .page-chrome,
+        main {
+          width: min(100% - 1rem, 760px);
+        }
+
+        .page-chrome {
+          top: 0.7rem;
+        }
+
+        .theme-toggle {
+          width: 2.7rem;
+          height: 2.7rem;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="grain"></div>
+    <div class="page-chrome">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+        <span class="theme-toggle__icon" data-theme-toggle-icon></span>
+        <span class="sr-only" data-theme-toggle-text>Switch to dark mode</span>
+      </button>
+    </div>
 
     <main>
       <section class="status-card" id="statusCard" aria-live="polite">

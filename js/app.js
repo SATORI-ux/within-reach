@@ -16,6 +16,7 @@ import {
   MAX_NOTE_LENGTH,
   VAPID_PUBLIC_KEY,
 } from './config.js';
+import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 import {
   applyAccent,
   bindHiddenDoor,
@@ -230,6 +231,7 @@ const noteCount = document.querySelector('#noteCount');
 const submitNoteButton = document.querySelector('#submitNoteButton');
 const cancelNoteButton = document.querySelector('#cancelNoteButton');
 const skipArrivalButton = document.querySelector('#skipArrivalButton');
+const themeToggle = document.querySelector('#themeToggle');
 const urgentDialog = document.querySelector('#urgentDialog');
 const cancelUrgentButton = document.querySelector('#cancelUrgentButton');
 const confirmUrgentButton = document.querySelector('#confirmUrgentButton');
@@ -303,7 +305,7 @@ function setNoteReactionButtonsDisabled(noteId, disabled) {
 function setPushStatus(message, isError = false) {
   if (!pushStatusEl) return;
   pushStatusEl.textContent = message;
-  pushStatusEl.style.color = isError ? '#8a4f4f' : 'rgba(77, 66, 58, 0.58)';
+  pushStatusEl.style.color = isError ? 'var(--danger)' : 'var(--text-faint)';
 }
 
 function setPushEnabledState(enabled) {
@@ -429,7 +431,7 @@ function preferredResponseGuidance(signal) {
 
 function setUrgentStateMessage(message, isError = false) {
   urgentStateMessage.textContent = message;
-  urgentStateMessage.style.color = isError ? '#8a4f4f' : 'var(--text-soft)';
+  urgentStateMessage.style.color = isError ? 'var(--danger)' : 'var(--text-soft)';
 }
 
 function setResponseLink(link, href, visible) {
@@ -745,6 +747,8 @@ function handleCollapseNotes() {
 }
 
 async function bootstrap() {
+  setDocumentTheme(document.documentElement.dataset.theme);
+  initializeThemeToggle(themeToggle);
   setReady();
   setActionsDisabled(true);
   bindHiddenDoor();

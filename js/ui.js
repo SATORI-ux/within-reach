@@ -534,12 +534,12 @@ export function showToast(message, accentColor) {
 
 export function setActionMessage(message, isError = false) {
   actionMessageEl.textContent = message;
-  actionMessageEl.style.color = isError ? '#8a4f4f' : 'var(--text-soft)';
+  actionMessageEl.style.color = isError ? 'var(--danger)' : 'var(--text-soft)';
 }
 
 export function setNoteMessage(message, isError = false) {
   noteMessageEl.textContent = message;
-  noteMessageEl.style.color = isError ? '#8a4f4f' : 'var(--text-soft)';
+  noteMessageEl.style.color = isError ? 'var(--danger)' : 'var(--text-soft)';
 }
 
 export function clearMessages() {
