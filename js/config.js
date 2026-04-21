@@ -65,6 +65,12 @@ export const LANDING_SECONDARY_LINE_WEIGHTING = {
   secret: 0.05,
 };
 
+export const ARRIVAL_AMBIENT_LINE_WEIGHTING = {
+  shared: 0.45,
+  personal: 0.35,
+  private: 0.2,
+};
+
 export const SECRET_CLUE_FRAGMENT_CHANCE = 0.02;
 export const SECRET_CLUE_FRAGMENTS = [
   'there is',

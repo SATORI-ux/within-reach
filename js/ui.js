@@ -2,6 +2,7 @@ import {
   ACCENT_BY_USER,
   AMBIENT_LINES_PERSONALIZED,
   AMBIENT_LINES_SHARED,
+  ARRIVAL_AMBIENT_LINE_WEIGHTING,
   CHECK_IN_TEMPLATES,
   ENABLE_SECRET_SECTION,
   ENABLE_FUNNY_FACTS,
@@ -65,7 +66,34 @@ async function getArrivalAmbientLine(visitor) {
   const privateCopy = await privateCopyPromise;
   const publicLines = AMBIENT_LINES_PERSONALIZED[visitor.user_slug] || [];
   const privateLines = privateCopy.ARRIVAL_LINES_PERSONALIZED?.[visitor.user_slug] || [];
-  return pickRandom([...AMBIENT_LINES_SHARED, ...publicLines, ...privateLines]);
+  const buckets = [
+    {
+      weight: ARRIVAL_AMBIENT_LINE_WEIGHTING.shared,
+      lines: AMBIENT_LINES_SHARED,
+    },
+    {
+      weight: ARRIVAL_AMBIENT_LINE_WEIGHTING.personal,
+      lines: publicLines,
+    },
+    {
+      weight: ARRIVAL_AMBIENT_LINE_WEIGHTING.private,
+      lines: privateLines,
+    },
+  ].filter((bucket) => bucket.weight > 0 && bucket.lines.length);
+
+  if (!buckets.length) return '';
+
+  const totalWeight = buckets.reduce((sum, bucket) => sum + bucket.weight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (const bucket of buckets) {
+    if (roll < bucket.weight) {
+      return pickRandom(bucket.lines);
+    }
+    roll -= bucket.weight;
+  }
+
+  return pickRandom(buckets[buckets.length - 1].lines);
 }
 
 function getSharedFacts() {
