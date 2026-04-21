@@ -858,6 +858,7 @@ a.ghost-button {
 
 .note-card {
   padding: 1rem;
+  container-type: inline-size;
 }
 
 .note-card__header {
@@ -879,29 +880,31 @@ a.ghost-button {
 }
 
 .note-card__reactions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.32rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(3.2rem, 18cqi, 4.5rem), 1fr));
+  gap: clamp(0.32rem, 1.6cqi, 0.55rem);
   margin-top: 0.9rem;
 }
 
 .reaction-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.24rem;
+  justify-content: center;
+  gap: clamp(0.2rem, 1.1cqi, 0.4rem);
+  width: 100%;
   border: 1px solid var(--button-border);
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
-  padding: 0.34rem 0.52rem;
+  padding: clamp(0.34rem, 1.8cqi, 0.52rem) clamp(0.45rem, 2.8cqi, 0.75rem);
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.82rem;
+  font-size: clamp(0.76rem, 3cqi, 0.92rem);
   line-height: 1;
   color: var(--text-soft);
   cursor: pointer;
 }
 
 .reaction-chip span:first-child {
-  font-size: 0.92rem;
+  font-size: clamp(0.95rem, 4.4cqi, 1.35rem);
   line-height: 1;
 }
 
@@ -1071,8 +1074,8 @@ a.ghost-button {
   }
 
   .reaction-chip {
-    padding: 0.32rem 0.46rem;
-    font-size: 0.8rem;
+    padding: 0.34rem 0.46rem;
+    font-size: 0.78rem;
   }
 }
 
