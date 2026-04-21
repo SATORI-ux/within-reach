@@ -35,6 +35,9 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          VITE_STRICT_PUBLIC_BUILD: 'true'
+          VITE_ENABLE_PRIVATE_BUILD: 'false'
         run: npm run build
 
       - name: Setup Pages

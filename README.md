@@ -61,7 +61,15 @@ or on Windows if PowerShell blocks npm scripts:
 npm.cmd run build
 ```
 
-The GitHub Pages workflow installs dependencies, runs the Vite build, and deploys the generated `dist` folder.
+The GitHub Pages workflow builds in strict public mode and deploys the generated `dist` folder.
+
+Public builds now fail closed. Private-only routes and copy stay out of the build unless `VITE_ENABLE_PRIVATE_BUILD=true` is set on purpose.
+
+If you intentionally need the protected private build, use a separate explicit opt-in:
+
+```bash
+$env:VITE_ENABLE_PRIVATE_BUILD='true'; npm.cmd run build:private
+```
 
 ## Supabase Setup
 
@@ -82,81 +90,9 @@ npx supabase functions deploy get-feed
 npx supabase functions deploy send-check-in
 ```
 
-## Private Build Notes
-
-The repository contains public-safe scaffolding for a private build.
-
-Public-safe code and layout can live in GitHub, while protected private page content should live in Supabase. The private route at `kept.html` is now designed to fetch structured content from `public.private_pages` through the `get-private-page` Edge Function after the hidden door has been unlocked.
-
-This separation lets you:
-
-- keep one repo synced to GitHub
-- keep the public Vercel project building from the same codebase
-- keep a second protected Vercel project for private previews
-- edit public UI without storing personal copy directly in the repo
-
-Apply the private-page schema before using the protected route:
-
-```text
-sql/private_pages.sql
-```
-
-Deploy the matching Edge Function:
-
-```bash
-npx supabase functions deploy get-private-page
-```
-
-Example `content` shape for `public.private_pages`:
-
-```json
-{
-  "hero": {
-    "eyebrow": "Quietly kept",
-    "title": "A note that stayed.",
-    "opening": "You found the small tucked-away place."
-  },
-  "letter": {
-    "label": "For you",
-    "title": "There has been a note here.",
-    "paragraphs": [
-      "Paragraph one.",
-      "Paragraph two."
-    ]
-  },
-  "meaning": {
-    "label": "The two words",
-    "title": "Constantia and Solacium",
-    "cards": [
-      { "title": "Constantia", "body": "Steadiness and endurance." },
-      { "title": "Solacium", "body": "Comfort and refuge." }
-    ],
-    "paragraphs": [
-      "Together, they belong to each other."
-    ]
-  },
-  "video": {
-    "label": "A moving piece",
-    "title": "A small video can live here.",
-    "placeholder": "Video placeholder"
-  },
-  "images": {
-    "label": "Kept images",
-    "title": "A few still things.",
-    "items": [
-      { "placeholder": "Image placeholder" },
-      { "placeholder": "Image placeholder" }
-    ]
-  },
-  "closing_line": "Still here."
-}
-```
-
-The public build still uses a harmless empty private-copy module for the shared landing page's optional private-weighted lines.
-
 ## Deployment Notes
 
-The public GitHub Pages deployment is built from source by the workflow. Avoid relying on manually edited files in `dist`; regenerate them with the build command instead.
+The public GitHub Pages deployment is built from source by the workflow in strict public mode. Avoid relying on manually edited files in `dist`; regenerate them with the build command instead.
 
 Before pushing, check:
 
@@ -164,4 +100,4 @@ Before pushing, check:
 git status --short
 ```
 
-Make sure no local private content files are staged.
+Keep local private content out of git. The repo already ignores `js/private-copy.js`, and the public build now requires an explicit private opt-in flag before private surfaces can be bundled.

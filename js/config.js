@@ -9,9 +9,10 @@ function parsePrivateLines(value) {
 }
 
 export const IS_PRIVATE_BUILD =
-  import.meta.env?.VITE_WITHIN_REACH_BUILD === 'private' ||
-  import.meta.env?.VITE_PRIVATE_BUILD === 'true' ||
-  import.meta.env?.MODE === 'private';
+  (import.meta.env?.VITE_WITHIN_REACH_BUILD === 'private' ||
+    import.meta.env?.VITE_PRIVATE_BUILD === 'true' ||
+    import.meta.env?.MODE === 'private') &&
+  import.meta.env?.VITE_ENABLE_PRIVATE_BUILD === 'true';
 export const ENABLE_SECRET_SECTION =
   IS_PRIVATE_BUILD && import.meta.env?.VITE_ENABLE_SECRET_SECTION !== 'false';
 
