@@ -52,6 +52,15 @@ const FOOTER_HOLD_DURATION_MS = 1200;
 let hiddenDoorUnlocked = false;
 let footerHoldTimer = null;
 
+function getArrivalDebugMode() {
+  return new URLSearchParams(window.location.search).get('debugArrival') === '1';
+}
+
+function getForcedArrivalBucket() {
+  const bucket = new URLSearchParams(window.location.search).get('debugArrivalBucket');
+  return ['shared', 'personal', 'private'].includes(bucket) ? bucket : null;
+}
+
 function pseudoRandomIndex(seedValue, length) {
   const seed = Number(seedValue) || 0;
   return Math.abs(seed) % length;
@@ -68,32 +77,82 @@ async function getArrivalAmbientLine(visitor) {
   const privateLines = privateCopy.ARRIVAL_LINES_PERSONALIZED?.[visitor.user_slug] || [];
   const buckets = [
     {
+      name: 'shared',
       weight: ARRIVAL_AMBIENT_LINE_WEIGHTING.shared,
       lines: AMBIENT_LINES_SHARED,
     },
     {
+      name: 'personal',
       weight: ARRIVAL_AMBIENT_LINE_WEIGHTING.personal,
       lines: publicLines,
     },
     {
+      name: 'private',
       weight: ARRIVAL_AMBIENT_LINE_WEIGHTING.private,
       lines: privateLines,
     },
   ].filter((bucket) => bucket.weight > 0 && bucket.lines.length);
 
-  if (!buckets.length) return '';
+  if (!buckets.length) {
+    return {
+      line: '',
+      bucket: 'none',
+      counts: {
+        shared: AMBIENT_LINES_SHARED.length,
+        personal: publicLines.length,
+        private: privateLines.length,
+      },
+      forcedBucket: getForcedArrivalBucket(),
+    };
+  }
+
+  const forcedBucket = getForcedArrivalBucket();
+  if (forcedBucket) {
+    const forced = buckets.find((bucket) => bucket.name === forcedBucket);
+    if (forced) {
+      return {
+        line: pickRandom(forced.lines),
+        bucket: forced.name,
+        counts: {
+          shared: AMBIENT_LINES_SHARED.length,
+          personal: publicLines.length,
+          private: privateLines.length,
+        },
+        forcedBucket,
+      };
+    }
+  }
 
   const totalWeight = buckets.reduce((sum, bucket) => sum + bucket.weight, 0);
   let roll = Math.random() * totalWeight;
 
   for (const bucket of buckets) {
     if (roll < bucket.weight) {
-      return pickRandom(bucket.lines);
+      return {
+        line: pickRandom(bucket.lines),
+        bucket: bucket.name,
+        counts: {
+          shared: AMBIENT_LINES_SHARED.length,
+          personal: publicLines.length,
+          private: privateLines.length,
+        },
+        forcedBucket,
+      };
     }
     roll -= bucket.weight;
   }
 
-  return pickRandom(buckets[buckets.length - 1].lines);
+  const fallbackBucket = buckets[buckets.length - 1];
+  return {
+    line: pickRandom(fallbackBucket.lines),
+    bucket: fallbackBucket.name,
+    counts: {
+      shared: AMBIENT_LINES_SHARED.length,
+      personal: publicLines.length,
+      private: privateLines.length,
+    },
+    forcedBucket,
+  };
 }
 
 function getSharedFacts() {
@@ -311,7 +370,8 @@ export function bindHiddenDoor() {
 }
 
 export async function renderArrival(visitor) {
-  const ambientLine = await getArrivalAmbientLine(visitor);
+  const arrivalAmbient = await getArrivalAmbientLine(visitor);
+  const ambientLine = arrivalAmbient.line;
   const debugType = new URLSearchParams(window.location.search).get('debugSecondary');
   const clueLine = ENABLE_FUNNY_FACTS ? getFactWithClueFragment(debugType === 'clue') : null;
   const secondaryLine = clueLine ? clueLine.fact : ENABLE_FUNNY_FACTS ? await getWeightedLandingSecondaryLine() : '';
@@ -326,7 +386,25 @@ export async function renderArrival(visitor) {
   arrivalLineEl.hidden = !ambientLine;
   setFactInterlude(secondaryLine, clueLine?.fragment || '');
   footerLineEl.textContent = pickRandom(FOOTER_LINES);
-  heroStatusEl.textContent = `${visitor.display_name} arrived through a quiet little doorway.`;
+  const baseHeroStatus = `${visitor.display_name} arrived through a quiet little doorway.`;
+  if (getArrivalDebugMode()) {
+    const debugStatus =
+      ` build=${IS_PRIVATE_BUILD ? 'private' : 'public'}` +
+      ` bucket=${arrivalAmbient.bucket}` +
+      ` forced=${arrivalAmbient.forcedBucket || 'none'}` +
+      ` counts=${arrivalAmbient.counts.shared}/${arrivalAmbient.counts.personal}/${arrivalAmbient.counts.private}`;
+    heroStatusEl.textContent = `${baseHeroStatus}${debugStatus}`;
+    console.info('Arrival debug', {
+      isPrivateBuild: IS_PRIVATE_BUILD,
+      bucket: arrivalAmbient.bucket,
+      forcedBucket: arrivalAmbient.forcedBucket || null,
+      counts: arrivalAmbient.counts,
+      line: ambientLine,
+      userSlug: visitor.user_slug,
+    });
+  } else {
+    heroStatusEl.textContent = baseHeroStatus;
+  }
 }
 
 export function renderMissingKeyState() {
