@@ -15,3 +15,6 @@ comment on table public.private_pages is
 
 comment on column public.private_pages.content is
   'Structured json payload rendered by kept.html in the protected private preview project.';
+
+-- Apply sql/private_pages_starter.sql only in the private build database when
+-- you want a concrete starter row for the protected kept page.

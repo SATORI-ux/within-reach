@@ -159,6 +159,50 @@ Client-side checks may improve UX, but they do not replace backend enforcement.
 
 ---
 
+## Public documentation boundary
+
+The private build is not part of the public product surface.
+
+Do not describe, summarize, hint at, roadmap, or market the private build in:
+- `README.md`
+- public-facing setup docs
+- contributor-facing overview docs
+- feature lists
+- deployment summaries
+- release notes intended for the public repo surface
+
+This includes:
+- hidden-letter behavior
+- clue-fragment systems
+- weighted secret-copy behavior
+- unlock conditions
+- any personal-only discovery mechanics
+- any language that frames the private build as planned product functionality
+
+### Rule
+Treat the private build as a personal iteration layer, not a repository-level product feature.
+
+### Public repo posture
+Public documentation should describe only the shipped or intended shared-product behavior.
+If a behavior is private, personal, or not intended for release, omit it from `README.md` entirely.
+
+### Engineering exception
+Private-build details may exist only in clearly scoped internal/spec files that are intentionally separated from public product documentation.
+
+They must not be echoed into:
+- the main README
+- contributor summaries
+- public architecture overviews
+- product briefs that define the shipped experience
+
+### Review check
+When editing `README.md` or any repo-overview documentation, explicitly verify:
+- no private-build mechanics are mentioned
+- no hidden/personal systems are implied
+- no personal-only iteration is described as part of the product
+
+If unsure, leave it out.
+
 ## Push truth
 Push truth is per-user, not merely per-browser-origin.
 

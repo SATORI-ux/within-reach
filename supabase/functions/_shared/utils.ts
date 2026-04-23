@@ -50,6 +50,8 @@ type PushOptions = {
 };
 
 let vapidConfigured = false;
+const APP_BASE_URL_ENV = 'WITHIN_REACH_APP_URL';
+const LEGACY_APP_BASE_URL_ENV = 'WITHIN_REACH_APP_PATH';
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -91,10 +93,26 @@ export function getAdminClient(): SupabaseClient {
 }
 
 export function getAppBaseUrl(): string {
-  const configured = (Deno.env.get('WITHIN_REACH_APP_PATH') || '').trim();
-  if (configured) return configured;
+  const configured =
+    Deno.env.get(APP_BASE_URL_ENV)?.trim() ||
+    Deno.env.get(LEGACY_APP_BASE_URL_ENV)?.trim();
 
-  return 'https://within-reach-satori-uxs-projects.vercel.app/';
+  if (!configured) {
+    throw new Error(`Missing ${APP_BASE_URL_ENV}. Set it to the canonical Within Reach app URL.`);
+  }
+
+  let url: URL;
+  try {
+    url = new URL(configured);
+  } catch (_) {
+    throw new Error(`${APP_BASE_URL_ENV} must be an absolute http(s) URL.`);
+  }
+
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error(`${APP_BASE_URL_ENV} must use http or https.`);
+  }
+
+  return url.href;
 }
 
 export async function getPushEnabledForUser(

@@ -23,8 +23,8 @@ function normalizePreferredResponse(value: string | undefined): PreferredRespons
   return 'either';
 }
 
-function buildUrgentUrl(basePath: string, recipientSessionToken: string, signalId: string): string {
-  const url = new URL(basePath, getAppBaseUrl());
+function buildUrgentUrl(recipientSessionToken: string, signalId: string): string {
+  const url = new URL(getAppBaseUrl());
   url.searchParams.set('session', recipientSessionToken);
   url.searchParams.set('urgent', '1');
   url.searchParams.set('signal', signalId);
@@ -67,8 +67,7 @@ Deno.serve(async (req) => {
       throw new Error(insertError?.message || 'Could not create urgent signal.');
     }
 
-    const appPath = getAppBaseUrl();
-    const urgentUrl = buildUrgentUrl(appPath, recipientSessionToken, created.signal_id);
+    const urgentUrl = buildUrgentUrl(recipientSessionToken, created.signal_id);
 
     const pushNotification = await sendPushToCounterpart(
       client,

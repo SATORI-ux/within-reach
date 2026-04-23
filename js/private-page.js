@@ -1,4 +1,5 @@
 import { getPrivatePage, issueDeviceSession } from './api.js';
+import { IS_PRIVATE_BUILD } from './config.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
 const SESSION_KEY = 'within-reach.session-token';
@@ -218,6 +219,12 @@ function renderPage(content) {
 async function bootstrap() {
   setDocumentTheme(document.documentElement.dataset.theme);
   initializeThemeToggle(themeToggle);
+
+  if (!IS_PRIVATE_BUILD) {
+    setStatus('This page is not available here.', 'The kept page only opens in the private build.');
+    return;
+  }
+
   const sessionToken = await resolveSessionToken();
 
   if (!sessionToken) {
@@ -234,7 +241,10 @@ async function bootstrap() {
     }
 
     if (!result.content) {
-      setStatus('The private page is ready, but still empty.', 'Add a row to public.private_pages for this user to populate the protected content.');
+      setStatus(
+        'The private page is ready, but still empty.',
+        'Run sql/private_pages_starter.sql for this private build, then edit that payload when the kept note is ready.'
+      );
       return;
     }
 

@@ -17,6 +17,12 @@ type PrivatePageRow = {
   updated_at: string | null;
 };
 
+function assertPrivatePagesEnabled() {
+  if (Deno.env.get('WITHIN_REACH_PRIVATE_PAGES_ENABLED') !== 'true') {
+    throw new Error('Private pages are not enabled for this deployment.');
+  }
+}
+
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
   if (optionsResponse) return optionsResponse;
@@ -25,6 +31,8 @@ Deno.serve(async (req) => {
   if (methodResponse) return methodResponse;
 
   try {
+    assertPrivatePagesEnabled();
+
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
