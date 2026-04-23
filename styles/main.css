@@ -673,6 +673,50 @@ a.ghost-button {
   border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 36%, transparent);
 }
 
+.thought-ledger {
+  padding: 1rem;
+}
+
+.thought-ledger__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.thought-chip {
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--thought-accent, var(--accent)) 18%, var(--button-border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--thought-accent, var(--accent)) 8%, transparent), color-mix(in srgb, var(--surface-strong) 96%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+}
+
+.thought-chip__name,
+.thought-chip__count {
+  margin: 0;
+}
+
+.thought-chip__name {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.thought-chip__count {
+  margin-top: 0.42rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--text-stronger);
+}
+
+.thought-chip--placeholder {
+  opacity: 0.78;
+}
+
 .push-interlude {
   display: flex;
   flex-direction: column;
@@ -1116,6 +1160,11 @@ a.ghost-button {
   .note-composer__meta {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .thought-ledger__grid {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
   }
 
   .note-composer__actions,

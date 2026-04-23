@@ -27,6 +27,7 @@ import {
   renderCheckIns,
   renderMissingKeyState,
   renderNotes,
+  renderThoughtCounts,
   revealMainContent,
   setActionMessage,
   setHiddenDoorUnlocked,
@@ -285,6 +286,7 @@ const state = {
   urgentSignal: null,
   checkIns: [],
   notes: [],
+  thoughtCounts: [],
   revealTimer: null,
   revealed: false,
   feed: {
@@ -394,12 +396,14 @@ function renderCurrentNotes() {
 function renderCurrentFeeds() {
   renderCheckIns(getVisibleCheckIns());
   renderNotes(getVisibleNotes(), state.visitor?.user_slug);
+  renderThoughtCounts(state.thoughtCounts);
   syncFeedHistoryControls();
 }
 
 function applyInitialFeedPayload(feed) {
   state.checkIns = feed.check_ins || [];
   state.notes = feed.notes || [];
+  state.thoughtCounts = feed.thought_counts || [];
   setHiddenDoorUnlocked(feed.secret_state?.unlocked);
 
   state.feed.checkIns.hasMore = Boolean(feed.check_ins_page?.has_more);
@@ -789,6 +793,7 @@ async function bootstrap() {
     renderMissingKeyState();
     renderCheckIns([]);
     renderNotes([], '');
+    renderThoughtCounts([]);
     state.visitor = null;
     syncPushUiWithVisitorTruth();
     finishBoot();
@@ -836,6 +841,7 @@ async function bootstrap() {
       renderMissingKeyState();
       renderCheckIns([]);
       renderNotes([], '');
+      renderThoughtCounts([]);
     }
 
     state.visitor = null;
@@ -863,6 +869,7 @@ async function handleCheckIn() {
     );
     setHiddenDoorUnlocked(result.secret_state?.unlocked);
     advanceSecretDebugProgress(debugSecretProgress, result.secret_state);
+    state.thoughtCounts = result.thought_counts || state.thoughtCounts;
 
     if (result.check_in) {
       state.checkIns = [result.check_in, ...state.checkIns];

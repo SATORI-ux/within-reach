@@ -17,6 +17,13 @@ export type VisitorRow = {
   is_active: boolean;
 };
 
+export type ThoughtCount = {
+  user_slug: string;
+  display_name: string;
+  accent_color: string | null;
+  count: number;
+};
+
 type DeviceSessionRow = {
   user_slug: string;
   session_token?: string;
@@ -96,6 +103,40 @@ export async function getPushEnabledForUser(
   }
 
   return (count ?? 0) > 0;
+}
+
+export async function getThoughtCounts(client: SupabaseClient): Promise<ThoughtCount[]> {
+  const { data: visitors, error: visitorError } = await client
+    .from('tile_keys')
+    .select('user_slug, display_name, accent_color')
+    .eq('is_active', true)
+    .order('display_name', { ascending: true });
+
+  if (visitorError) {
+    throw new Error(visitorError.message);
+  }
+
+  const counts = await Promise.all(
+    (visitors ?? []).map(async (visitor) => {
+      const { count, error } = await client
+        .from('check_ins')
+        .select('*', { count: 'exact', head: true })
+        .eq('from_user_slug', visitor.user_slug);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        user_slug: visitor.user_slug,
+        display_name: visitor.display_name,
+        accent_color: visitor.accent_color,
+        count: count ?? 0,
+      };
+    }),
+  );
+
+  return counts;
 }
 
 export async function readJson<T>(req: Request): Promise<T> {

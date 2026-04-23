@@ -1,5 +1,6 @@
 import {
   getAdminClient,
+  getThoughtCounts,
   getReactionsSummary,
   handleOptions,
   json,
@@ -141,6 +142,7 @@ Deno.serve(async (req) => {
         display_name: visitor.display_name,
         accent_color: visitor.accent_color,
       },
+      thought_counts: await getThoughtCounts(client),
       secret_state: await getSecretState(client, visitor.user_slug),
       check_ins: checkIns,
       check_ins_page: checkInsPage,

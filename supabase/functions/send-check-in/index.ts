@@ -1,5 +1,6 @@
 import {
   getAdminClient,
+  getThoughtCounts,
   handleOptions,
   json,
   readJson,
@@ -98,6 +99,7 @@ Deno.serve(async (req) => {
 
     return json({
       total_count: count ?? 0,
+      thought_counts: await getThoughtCounts(client),
       secret_state: secretState,
       debug: body.debug_secret_progress
         ? {
