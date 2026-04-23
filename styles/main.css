@@ -514,6 +514,11 @@ a.ghost-button {
   color: var(--text-soft);
 }
 
+.inline-message[hidden],
+.push-status[hidden] {
+  display: none;
+}
+
 .check-ins-feed,
 .notes-feed {
   display: grid;

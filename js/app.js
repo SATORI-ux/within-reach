@@ -337,6 +337,7 @@ function setPushStatus(message, isError = false) {
   if (!pushStatusEl) return;
   pushStatusEl.textContent = message;
   pushStatusEl.style.color = isError ? 'var(--danger)' : 'var(--text-faint)';
+  pushStatusEl.hidden = !message;
 }
 
 function setPushEnabledState(enabled) {

@@ -642,11 +642,13 @@ export function showToast(message, accentColor) {
 export function setActionMessage(message, isError = false) {
   actionMessageEl.textContent = message;
   actionMessageEl.style.color = isError ? 'var(--danger)' : 'var(--text-soft)';
+  actionMessageEl.hidden = !message;
 }
 
 export function setNoteMessage(message, isError = false) {
   noteMessageEl.textContent = message;
   noteMessageEl.style.color = isError ? 'var(--danger)' : 'var(--text-soft)';
+  noteMessageEl.hidden = !message;
 }
 
 export function clearMessages() {
