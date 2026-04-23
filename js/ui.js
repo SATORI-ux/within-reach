@@ -274,7 +274,7 @@ function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'su
   button.type = 'button';
   button.className = `reaction-chip reaction-chip--${variant}`;
   button.dataset.noteId = String(noteId);
-  button.dataset.reaction = emoji;
+  button.dataset.reactionIndex = String(REACTIONS.indexOf(emoji));
 
   const emojiEl = document.createElement('span');
   emojiEl.textContent = emoji;

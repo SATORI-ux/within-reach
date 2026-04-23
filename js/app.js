@@ -15,6 +15,7 @@ import {
   DEBUG_UI_MESSAGES,
   IS_PRIVATE_BUILD,
   MAX_NOTE_LENGTH,
+  REACTIONS,
   VAPID_PUBLIC_KEY,
 } from './config.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
@@ -947,7 +948,8 @@ async function handleReactionClick(event) {
   if (!button || !state.sessionToken || !state.visitor) return;
 
   const noteId = Number(button.dataset.noteId);
-  const reaction = button.dataset.reaction;
+  const reactionIndex = Number(button.dataset.reactionIndex);
+  const reaction = REACTIONS[reactionIndex];
 
   if (!noteId || !reaction) return;
   if (state.busy.reactions.has(noteId)) return;
