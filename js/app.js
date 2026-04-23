@@ -274,6 +274,7 @@ const ackUrgentButton = document.querySelector('#ackUrgentButton');
 const urgentStateMessage = document.querySelector('#urgentStateMessage');
 const notesFeed = document.querySelector('#notesFeed');
 const enablePushButton = document.querySelector('#enablePushButton');
+const pushCopyEl = document.querySelector('#pushCopy');
 const pushStatusEl = document.querySelector('#pushStatus');
 const loadOlderCheckInsButton = document.querySelector('#loadOlderCheckInsButton');
 const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton');
@@ -344,6 +345,10 @@ function setPushEnabledState(enabled) {
   enablePushButton.textContent = enabled
     ? 'Gentle notifications on'
     : 'Enable gentle notifications';
+
+  if (pushCopyEl) {
+    pushCopyEl.hidden = enabled;
+  }
 }
 
 function syncPushUiWithVisitorTruth() {

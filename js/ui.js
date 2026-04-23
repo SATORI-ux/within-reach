@@ -270,10 +270,6 @@ function renderEmptyNotes() {
   `;
 }
 
-function formatThoughtLabel(count = 0) {
-  return `${count} ${count === 1 ? 'thought' : 'thoughts'}`;
-}
-
 function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'summary' }) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -492,15 +488,15 @@ export function renderThoughtCounts(thoughtCounts = []) {
     chip.className = 'thought-chip';
     chip.style.setProperty('--thought-accent', entry.accent_color || '#6e8d62');
 
-    const nameEl = document.createElement('p');
-    nameEl.className = 'thought-chip__name';
-    nameEl.textContent = entry.display_name;
+    const labelEl = document.createElement('p');
+    labelEl.className = 'thought-chip__label';
+    labelEl.textContent = `${entry.display_name} thoughts`;
 
-    const countEl = document.createElement('p');
-    countEl.className = 'thought-chip__count';
-    countEl.textContent = formatThoughtLabel(entry.count || 0);
+    const valueEl = document.createElement('p');
+    valueEl.className = 'thought-chip__value';
+    valueEl.textContent = String(entry.count || 0);
 
-    chip.append(nameEl, countEl);
+    chip.append(labelEl, valueEl);
     thoughtLedgerGridEl.appendChild(chip);
   });
 }

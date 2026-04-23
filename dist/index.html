@@ -28,8 +28,8 @@
       })();
     </script>
     <link rel="manifest" href="/assets/manifest-a-bKHd93.webmanifest" />
-    <script type="module" crossorigin src="/assets/main-_PIzOrgv.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-DqWuWNRF.css">
+    <script type="module" crossorigin src="/assets/main-5n0Dus_f.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/main-DelCndHn.css">
   </head>
   <body class="is-booting">
     <div class="grain"></div>
@@ -120,25 +120,8 @@
           <p class="inline-message" id="actionMessage" aria-live="polite"></p>
         </section>
 
-        <section class="section thought-ledger" id="thoughtLedger" aria-labelledby="thoughtLedgerTitle">
-          <div class="section-heading">
-            <p class="section__label">Thoughts kept here</p>
-            <h2 id="thoughtLedgerTitle">Small counts, quietly held.</h2>
-          </div>
-          <div class="thought-ledger__grid" id="thoughtLedgerGrid">
-            <article class="thought-chip thought-chip--placeholder">
-              <p class="thought-chip__name">Joey</p>
-              <p class="thought-chip__count">0 thoughts</p>
-            </article>
-            <article class="thought-chip thought-chip--placeholder">
-              <p class="thought-chip__name">Jeszi</p>
-              <p class="thought-chip__count">0 thoughts</p>
-            </article>
-          </div>
-        </section>
-
         <section class="push-interlude" aria-live="polite">
-          <p class="push-interlude__copy">If you'd like, this place can tap you gently when something arrives.</p>
+          <p class="push-interlude__copy" id="pushCopy">If you'd like, this place can tap you gently when something arrives.</p>
           <button id="enablePushButton" type="button" class="push-pill push-pill--subtle">
             Enable gentle notifications
           </button>
@@ -159,6 +142,19 @@
           Show older check-ins
           </button>
           <button id="collapseCheckInsButton" class="section-collapse" type="button" aria-label="Return to recent check-ins" hidden>x</button>
+        </section>
+
+        <section class="thought-ledger" id="thoughtLedger" aria-label="Thought totals">
+          <div class="thought-ledger__grid" id="thoughtLedgerGrid">
+            <article class="thought-chip thought-chip--placeholder">
+              <p class="thought-chip__label">Joey thoughts</p>
+              <p class="thought-chip__value">0</p>
+            </article>
+            <article class="thought-chip thought-chip--placeholder">
+              <p class="thought-chip__label">Jeszi thoughts</p>
+              <p class="thought-chip__value">0</p>
+            </article>
+          </div>
         </section>
 
         <section class="fact-interlude" id="factInterlude" hidden aria-live="polite">

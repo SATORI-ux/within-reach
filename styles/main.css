@@ -674,18 +674,18 @@ a.ghost-button {
 }
 
 .thought-ledger {
-  padding: 1rem;
+  margin-top: 0.95rem;
+  padding: 0 0.2rem;
 }
 
 .thought-ledger__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.9rem;
+  gap: 0.65rem;
 }
 
 .thought-chip {
-  padding: 0.95rem 1rem;
+  padding: 0.8rem 0.95rem 0.78rem;
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--thought-accent, var(--accent)) 18%, var(--button-border));
   background:
@@ -693,24 +693,25 @@ a.ghost-button {
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
 }
 
-.thought-chip__name,
-.thought-chip__count {
+.thought-chip__label,
+.thought-chip__value {
   margin: 0;
 }
 
-.thought-chip__name {
+.thought-chip__label {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.thought-chip__count {
-  margin-top: 0.42rem;
-  font-size: 1rem;
-  line-height: 1.4;
-  color: var(--text-stronger);
+.thought-chip__value {
+  margin-top: 0.28rem;
+  font-size: 1.65rem;
+  line-height: 1;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--thought-accent, var(--accent)) 28%, var(--text-stronger));
 }
 
 .thought-chip--placeholder {
