@@ -872,16 +872,12 @@ async function handleCheckIn() {
       renderCurrentCheckIns();
     }
 
-    const visibleThoughtCount = result.secret_state?.debug?.effective_thought_count ?? result.total_count;
     const debugMessage = getSecretDebugMessage(result.secret_state);
     const countDebugMessage = result.debug
       ? ` Check-in ${result.debug.created_check_in_id} counted ${result.debug.counted_total} for ${result.debug.counted_user_slug}.`
       : '';
 
-    showToast(
-      `${state.visitor.display_name} · ${visibleThoughtCount} thoughts of you`,
-      state.visitor.accent_color
-    );
+    showToast('A little thought sent.', state.visitor.accent_color);
     setActionMessage(`${debugMessage}${countDebugMessage}`.trim());
   } catch (error) {
     console.error(error);
