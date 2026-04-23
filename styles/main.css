@@ -728,6 +728,7 @@ a.ghost-button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-top: 0.65rem;
   gap: 0.35rem;
   padding: 0.2rem 1rem 1rem;
 }
