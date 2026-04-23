@@ -727,6 +727,11 @@ a.ghost-button {
   padding: 0.2rem 1rem 1rem;
 }
 
+.push-interlude--compact {
+  gap: 0.2rem;
+  padding-bottom: 0.35rem;
+}
+
 .push-interlude__copy {
   margin: 0;
   max-width: 31rem;
@@ -777,6 +782,10 @@ a.ghost-button {
   line-height: 1.4;
   color: var(--text-faint);
   text-align: center;
+}
+
+.push-interlude--compact .push-status:empty {
+  min-height: 0;
 }
 
 .urgent-state {

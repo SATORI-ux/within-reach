@@ -275,6 +275,7 @@ const urgentStateMessage = document.querySelector('#urgentStateMessage');
 const notesFeed = document.querySelector('#notesFeed');
 const enablePushButton = document.querySelector('#enablePushButton');
 const pushCopyEl = document.querySelector('#pushCopy');
+const pushInterludeEl = document.querySelector('.push-interlude');
 const pushStatusEl = document.querySelector('#pushStatus');
 const loadOlderCheckInsButton = document.querySelector('#loadOlderCheckInsButton');
 const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton');
@@ -348,6 +349,10 @@ function setPushEnabledState(enabled) {
 
   if (pushCopyEl) {
     pushCopyEl.hidden = enabled;
+  }
+
+  if (pushInterludeEl) {
+    pushInterludeEl.classList.toggle('push-interlude--compact', enabled);
   }
 }
 
