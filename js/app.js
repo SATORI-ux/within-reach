@@ -932,6 +932,8 @@ async function handleSubmitNote() {
 }
 
 async function handleReactionClick(event) {
+  if (!(event.target instanceof Element)) return;
+
   const toggleButton = event.target.closest('[data-action="toggle-reaction-picker"]');
   if (toggleButton) {
     const noteId = Number(toggleButton.dataset.noteId);

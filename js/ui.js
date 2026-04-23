@@ -269,13 +269,22 @@ function renderEmptyNotes() {
   `;
 }
 
-function buildReactionButton({ noteId, emoji, summary, viewerSlug }) {
+function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'summary' }) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'reaction-chip';
+  button.className = `reaction-chip reaction-chip--${variant}`;
   button.dataset.noteId = String(noteId);
   button.dataset.reaction = emoji;
-  button.innerHTML = `<span>${emoji}</span><span>${summary?.count || 0}</span>`;
+
+  const emojiEl = document.createElement('span');
+  emojiEl.textContent = emoji;
+  button.appendChild(emojiEl);
+
+  if (variant === 'summary') {
+    const countEl = document.createElement('span');
+    countEl.textContent = String(summary?.count || 0);
+    button.appendChild(countEl);
+  }
 
   if (summary?.reacted_by_viewer || summary?.users?.includes(viewerSlug)) {
     button.classList.add('is-active');
@@ -295,7 +304,13 @@ function buildReactionToggle(noteId, hasReactions, pickerOpen) {
   return button;
 }
 
-function renderReactionSet(reactionsEl, noteId, reactions, viewerSlug, { includeEmpty = true } = {}) {
+function renderReactionSet(
+  reactionsEl,
+  noteId,
+  reactions,
+  viewerSlug,
+  { includeEmpty = true, variant = 'summary' } = {}
+) {
   reactionsEl.innerHTML = '';
 
   REACTIONS.forEach((emoji) => {
@@ -309,6 +324,7 @@ function renderReactionSet(reactionsEl, noteId, reactions, viewerSlug, { include
         emoji,
         summary,
         viewerSlug,
+        variant,
       })
     );
   });
@@ -498,13 +514,19 @@ export function renderNotes(notes = [], viewerSlug) {
     const reactions = note.reactions || [];
     const hasVisibleReactions = reactions.some((reaction) => reaction.count > 0);
 
-    renderReactionSet(reactionsEl, note.id, reactions, viewerSlug, { includeEmpty: false });
+    renderReactionSet(reactionsEl, note.id, reactions, viewerSlug, {
+      includeEmpty: false,
+      variant: 'summary',
+    });
 
     const toggleButton = buildReactionToggle(note.id, hasVisibleReactions, pickerOpen);
     reactionToggleSlot.replaceWith(toggleButton);
 
     reactionPickerEl.hidden = !pickerOpen;
-    renderReactionSet(reactionPickerEl, note.id, reactions, viewerSlug, { includeEmpty: true });
+    renderReactionSet(reactionPickerEl, note.id, reactions, viewerSlug, {
+      includeEmpty: true,
+      variant: 'picker',
+    });
 
     notesFeedEl.appendChild(fragment);
   });
@@ -523,8 +545,14 @@ export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
   const nextReactions = reactions || [];
   const hasVisibleReactions = nextReactions.some((reaction) => reaction.count > 0);
 
-  renderReactionSet(reactionsEl, noteId, nextReactions, viewerSlug, { includeEmpty: false });
-  renderReactionSet(reactionPickerEl, noteId, nextReactions, viewerSlug, { includeEmpty: true });
+  renderReactionSet(reactionsEl, noteId, nextReactions, viewerSlug, {
+    includeEmpty: false,
+    variant: 'summary',
+  });
+  renderReactionSet(reactionPickerEl, noteId, nextReactions, viewerSlug, {
+    includeEmpty: true,
+    variant: 'picker',
+  });
   toggleButton.textContent = hasVisibleReactions ? 'Add a small response' : 'Leave a small response';
   toggleButton.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
 }

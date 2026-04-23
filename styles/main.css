@@ -937,10 +937,13 @@ a.ghost-button {
 }
 
 .note-card__reaction-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(clamp(3.2rem, 18cqi, 4.4rem), 1fr));
-  gap: clamp(0.32rem, 1.6cqi, 0.55rem);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.42rem;
   margin-top: 0.65rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .reaction-chip {
@@ -969,6 +972,13 @@ a.ghost-button {
   width: auto;
   padding: 0.34rem 0.58rem;
   font-size: 0.8rem;
+}
+
+.reaction-chip--picker {
+  width: auto;
+  min-width: 2.9rem;
+  padding: 0.42rem 0.62rem;
+  flex: 0 0 auto;
 }
 
 .reaction-chip.is-active {
@@ -1137,11 +1147,6 @@ a.ghost-button {
     gap: 0.34rem;
   }
 
-  .note-card__reaction-picker {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.24rem;
-  }
-
   .reaction-chip {
     flex: 1 1 0;
     min-width: 0;
@@ -1156,6 +1161,12 @@ a.ghost-button {
     min-width: auto;
     padding: 0.28rem 0.48rem;
     font-size: 0.75rem;
+  }
+
+  .reaction-chip--picker {
+    flex: 0 0 auto;
+    min-width: 2.7rem;
+    padding: 0.34rem 0.5rem;
   }
 
   .reaction-chip span:first-child {
