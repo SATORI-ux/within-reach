@@ -1038,11 +1038,12 @@ async function handleEnablePush() {
   try {
     await enablePushNotifications();
     const refreshedVisitor = await refreshVisitorPushTruth();
-    if (!refreshedVisitor && state.visitor) {
-      state.visitor.push_enabled = true;
-    }
     syncPushUiWithVisitorTruth();
-    setPushStatus('Quietly enabled.');
+    if (refreshedVisitor?.push_enabled) {
+      setPushStatus('Quietly enabled.');
+    } else {
+      setPushStatus('Subscription saved. Waiting to confirm here.');
+    }
     window.setTimeout(() => {
       setPushStatus('');
     }, 2400);
