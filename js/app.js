@@ -975,9 +975,7 @@ async function handleReactionClick(event) {
     if (rawMessage.includes('note_reactions_unique')) {
       setActionMessage('');
     } else {
-      const message = DEBUG_UI_MESSAGES
-        ? rawMessage || 'Could not update that reaction.'
-        : 'Could not update that reaction.';
+      const message = rawMessage || 'Could not update that reaction.';
       setActionMessage(message, true);
     }
   } finally {
