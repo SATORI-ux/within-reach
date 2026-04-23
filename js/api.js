@@ -42,8 +42,8 @@ async function callFunction(functionName, payload = {}) {
   return json;
 }
 
-export function resolveVisitor(tileKey) {
-  return callFunction('resolve-visitor', { tile_key: tileKey });
+export function resolveVisitor(tileKey, options = {}) {
+  return callFunction('resolve-visitor', { tile_key: tileKey, ...options });
 }
 
 export function issueDeviceSession(tileKey, label = 'web') {

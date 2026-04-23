@@ -50,6 +50,8 @@ Deno.serve(async (req) => {
     let tileLookupError: string | null = null
     let sessionLookupError: string | null = null
     let matchedSource: 'tile_keys' | 'device_sessions' | null = null
+    let matchedSessionId: number | null = null
+    let matchedDeviceLabel: string | null = null
 
     const { data: tile, error: tileError } = await supabase
       .from('tile_keys')
@@ -70,7 +72,7 @@ Deno.serve(async (req) => {
     if (!resolvedUserSlug) {
       const { data: session, error: sessionError } = await supabase
         .from('device_sessions')
-        .select('user_slug')
+        .select('id, user_slug, label')
         .eq('session_token', key)
         .eq('is_active', true)
         .maybeSingle()
@@ -82,24 +84,18 @@ Deno.serve(async (req) => {
       if (session?.user_slug) {
         resolvedUserSlug = session.user_slug
         matchedSource = 'device_sessions'
+        matchedSessionId = typeof session.id === 'number' ? session.id : null
+        matchedDeviceLabel = typeof session.label === 'string' ? session.label : null
       }
     }
 
     if (!resolvedUserSlug) {
-      return json(
-        {
-          error: 'Invalid tile key.',
-          debug: {
-            received_key: key,
-            key_length: key.length,
-            tile_lookup_found: !!tile?.user_slug,
-            tile_lookup_error: tileLookupError,
-            session_lookup_found: matchedSource === 'device_sessions',
-            session_lookup_error: sessionLookupError,
-          },
-        },
-        401
-      )
+      console.error('Push subscription key lookup failed', {
+        tile_lookup_error: tileLookupError,
+        session_lookup_error: sessionLookupError,
+      })
+
+      return json({ error: 'Invalid session.' }, 401)
     }
 
     const { error: upsertError } = await supabase
@@ -109,6 +105,8 @@ Deno.serve(async (req) => {
           user_slug: resolvedUserSlug,
           endpoint: subscription.endpoint,
           subscription_json: subscription,
+          device_session_id: matchedSessionId,
+          device_label: matchedDeviceLabel,
           is_active: true,
           updated_at: new Date().toISOString(),
         },
@@ -116,24 +114,16 @@ Deno.serve(async (req) => {
       )
 
     if (upsertError) {
-      return json(
-        {
-          error: upsertError.message,
-          debug: {
-            received_key: key,
-            matched_source: matchedSource,
-            resolved_user_slug: resolvedUserSlug,
-          },
-        },
-        500
-      )
+      console.error('Push subscription upsert failed', {
+        matched_source: matchedSource,
+        resolved_user_slug: resolvedUserSlug,
+        message: upsertError.message,
+      })
+
+      return json({ error: 'Could not save that subscription.' }, 500)
     }
 
-    return json({
-      ok: true,
-      user_slug: resolvedUserSlug,
-      matched_source: matchedSource,
-    })
+    return json({ ok: true })
   } catch (error) {
     return json({ error: String(error) }, 500)
   }

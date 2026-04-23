@@ -79,6 +79,24 @@ create table if not exists public.device_sessions (
   last_seen_at timestamptz not null default now()
 );
 
+create table if not exists public.push_subscriptions (
+  id bigint generated always as identity primary key,
+  user_slug text not null references public.tile_keys(user_slug) on update cascade,
+  endpoint text not null unique,
+  subscription_json jsonb not null,
+  device_session_id bigint references public.device_sessions(id) on update cascade on delete set null,
+  device_label text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table if exists public.push_subscriptions
+  add column if not exists device_session_id bigint references public.device_sessions(id) on update cascade on delete set null;
+
+alter table if exists public.push_subscriptions
+  add column if not exists device_label text;
+
 create or replace view public.check_in_feed as
 select
   c.id,
@@ -116,6 +134,8 @@ create index if not exists idx_secret_unlocks_unlocked_at on public.secret_unloc
 create index if not exists idx_private_pages_updated_at on public.private_pages (updated_at desc);
 create index if not exists idx_device_sessions_user_slug on public.device_sessions (user_slug);
 create index if not exists idx_device_sessions_last_seen_at on public.device_sessions (last_seen_at desc);
+create index if not exists idx_push_subscriptions_user_slug on public.push_subscriptions (user_slug);
+create index if not exists idx_push_subscriptions_device_session_id on public.push_subscriptions (device_session_id);
 
 alter table public.tile_keys enable row level security;
 alter table public.check_ins enable row level security;
@@ -126,3 +146,4 @@ alter table public.urgent_contacts enable row level security;
 alter table public.secret_unlocks enable row level security;
 alter table public.private_pages enable row level security;
 alter table public.device_sessions enable row level security;
+alter table public.push_subscriptions enable row level security;

@@ -1,6 +1,7 @@
 import {
   getCounterpartSlug,
   getAdminClient,
+  getAppBaseUrl,
   handleOptions,
   issueDeviceSessionForUser,
   json,
@@ -23,7 +24,7 @@ function normalizePreferredResponse(value: string | undefined): PreferredRespons
 }
 
 function buildUrgentUrl(basePath: string, recipientSessionToken: string, signalId: string): string {
-  const url = new URL(basePath, 'https://kept.satori-ux.com');
+  const url = new URL(basePath, getAppBaseUrl());
   url.searchParams.set('session', recipientSessionToken);
   url.searchParams.set('urgent', '1');
   url.searchParams.set('signal', signalId);
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
       throw new Error(insertError?.message || 'Could not create urgent signal.');
     }
 
-    const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || 'https://kept.satori-ux.com/';
+    const appPath = getAppBaseUrl();
     const urgentUrl = buildUrgentUrl(appPath, recipientSessionToken, created.signal_id);
 
     const pushNotification = await sendPushToCounterpart(

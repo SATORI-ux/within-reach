@@ -82,6 +82,9 @@ It is the closest behavior to a friendship lamp.
 
 The user should be able to send it almost without thinking.
 
+By default it should not become a visible metric.
+If thought totals are exposed for the hidden-letter ritual, they should be tucked behind an explicit reveal and remain a quiet two-person detail rather than a default page feature.
+
 ### Leave a note
 This is the slower surface.
 

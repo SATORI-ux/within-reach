@@ -45,6 +45,7 @@ Always protect these:
 - Check-ins and notes are separate surfaces.
 - Urgent events do not appear in the public shared history.
 - No persistent scoreboard, stat block, or gamified count display.
+- Exception: an explicitly revealed, optional two-person thought tally may exist for the hidden-letter ritual if it stays quiet, small, and non-default.
 - Randomness must be curated, sparse, and tonally consistent.
 - The product must not drift toward messaging, feeds, or engagement loops.
 

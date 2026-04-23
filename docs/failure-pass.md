@@ -141,6 +141,7 @@ For non-trivial changes, check all of the following:
 - Notes and check-ins remain separate
 - Urgent remains private
 - No visible scoreboards or growth loops introduced
+- Exception: an optional, explicitly revealed two-person thought tally may be allowed for the hidden-letter ritual if it stays non-default, quiet, and non-gamified
 
 ### Boundary check
 - Identity still server-validated

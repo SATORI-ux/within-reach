@@ -12,8 +12,6 @@ import {
 } from './api.js';
 import {
   ARRIVAL_REVEAL_DELAY_MS,
-  DEBUG_UI_MESSAGES,
-  IS_PRIVATE_BUILD,
   MAX_NOTE_LENGTH,
   REACTIONS,
   VAPID_PUBLIC_KEY,
@@ -42,7 +40,6 @@ import {
 const SESSION_KEY = 'within-reach.session-token';
 const SESSION_COOKIE_NAME = 'within_reach_session_token';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
-const SECRET_DEBUG_PROGRESS_KEY = 'within-reach.debug-secret-progress';
 const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
 
 function getCookie(name) {
@@ -133,103 +130,6 @@ function clearUrgentRoute() {
   window.history.replaceState({}, '', cleanUrl || '/');
 }
 
-function getSecretDebugProgress() {
-  const params = new URLSearchParams(window.location.search);
-
-  if (!params.has('debugSecretThoughts') || !params.has('debugSecretDays')) return null;
-
-  const thoughts = Number(params.get('debugSecretThoughts'));
-  const days = Number(params.get('debugSecretDays'));
-
-  if (!Number.isFinite(thoughts) || !Number.isFinite(days)) return null;
-
-  const seedThoughts = Math.max(0, Math.floor(thoughts));
-  const firstThoughtDaysAgo = Math.max(0, Math.floor(days));
-  let storedProgress = null;
-
-  try {
-    storedProgress = JSON.parse(localStorage.getItem(SECRET_DEBUG_PROGRESS_KEY) || 'null');
-  } catch {
-    localStorage.removeItem(SECRET_DEBUG_PROGRESS_KEY);
-  }
-
-  if (
-    storedProgress?.seed_thoughts === seedThoughts &&
-    storedProgress?.first_thought_days_ago === firstThoughtDaysAgo &&
-    Number.isFinite(storedProgress?.prior_thought_count)
-  ) {
-    return {
-      prior_thought_count: Math.max(0, Math.floor(storedProgress.prior_thought_count)),
-      first_thought_days_ago: firstThoughtDaysAgo,
-      seed_thoughts: seedThoughts,
-    };
-  }
-
-  return {
-    prior_thought_count: seedThoughts,
-    first_thought_days_ago: firstThoughtDaysAgo,
-    seed_thoughts: seedThoughts,
-  };
-}
-
-function advanceSecretDebugProgress(debugSecretProgress, secretState) {
-  if (!debugSecretProgress) return;
-
-  const effectiveThoughtCount =
-    secretState?.debug?.effective_thought_count ?? debugSecretProgress.prior_thought_count + 1;
-
-  localStorage.setItem(
-    SECRET_DEBUG_PROGRESS_KEY,
-    JSON.stringify({
-      seed_thoughts: debugSecretProgress.seed_thoughts,
-      first_thought_days_ago: debugSecretProgress.first_thought_days_ago,
-      prior_thought_count: Math.max(0, Math.floor(effectiveThoughtCount)),
-    })
-  );
-}
-
-function getSecretDebugMessage(secretState) {
-  const debug = secretState?.debug;
-  if (!debug) return '';
-
-  const count = debug.effective_thought_count ?? 'unknown';
-  const days = debug.first_thought_days_ago ?? 'unknown';
-
-  if (!debug.enabled) {
-    return 'Debug unlock spoof was sent, but SECRET_DEBUG_UNLOCKS is not enabled for the Edge Function.';
-  }
-
-  if (debug.reason === 'wrong-target-user') {
-    return `Debug unlock did not run for this tile. Target is ${debug.target_user_slug}; current tile is ${debug.user_slug}.`;
-  }
-
-  if (debug.reason === 'below-thought-target') {
-    return `Debug unlock stayed locked: effective thoughts ${count}/${debug.thought_target}.`;
-  }
-
-  if (debug.reason === 'below-minimum-days') {
-    return `Debug unlock stayed locked: effective days ${days}/${debug.minimum_days}.`;
-  }
-
-  if (debug.reason === 'unlocked') {
-    return IS_PRIVATE_BUILD
-      ? 'Debug unlock succeeded. Long-press the quiet footer line.'
-      : 'Debug unlock succeeded on the server, but this page is not running as the private build.';
-  }
-
-  if (debug.reason === 'already-unlocked') {
-    return IS_PRIVATE_BUILD
-      ? 'The hidden door is already unlocked. Long-press the quiet footer line.'
-      : 'The hidden door is already unlocked on the server, but this page is not running as the private build.';
-  }
-
-    if (debug.reason === 'secret-state-error') {
-    return 'Debug unlock could not read or update hidden-door state. The check-in was still saved.';
-  }
-
-  return `Debug unlock result: ${debug.reason}.`;
-}
-
 function finishBoot() {
   document.body.classList.remove('is-booting');
 }
@@ -274,9 +174,14 @@ const ackUrgentButton = document.querySelector('#ackUrgentButton');
 const urgentStateMessage = document.querySelector('#urgentStateMessage');
 const notesFeed = document.querySelector('#notesFeed');
 const enablePushButton = document.querySelector('#enablePushButton');
+const dismissPushPromptButton = document.querySelector('#dismissPushPromptButton');
 const pushCopyEl = document.querySelector('#pushCopy');
 const pushInterludeEl = document.querySelector('.push-interlude');
+const pushInterludeActionsEl = document.querySelector('#pushInterludeActions');
 const pushStatusEl = document.querySelector('#pushStatus');
+const pushDebugPanelEl = document.querySelector('#pushDebugPanel');
+const pushDebugSummaryEl = document.querySelector('#pushDebugSummary');
+const pushDebugDevicesEl = document.querySelector('#pushDebugDevices');
 const loadOlderCheckInsButton = document.querySelector('#loadOlderCheckInsButton');
 const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton');
 const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
@@ -286,6 +191,8 @@ const state = {
   sessionToken: '',
   visitor: null,
   urgentSignal: null,
+  pushDebug: null,
+  pushDeviceState: null,
   checkIns: [],
   notes: [],
   thoughtCounts: [],
@@ -316,6 +223,31 @@ const state = {
     reactions: new Set(),
   },
 };
+
+const PUSH_PROMPT_DISMISS_PREFIX = 'within-reach.push-prompt-dismissed.';
+
+function getPushDebugMode() {
+  return new URLSearchParams(window.location.search).get('debugPush') === '1';
+}
+
+function getPushPromptDismissKey(userSlug) {
+  return `${PUSH_PROMPT_DISMISS_PREFIX}${userSlug}`;
+}
+
+function isPushPromptDismissed(userSlug) {
+  if (!userSlug) return false;
+  return window.localStorage.getItem(getPushPromptDismissKey(userSlug)) === '1';
+}
+
+function dismissPushPromptForCurrentVisitor() {
+  if (!state.visitor?.user_slug) return;
+  window.localStorage.setItem(getPushPromptDismissKey(state.visitor.user_slug), '1');
+}
+
+function clearPushPromptDismissal(userSlug) {
+  if (!userSlug) return;
+  window.localStorage.removeItem(getPushPromptDismissKey(userSlug));
+}
 
 function setActionsDisabled(disabled) {
   thinkingButton.disabled = disabled;
@@ -348,17 +280,82 @@ function setPushEnabledState(enabled) {
     ? 'Gentle notifications on'
     : 'Enable gentle notifications';
 
-  if (pushCopyEl) {
-    pushCopyEl.hidden = enabled;
+}
+
+function renderPushDebugPanel() {
+  if (!pushDebugPanelEl || !pushDebugSummaryEl || !pushDebugDevicesEl) return;
+
+  const debugMode = getPushDebugMode();
+  const debug = state.pushDebug;
+  const deviceState = state.pushDeviceState;
+
+  pushDebugPanelEl.hidden = !debugMode;
+  if (!debugMode) return;
+
+  const backendEnabled = state.visitor?.push_enabled ? 'on' : 'off';
+  const deviceSubscribed = deviceState?.hasDeviceSubscription ? 'yes' : 'no';
+  const permission = deviceState?.permission || 'unknown';
+  const currentLabel = debug?.current_device?.label || 'unknown';
+
+  pushDebugSummaryEl.textContent =
+    `Backend push: ${backendEnabled}. Browser permission: ${permission}. This device subscribed: ${deviceSubscribed}. This-device id: ${currentLabel}.`;
+
+  pushDebugDevicesEl.innerHTML = '';
+
+  const enabledDevices = debug?.enabled_devices || [];
+  if (!enabledDevices.length) {
+    const empty = document.createElement('p');
+    empty.className = 'push-debug__device-meta';
+    empty.textContent = 'No enabled devices are recorded for this user yet.';
+    pushDebugDevicesEl.appendChild(empty);
+    return;
   }
 
-  if (pushInterludeEl) {
-    pushInterludeEl.classList.toggle('push-interlude--compact', enabled);
-  }
+  enabledDevices.forEach((device, index) => {
+    const card = document.createElement('article');
+    card.className = 'push-debug__device';
+
+    const title = document.createElement('p');
+    title.className = 'push-debug__device-title';
+    title.textContent = device.this_device
+      ? `${device.label || `Device ${index + 1}`} (this-device)`
+      : device.label || `Device ${index + 1}`;
+
+    const meta = document.createElement('p');
+    meta.className = 'push-debug__device-meta';
+    meta.textContent = `Updated ${device.updated_at || 'unknown'} • host ${device.endpoint_host || 'unknown'}`;
+
+    card.append(title, meta);
+    pushDebugDevicesEl.appendChild(card);
+  });
 }
 
 function syncPushUiWithVisitorTruth() {
-  setPushEnabledState(Boolean(state.visitor?.push_enabled));
+  const enabled = Boolean(state.visitor?.push_enabled);
+  const hasStatus = Boolean(pushStatusEl?.textContent);
+  const showPrompt = Boolean(state.visitor?.user_slug) && !enabled && !isPushPromptDismissed(state.visitor.user_slug);
+  const showDebug = getPushDebugMode();
+
+  setPushEnabledState(enabled);
+
+  if (enabled && state.visitor?.user_slug) {
+    clearPushPromptDismissal(state.visitor.user_slug);
+  }
+
+  if (pushCopyEl) {
+    pushCopyEl.hidden = !showPrompt;
+  }
+
+  if (pushInterludeActionsEl) {
+    pushInterludeActionsEl.hidden = !showPrompt;
+  }
+
+  if (pushInterludeEl) {
+    pushInterludeEl.hidden = !showPrompt && !showDebug && !hasStatus;
+    pushInterludeEl.classList.toggle('push-interlude--compact', !showPrompt);
+  }
+
+  renderPushDebugPanel();
 }
 
 function getVisibleCheckIns() {
@@ -554,6 +551,7 @@ async function logPushTruthMismatch() {
   if (!state.visitor) return;
 
   const deviceState = await inspectCurrentDevicePushSubscription();
+  state.pushDeviceState = deviceState;
   const visitorPushEnabled = Boolean(state.visitor.push_enabled);
 
   if (deviceState.hasDeviceSubscription !== visitorPushEnabled) {
@@ -566,15 +564,20 @@ async function logPushTruthMismatch() {
   }
 }
 
+async function refreshPushDebugState() {
+  state.pushDeviceState = await inspectCurrentDevicePushSubscription();
+}
+
 async function refreshVisitorPushTruth() {
   if (!state.sessionToken || !state.visitor) return null;
 
   try {
     const refreshedVisitor = await withTimeout(
-      resolveVisitor(state.sessionToken),
+      resolveVisitor(state.sessionToken, { debug_push: getPushDebugMode() }),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
+    state.pushDebug = refreshedVisitor.push_debug || null;
     state.visitor = {
       ...state.visitor,
       ...refreshedVisitor,
@@ -815,10 +818,12 @@ async function bootstrap() {
 
   try {
     state.visitor = await withTimeout(
-      resolveVisitor(state.sessionToken),
+      resolveVisitor(state.sessionToken, { debug_push: getPushDebugMode() }),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
+    state.pushDebug = state.visitor.push_debug || null;
+    await refreshPushDebugState();
 
     applyAccent(state.visitor.user_slug);
     await renderArrival(state.visitor);
@@ -856,6 +861,8 @@ async function bootstrap() {
     }
 
     state.visitor = null;
+    state.pushDebug = null;
+    state.pushDeviceState = null;
     finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
@@ -873,13 +880,8 @@ async function handleCheckIn() {
   thinkingButton.disabled = true;
 
   try {
-    const debugSecretProgress = getSecretDebugProgress();
-    const result = await sendCheckIn(
-      state.sessionToken,
-      debugSecretProgress ? { debug_secret_progress: debugSecretProgress } : {}
-    );
+    const result = await sendCheckIn(state.sessionToken);
     setHiddenDoorUnlocked(result.secret_state?.unlocked);
-    advanceSecretDebugProgress(debugSecretProgress, result.secret_state);
     state.thoughtCounts = result.thought_counts || state.thoughtCounts;
 
     if (result.check_in) {
@@ -892,13 +894,8 @@ async function handleCheckIn() {
       renderCurrentCheckIns();
     }
 
-    const debugMessage = getSecretDebugMessage(result.secret_state);
-    const countDebugMessage = result.debug
-      ? ` Check-in ${result.debug.created_check_in_id} counted ${result.debug.counted_total} for ${result.debug.counted_user_slug}.`
-      : '';
-
     showToast('A little thought sent.', state.visitor.accent_color);
-    setActionMessage(`${debugMessage}${countDebugMessage}`.trim());
+    setActionMessage('');
   } catch (error) {
     console.error(error);
     setActionMessage(error.message || 'Could not send that check-in.', true);
@@ -1063,6 +1060,7 @@ async function handleEnablePush() {
 
   try {
     await enablePushNotifications();
+    await refreshPushDebugState();
     const refreshedVisitor = await refreshVisitorPushTruth();
     syncPushUiWithVisitorTruth();
     if (refreshedVisitor?.push_enabled) {
@@ -1083,6 +1081,12 @@ async function handleEnablePush() {
       enablePushButton.disabled = false;
     }
   }
+}
+
+function handleDismissPushPrompt() {
+  dismissPushPromptForCurrentVisitor();
+  setPushStatus('');
+  syncPushUiWithVisitorTruth();
 }
 
 thinkingButton.addEventListener('click', handleCheckIn);
@@ -1106,6 +1110,10 @@ notesFeed.addEventListener('click', handleReactionClick);
 
 if (enablePushButton) {
   enablePushButton.addEventListener('click', handleEnablePush);
+}
+
+if (dismissPushPromptButton) {
+  dismissPushPromptButton.addEventListener('click', handleDismissPushPrompt);
 }
 
 if (loadOlderCheckInsButton) {

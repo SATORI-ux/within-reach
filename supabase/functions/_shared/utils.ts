@@ -25,10 +25,12 @@ export type ThoughtCount = {
 };
 
 type DeviceSessionRow = {
+  id?: number;
   user_slug: string;
   session_token?: string;
   label?: string | null;
   is_active: boolean;
+  last_seen_at?: string | null;
 };
 
 type PushSendResult = {
@@ -86,6 +88,13 @@ export function getAdminClient(): SupabaseClient {
       autoRefreshToken: false,
     },
   });
+}
+
+export function getAppBaseUrl(): string {
+  const configured = (Deno.env.get('WITHIN_REACH_APP_PATH') || '').trim();
+  if (configured) return configured;
+
+  return 'https://within-reach-satori-uxs-projects.vercel.app/';
 }
 
 export async function getPushEnabledForUser(
@@ -168,17 +177,9 @@ async function getVisitorFromSession(
   client: SupabaseClient,
   key: string,
 ): Promise<VisitorRow | null> {
-  const { data: session, error: sessionError } = await client
-    .from('device_sessions')
-    .select('user_slug, is_active')
-    .eq('session_token', key)
-    .maybeSingle<DeviceSessionRow>();
+  const session = await getActiveDeviceSession(client, key);
 
-  if (sessionError) {
-    throw new Error(sessionError.message);
-  }
-
-  if (!session || !session.is_active) {
+  if (!session) {
     return null;
   }
 
@@ -197,6 +198,27 @@ async function getVisitorFromSession(
   }
 
   return tile;
+}
+
+export async function getActiveDeviceSession(
+  client: SupabaseClient,
+  sessionToken: string,
+): Promise<DeviceSessionRow | null> {
+  const { data: session, error: sessionError } = await client
+    .from('device_sessions')
+    .select('id, user_slug, label, is_active, last_seen_at')
+    .eq('session_token', sessionToken)
+    .maybeSingle<DeviceSessionRow>();
+
+  if (sessionError) {
+    throw new Error(sessionError.message);
+  }
+
+  if (!session || !session.is_active) {
+    return null;
+  }
+
+  return session;
 }
 
 export async function resolveVisitorKey(
@@ -314,7 +336,7 @@ export async function sendPushToCounterpart(
   kind: 'gentle' | 'urgent',
   title: string,
   body: string,
-  url = 'https://kept.satori-ux.com/',
+  url = getAppBaseUrl(),
   options: PushOptions = {},
 ): Promise<PushSendResult> {
   const counterpartSlug = getCounterpartSlug(fromVisitor.user_slug);

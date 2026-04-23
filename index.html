@@ -119,12 +119,21 @@
           <p class="inline-message" id="actionMessage" aria-live="polite"></p>
         </section>
 
-        <section class="push-interlude" aria-live="polite">
+        <section class="push-interlude" aria-live="polite" hidden>
           <p class="push-interlude__copy" id="pushCopy">If you'd like, this place can tap you gently when something arrives.</p>
-          <button id="enablePushButton" type="button" class="push-pill push-pill--subtle">
-            Enable gentle notifications
-          </button>
+          <div class="push-interlude__actions" id="pushInterludeActions">
+            <button id="enablePushButton" type="button" class="push-pill push-pill--subtle">
+              Enable gentle notifications
+            </button>
+            <button id="dismissPushPromptButton" type="button" class="ghost-button push-interlude__dismiss">
+              Not now
+            </button>
+          </div>
           <p id="pushStatus" class="push-status"></p>
+          <section class="push-debug" id="pushDebugPanel" hidden aria-label="Push debug">
+            <p class="push-debug__summary" id="pushDebugSummary"></p>
+            <div class="push-debug__devices" id="pushDebugDevices"></div>
+          </section>
         </section>
 
         <section class="section feed-section" aria-labelledby="checkInsTitle">

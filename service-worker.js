@@ -2,6 +2,10 @@ self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
+function getDefaultAppUrl() {
+  return new URL('./', self.location.origin).href;
+}
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
@@ -10,7 +14,7 @@ self.addEventListener('push', (event) => {
   let payload = {
     title: 'A small check-in arrived.',
     body: 'Someone was thinking of you.',
-    data: { url: 'https://kept.satori-ux.com/' },
+    data: { url: getDefaultAppUrl() },
   };
 
   try {
@@ -20,7 +24,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      data: payload.data || { url: 'https://kept.satori-ux.com/' },
+      data: payload.data || { url: getDefaultAppUrl() },
       tag: payload.tag,
       renotify: Boolean(payload.renotify),
       requireInteraction: Boolean(payload.requireInteraction),
