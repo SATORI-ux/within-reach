@@ -490,7 +490,7 @@ export function renderThoughtCounts(thoughtCounts = []) {
 
     const labelEl = document.createElement('p');
     labelEl.className = 'thought-chip__label';
-    labelEl.textContent = `${entry.display_name} thoughts`;
+    labelEl.textContent = `${entry.display_name}'s thoughts`;
 
     const valueEl = document.createElement('p');
     valueEl.className = 'thought-chip__value';
