@@ -32,6 +32,7 @@ import {
   setNoteMessage,
   setReady,
   showToast,
+  toggleReactionPicker,
   updateFeedHistoryControls,
   updateRenderedNoteReactions,
 } from './ui.js';
@@ -931,6 +932,15 @@ async function handleSubmitNote() {
 }
 
 async function handleReactionClick(event) {
+  const toggleButton = event.target.closest('[data-action="toggle-reaction-picker"]');
+  if (toggleButton) {
+    const noteId = Number(toggleButton.dataset.noteId);
+    if (noteId) {
+      toggleReactionPicker(noteId);
+    }
+    return;
+  }
+
   const button = event.target.closest('.reaction-chip');
   if (!button || !state.sessionToken || !state.visitor) return;
 

@@ -284,11 +284,25 @@ function buildReactionButton({ noteId, emoji, summary, viewerSlug }) {
   return button;
 }
 
-function renderReactionSet(reactionsEl, noteId, reactions, viewerSlug) {
+function buildReactionToggle(noteId, hasReactions, pickerOpen) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'note-card__reaction-toggle';
+  button.dataset.noteId = String(noteId);
+  button.dataset.action = 'toggle-reaction-picker';
+  button.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
+  button.textContent = hasReactions ? 'Add a small response' : 'Leave a small response';
+  return button;
+}
+
+function renderReactionSet(reactionsEl, noteId, reactions, viewerSlug, { includeEmpty = true } = {}) {
   reactionsEl.innerHTML = '';
 
   REACTIONS.forEach((emoji) => {
     const summary = reactions?.find((reaction) => reaction.reaction === emoji);
+    if (!includeEmpty && !(summary?.count > 0 || summary?.reacted_by_viewer || summary?.users?.includes(viewerSlug))) {
+      return;
+    }
     reactionsEl.appendChild(
       buildReactionButton({
         noteId,
@@ -356,8 +370,7 @@ export function applyAccent(userSlug) {
 }
 
 export function setHiddenDoorUnlocked(unlocked) {
-  const debugUnlock = new URLSearchParams(window.location.search).get('debugUnlockDoor') === 'true';
-  hiddenDoorUnlocked = IS_PRIVATE_BUILD && (Boolean(unlocked) || debugUnlock);
+  hiddenDoorUnlocked = IS_PRIVATE_BUILD && Boolean(unlocked);
 }
 
 export function bindHiddenDoor() {
@@ -449,6 +462,12 @@ export function renderCheckIns(checkIns = []) {
 }
 
 export function renderNotes(notes = [], viewerSlug) {
+  const openPickers = new Set(
+    Array.from(notesFeedEl.querySelectorAll('[data-note-id][data-reaction-picker-open="true"]')).map((card) =>
+      card.dataset.noteId
+    )
+  );
+
   notesFeedEl.innerHTML = '';
 
   if (!notes.length) {
@@ -463,6 +482,8 @@ export function renderNotes(notes = [], viewerSlug) {
     const metaEl = fragment.querySelector('.note-card__meta');
     const contentEl = fragment.querySelector('.note-card__content');
     const reactionsEl = fragment.querySelector('.note-card__reactions');
+    const reactionToggleSlot = fragment.querySelector('.note-card__reaction-toggle');
+    const reactionPickerEl = fragment.querySelector('.note-card__reaction-picker');
 
     card.dataset.noteId = String(note.id);
     nameEl.textContent = note.display_name;
@@ -472,7 +493,18 @@ export function renderNotes(notes = [], viewerSlug) {
     const accent = note.accent_color || ACCENT_BY_USER[note.from_user_slug] || '#6e8d62';
     card.style.setProperty('--note-accent', accent);
 
-    renderReactionSet(reactionsEl, note.id, note.reactions || [], viewerSlug);
+    const pickerOpen = openPickers.has(String(note.id));
+    card.dataset.reactionPickerOpen = pickerOpen ? 'true' : 'false';
+    const reactions = note.reactions || [];
+    const hasVisibleReactions = reactions.some((reaction) => reaction.count > 0);
+
+    renderReactionSet(reactionsEl, note.id, reactions, viewerSlug, { includeEmpty: false });
+
+    const toggleButton = buildReactionToggle(note.id, hasVisibleReactions, pickerOpen);
+    reactionToggleSlot.replaceWith(toggleButton);
+
+    reactionPickerEl.hidden = !pickerOpen;
+    renderReactionSet(reactionPickerEl, note.id, reactions, viewerSlug, { includeEmpty: true });
 
     notesFeedEl.appendChild(fragment);
   });
@@ -483,9 +515,32 @@ export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
   if (!card) return;
 
   const reactionsEl = card.querySelector('.note-card__reactions');
-  if (!reactionsEl) return;
+  const reactionPickerEl = card.querySelector('.note-card__reaction-picker');
+  const toggleButton = card.querySelector('.note-card__reaction-toggle');
+  if (!reactionsEl || !reactionPickerEl || !toggleButton) return;
 
-  renderReactionSet(reactionsEl, noteId, reactions || [], viewerSlug);
+  const pickerOpen = card.dataset.reactionPickerOpen === 'true';
+  const nextReactions = reactions || [];
+  const hasVisibleReactions = nextReactions.some((reaction) => reaction.count > 0);
+
+  renderReactionSet(reactionsEl, noteId, nextReactions, viewerSlug, { includeEmpty: false });
+  renderReactionSet(reactionPickerEl, noteId, nextReactions, viewerSlug, { includeEmpty: true });
+  toggleButton.textContent = hasVisibleReactions ? 'Add a small response' : 'Leave a small response';
+  toggleButton.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
+}
+
+export function toggleReactionPicker(noteId) {
+  const card = notesFeedEl.querySelector(`[data-note-id="${noteId}"]`);
+  if (!card) return;
+
+  const picker = card.querySelector('.note-card__reaction-picker');
+  const toggleButton = card.querySelector('.note-card__reaction-toggle');
+  if (!picker || !toggleButton) return;
+
+  const nextOpen = card.dataset.reactionPickerOpen !== 'true';
+  card.dataset.reactionPickerOpen = nextOpen ? 'true' : 'false';
+  picker.hidden = !nextOpen;
+  toggleButton.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
 }
 
 export function updateFeedHistoryControls({
