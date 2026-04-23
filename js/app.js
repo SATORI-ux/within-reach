@@ -3,6 +3,7 @@ import {
   addNote,
   getFeed,
   getUrgentSignal,
+  issueDeviceSession,
   reactNote,
   resolveVisitor,
   savePushSubscription,
@@ -35,8 +36,8 @@ import {
   updateRenderedNoteReactions,
 } from './ui.js';
 
-const SESSION_KEY = 'check-in-space.tile-key';
-const SESSION_COOKIE_NAME = 'check_in_space_tile_key';
+const SESSION_KEY = 'within-reach.session-token';
+const SESSION_COOKIE_NAME = 'within_reach_session_token';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 const SECRET_DEBUG_PROGRESS_KEY = 'within-reach.debug-secret-progress';
 const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
@@ -47,42 +48,66 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[1]) : '';
 }
 
-function setTileKeyPersistence(tileKey) {
-  const normalizedKey = (tileKey || '').trim();
-  if (!normalizedKey) return;
+function setSessionPersistence(sessionToken) {
+  const normalizedToken = (sessionToken || '').trim();
+  if (!normalizedToken) return;
 
-  localStorage.setItem(SESSION_KEY, normalizedKey);
+  localStorage.setItem(SESSION_KEY, normalizedToken);
 
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(normalizedKey)}; Max-Age=${SESSION_COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(normalizedToken)}; Max-Age=${SESSION_COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
 }
 
-function clearTileKeyPersistence() {
+function clearSessionPersistence() {
   localStorage.removeItem(SESSION_KEY);
   document.cookie = `${SESSION_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
 }
 
-function getStoredTileKey() {
-  const cookieKey = getCookie(SESSION_COOKIE_NAME).trim();
-  if (cookieKey) return cookieKey;
+function getStoredSessionToken() {
+  const cookieToken = getCookie(SESSION_COOKIE_NAME).trim();
+  if (cookieToken) return cookieToken;
 
   return (localStorage.getItem(SESSION_KEY) || '').trim();
 }
 
-function getTileKey() {
+function replaceUrlParams(mutator) {
   const params = new URLSearchParams(window.location.search);
+  mutator(params);
+  const cleanSearch = params.toString();
+  const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', cleanUrl || '/');
+}
+
+async function resolveSessionToken() {
+  const params = new URLSearchParams(window.location.search);
+  const incomingSession = (params.get('session') || '').trim();
+
+  if (incomingSession) {
+    setSessionPersistence(incomingSession);
+    replaceUrlParams((nextParams) => {
+      nextParams.delete('session');
+    });
+    return incomingSession;
+  }
+
   const incomingKey = (params.get('key') || '').trim();
 
   if (incomingKey) {
-    setTileKeyPersistence(incomingKey);
-    params.delete('key');
-    const cleanSearch = params.toString();
-    const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, '', cleanUrl || '/');
-    return incomingKey;
+    const issued = await issueDeviceSession(incomingKey, 'web');
+    const sessionToken = (issued?.session_token || '').trim();
+
+    if (!sessionToken) {
+      throw new Error('Could not start this session.');
+    }
+
+    setSessionPersistence(sessionToken);
+    replaceUrlParams((nextParams) => {
+      nextParams.delete('key');
+    });
+    return sessionToken;
   }
 
-  return getStoredTileKey();
+  return getStoredSessionToken();
 }
 
 function getUrgentRoute() {
@@ -253,7 +278,7 @@ const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
 const collapseNotesButton = document.querySelector('#collapseNotesButton');
 
 const state = {
-  tileKey: '',
+  sessionToken: '',
   visitor: null,
   urgentSignal: null,
   checkIns: [],
@@ -468,10 +493,10 @@ function renderUrgentSignal(signal) {
 }
 
 async function loadUrgentRoute(route) {
-  if (!route || !state.tileKey) return;
+  if (!route || !state.sessionToken) return;
 
   try {
-    const result = await getUrgentSignal(state.tileKey, route.signalId);
+    const result = await getUrgentSignal(state.sessionToken, route.signalId);
     renderUrgentSignal(result.signal);
   } catch (error) {
     console.error(error);
@@ -525,11 +550,11 @@ async function logPushTruthMismatch() {
 }
 
 async function refreshVisitorPushTruth() {
-  if (!state.tileKey || !state.visitor) return null;
+  if (!state.sessionToken || !state.visitor) return null;
 
   try {
     const refreshedVisitor = await withTimeout(
-      resolveVisitor(state.tileKey),
+      resolveVisitor(state.sessionToken),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
@@ -546,8 +571,8 @@ async function refreshVisitorPushTruth() {
 }
 
 async function enablePushNotifications() {
-  if (!state.tileKey) {
-    throw new Error('No tile key is active for this session.');
+  if (!state.sessionToken) {
+    throw new Error('No session is active for this visit.');
   }
 
   if (!supportsPushNotifications()) {
@@ -578,7 +603,7 @@ async function enablePushNotifications() {
     });
   }
 
-  await savePushSubscription(state.tileKey, subscription);
+  await savePushSubscription(state.sessionToken, subscription);
 }
 
 function scheduleReveal() {
@@ -642,9 +667,9 @@ function closeUrgentDialog() {
 }
 
 async function refreshFeed() {
-  if (!state.tileKey) return;
+  if (!state.sessionToken) return;
 
-  const feed = await getFeed(state.tileKey, {
+  const feed = await getFeed(state.sessionToken, {
     check_ins_limit: state.feed.checkIns.limit,
     notes_limit: state.feed.notes.limit,
   });
@@ -653,7 +678,7 @@ async function refreshFeed() {
 }
 
 async function handleLoadOlderCheckIns() {
-  if (!state.tileKey) return;
+  if (!state.sessionToken) return;
   if (state.feed.checkIns.loadingOlder) return;
 
   const hasHiddenLoaded = hasCollapsedCheckInsHistory();
@@ -670,7 +695,7 @@ async function handleLoadOlderCheckIns() {
   syncFeedHistoryControls();
 
   try {
-    const feed = await getFeed(state.tileKey, {
+    const feed = await getFeed(state.sessionToken, {
       check_ins_limit: state.feed.checkIns.limit,
       check_ins_before_id: state.feed.checkIns.nextBeforeId,
       notes_limit: 1,
@@ -694,7 +719,7 @@ async function handleLoadOlderCheckIns() {
 }
 
 async function handleLoadOlderNotes() {
-  if (!state.tileKey) return;
+  if (!state.sessionToken) return;
   if (state.feed.notes.loadingOlder) return;
 
   const hasHiddenLoaded = hasCollapsedNotesHistory();
@@ -711,7 +736,7 @@ async function handleLoadOlderNotes() {
   syncFeedHistoryControls();
 
   try {
-    const feed = await getFeed(state.tileKey, {
+    const feed = await getFeed(state.sessionToken, {
       check_ins_limit: 1,
       notes_limit: state.feed.notes.limit,
       notes_before_id: state.feed.notes.nextBeforeId,
@@ -755,10 +780,10 @@ async function bootstrap() {
   bindRevealSkip();
   updateNoteCount();
 
-  state.tileKey = getTileKey();
+  state.sessionToken = await resolveSessionToken();
   const urgentRoute = getUrgentRoute();
 
-  if (!state.tileKey) {
+  if (!state.sessionToken) {
     renderMissingKeyState();
     renderCheckIns([]);
     renderNotes([], '');
@@ -772,7 +797,7 @@ async function bootstrap() {
 
   try {
     state.visitor = await withTimeout(
-      resolveVisitor(state.tileKey),
+      resolveVisitor(state.sessionToken),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
@@ -802,10 +827,10 @@ async function bootstrap() {
     console.error(error);
 
     const message = error?.message || 'Could not open this space right now.';
-    const shouldClearStoredKey = /invalid tile key/i.test(message);
+    const shouldClearStoredKey = /invalid tile key|invalid session token|not active/i.test(message);
 
     if (shouldClearStoredKey) {
-      clearTileKeyPersistence();
+      clearSessionPersistence();
       renderMissingKeyState();
       renderCheckIns([]);
       renderNotes([], '');
@@ -822,7 +847,7 @@ async function bootstrap() {
 }
 
 async function handleCheckIn() {
-  if (!state.tileKey || state.busy.checkIn) return;
+  if (!state.sessionToken || state.busy.checkIn) return;
 
   state.busy.checkIn = true;
   clearMessages();
@@ -831,7 +856,7 @@ async function handleCheckIn() {
   try {
     const debugSecretProgress = getSecretDebugProgress();
     const result = await sendCheckIn(
-      state.tileKey,
+      state.sessionToken,
       debugSecretProgress ? { debug_secret_progress: debugSecretProgress } : {}
     );
     setHiddenDoorUnlocked(result.secret_state?.unlocked);
@@ -868,7 +893,7 @@ async function handleCheckIn() {
 }
 
 async function handleSubmitNote() {
-  if (!state.tileKey || state.busy.note) return;
+  if (!state.sessionToken || state.busy.note) return;
 
   const content = noteInput.value.trim();
   if (!content) {
@@ -886,7 +911,7 @@ async function handleSubmitNote() {
   setNoteMessage('');
 
   try {
-    const result = await addNote(state.tileKey, content);
+    const result = await addNote(state.sessionToken, content);
     if (result.note) {
       state.notes = [result.note, ...state.notes];
 
@@ -911,7 +936,7 @@ async function handleSubmitNote() {
 
 async function handleReactionClick(event) {
   const button = event.target.closest('.reaction-chip');
-  if (!button || !state.tileKey || !state.visitor) return;
+  if (!button || !state.sessionToken || !state.visitor) return;
 
   const noteId = Number(button.dataset.noteId);
   const reaction = button.dataset.reaction;
@@ -924,7 +949,7 @@ async function handleReactionClick(event) {
   setActionMessage('');
 
   try {
-    const result = await reactNote(state.tileKey, noteId, reaction);
+    const result = await reactNote(state.sessionToken, noteId, reaction);
     const noteIndex = state.notes.findIndex((note) => note.id === noteId);
     if (noteIndex >= 0) {
       state.notes[noteIndex] = {
@@ -952,7 +977,7 @@ async function handleReactionClick(event) {
 }
 
 async function handleUrgentConfirm() {
-  if (!state.tileKey || state.busy.urgent) return;
+  if (!state.sessionToken || state.busy.urgent) return;
 
   state.busy.urgent = true;
   confirmUrgentButton.disabled = true;
@@ -962,7 +987,7 @@ async function handleUrgentConfirm() {
     const preferredResponse =
       urgentPreferredResponse?.querySelector('input[name="preferredResponse"]:checked')?.value || 'either';
 
-    await sendUrgentSignal(state.tileKey, preferredResponse);
+    await sendUrgentSignal(state.sessionToken, preferredResponse);
     closeUrgentDialog();
     setActionMessage('Signal sent.');
     showToast('Signal sent.', state.visitor?.accent_color);
@@ -977,14 +1002,14 @@ async function handleUrgentConfirm() {
 }
 
 async function handleUrgentAck() {
-  if (!state.tileKey || !state.urgentSignal || state.busy.urgentAck) return;
+  if (!state.sessionToken || !state.urgentSignal || state.busy.urgentAck) return;
 
   state.busy.urgentAck = true;
   ackUrgentButton.disabled = true;
   setUrgentStateMessage('');
 
   try {
-    const result = await acknowledgeUrgentSignal(state.tileKey, state.urgentSignal.signal_id);
+    const result = await acknowledgeUrgentSignal(state.sessionToken, state.urgentSignal.signal_id);
     state.urgentSignal = {
       ...state.urgentSignal,
       ...result.signal,

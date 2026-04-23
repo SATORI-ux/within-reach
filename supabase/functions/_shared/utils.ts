@@ -19,6 +19,8 @@ export type VisitorRow = {
 
 type DeviceSessionRow = {
   user_slug: string;
+  session_token?: string;
+  label?: string | null;
   is_active: boolean;
 };
 
@@ -218,6 +220,36 @@ export async function getTileKeyForUser(
   }
 
   return data?.tile_key ?? null;
+}
+
+function generateSessionToken() {
+  return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+}
+
+export async function issueDeviceSessionForUser(
+  client: SupabaseClient,
+  userSlug: string,
+  label: string | null = null,
+): Promise<string> {
+  const sessionToken = generateSessionToken();
+  const now = new Date().toISOString();
+
+  const { error } = await client
+    .from('device_sessions')
+    .insert({
+      user_slug: userSlug,
+      session_token: sessionToken,
+      label,
+      is_active: true,
+      created_at: now,
+      last_seen_at: now,
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return sessionToken;
 }
 
 function ensureVapidConfigured() {

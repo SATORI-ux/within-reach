@@ -21,3 +21,9 @@ verify_jwt = false
 
 [functions.get-feed]
 verify_jwt = false
+
+[functions.issue-device-session]
+verify_jwt = false
+
+[functions.resolve-device-session]
+verify_jwt = false

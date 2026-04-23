@@ -1,8 +1,8 @@
 import {
   getCounterpartSlug,
   getAdminClient,
-  getTileKeyForUser,
   handleOptions,
+  issueDeviceSessionForUser,
   json,
   readJson,
   requirePost,
@@ -22,9 +22,9 @@ function normalizePreferredResponse(value: string | undefined): PreferredRespons
   return 'either';
 }
 
-function buildUrgentUrl(basePath: string, recipientKey: string, signalId: string): string {
+function buildUrgentUrl(basePath: string, recipientSessionToken: string, signalId: string): string {
   const url = new URL(basePath, 'https://kept.satori-ux.com');
-  url.searchParams.set('key', recipientKey);
+  url.searchParams.set('session', recipientSessionToken);
   url.searchParams.set('urgent', '1');
   url.searchParams.set('signal', signalId);
 
@@ -49,10 +49,7 @@ Deno.serve(async (req) => {
       throw new Error('No counterpart is configured for this signal.');
     }
 
-    const recipientKey = await getTileKeyForUser(client, counterpartSlug);
-    if (!recipientKey) {
-      throw new Error('The recipient tile key is not active.');
-    }
+    const recipientSessionToken = await issueDeviceSessionForUser(client, counterpartSlug, 'urgent-link');
 
     const { data: created, error: insertError } = await client
       .from('urgent_signals')
@@ -70,7 +67,7 @@ Deno.serve(async (req) => {
     }
 
     const appPath = Deno.env.get('WITHIN_REACH_APP_PATH') || 'https://kept.satori-ux.com/';
-    const urgentUrl = buildUrgentUrl(appPath, recipientKey, created.signal_id);
+    const urgentUrl = buildUrgentUrl(appPath, recipientSessionToken, created.signal_id);
 
     const pushNotification = await sendPushToCounterpart(
       client,

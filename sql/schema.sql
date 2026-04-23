@@ -69,6 +69,16 @@ create table if not exists public.private_pages (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.device_sessions (
+  id bigint generated always as identity primary key,
+  user_slug text not null references public.tile_keys(user_slug) on update cascade,
+  session_token text not null unique,
+  label text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
 create or replace view public.check_in_feed as
 select
   c.id,
@@ -104,6 +114,8 @@ create index if not exists idx_urgent_signals_signal_id on public.urgent_signals
 create index if not exists idx_urgent_signals_status on public.urgent_signals (status);
 create index if not exists idx_secret_unlocks_unlocked_at on public.secret_unlocks (unlocked_at desc);
 create index if not exists idx_private_pages_updated_at on public.private_pages (updated_at desc);
+create index if not exists idx_device_sessions_user_slug on public.device_sessions (user_slug);
+create index if not exists idx_device_sessions_last_seen_at on public.device_sessions (last_seen_at desc);
 
 alter table public.tile_keys enable row level security;
 alter table public.check_ins enable row level security;
@@ -113,3 +125,4 @@ alter table public.urgent_signals enable row level security;
 alter table public.urgent_contacts enable row level security;
 alter table public.secret_unlocks enable row level security;
 alter table public.private_pages enable row level security;
+alter table public.device_sessions enable row level security;

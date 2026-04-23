@@ -405,6 +405,12 @@ verify_jwt = false
 [functions.get-private-page]
 verify_jwt = false
 
+[functions.issue-device-session]
+verify_jwt = false
+
+[functions.resolve-device-session]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

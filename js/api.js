@@ -46,6 +46,13 @@ export function resolveVisitor(tileKey) {
   return callFunction('resolve-visitor', { tile_key: tileKey });
 }
 
+export function issueDeviceSession(tileKey, label = 'web') {
+  return callFunction('issue-device-session', {
+    key: tileKey,
+    label,
+  });
+}
+
 export function getFeed(tileKey, options = {}) {
   return callFunction('get-feed', {
     tile_key: tileKey,

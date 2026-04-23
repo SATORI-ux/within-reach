@@ -1,8 +1,8 @@
-import { getPrivatePage } from './api.js';
+import { getPrivatePage, issueDeviceSession } from './api.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
-const SESSION_KEY = 'check-in-space.tile-key';
-const SESSION_COOKIE_NAME = 'check_in_space_tile_key';
+const SESSION_KEY = 'within-reach.session-token';
+const SESSION_COOKIE_NAME = 'within_reach_session_token';
 
 const statusCard = document.querySelector('#statusCard');
 const statusTitle = document.querySelector('#statusTitle');
@@ -42,36 +42,60 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[1]) : '';
 }
 
-function setTileKeyPersistence(tileKey) {
-  const normalizedKey = (tileKey || '').trim();
-  if (!normalizedKey) return;
+function setSessionPersistence(sessionToken) {
+  const normalizedToken = (sessionToken || '').trim();
+  if (!normalizedToken) return;
 
-  localStorage.setItem(SESSION_KEY, normalizedKey);
+  localStorage.setItem(SESSION_KEY, normalizedToken);
 
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(normalizedKey)}; Max-Age=${60 * 60 * 24 * 90}; Path=/; SameSite=Lax${secure}`;
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(normalizedToken)}; Max-Age=${60 * 60 * 24 * 90}; Path=/; SameSite=Lax${secure}`;
 }
 
-function getStoredTileKey() {
-  const cookieKey = getCookie(SESSION_COOKIE_NAME).trim();
-  if (cookieKey) return cookieKey;
+function getStoredSessionToken() {
+  const cookieToken = getCookie(SESSION_COOKIE_NAME).trim();
+  if (cookieToken) return cookieToken;
   return (localStorage.getItem(SESSION_KEY) || '').trim();
 }
 
-function getTileKey() {
+function replaceUrlParams(mutator) {
   const params = new URLSearchParams(window.location.search);
+  mutator(params);
+  const cleanSearch = params.toString();
+  const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', cleanUrl || '/');
+}
+
+async function resolveSessionToken() {
+  const params = new URLSearchParams(window.location.search);
+  const incomingSession = (params.get('session') || '').trim();
+
+  if (incomingSession) {
+    setSessionPersistence(incomingSession);
+    replaceUrlParams((nextParams) => {
+      nextParams.delete('session');
+    });
+    return incomingSession;
+  }
+
   const incomingKey = (params.get('key') || '').trim();
 
   if (incomingKey) {
-    setTileKeyPersistence(incomingKey);
-    params.delete('key');
-    const cleanSearch = params.toString();
-    const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, '', cleanUrl || '/');
-    return incomingKey;
+    const issued = await issueDeviceSession(incomingKey, 'private-page');
+    const sessionToken = (issued?.session_token || '').trim();
+
+    if (!sessionToken) {
+      throw new Error('Could not start this session.');
+    }
+
+    setSessionPersistence(sessionToken);
+    replaceUrlParams((nextParams) => {
+      nextParams.delete('key');
+    });
+    return sessionToken;
   }
 
-  return getStoredTileKey();
+  return getStoredSessionToken();
 }
 
 function setStatus(title, body) {
@@ -194,15 +218,15 @@ function renderPage(content) {
 async function bootstrap() {
   setDocumentTheme(document.documentElement.dataset.theme);
   initializeThemeToggle(themeToggle);
-  const tileKey = getTileKey();
+  const sessionToken = await resolveSessionToken();
 
-  if (!tileKey) {
-    setStatus('This page needs your tile key.', 'Open the shared space first, then return through the hidden door.');
+  if (!sessionToken) {
+    setStatus('This page needs your session.', 'Open the shared space first, then return through the hidden door.');
     return;
   }
 
   try {
-    const result = await getPrivatePage(tileKey);
+    const result = await getPrivatePage(sessionToken);
 
     if (!result.unlocked) {
       setStatus('This doorway is still closed.', 'The private page becomes available after the hidden door has been unlocked.');
