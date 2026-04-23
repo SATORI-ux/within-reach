@@ -352,6 +352,10 @@ body.content-revealed .main-content {
   margin-top: 1.2rem;
 }
 
+.quick-actions {
+  padding-bottom: 0.95rem;
+}
+
 .action-card,
 .ghost-button,
 .solid-button {
