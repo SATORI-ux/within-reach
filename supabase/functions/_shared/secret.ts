@@ -33,11 +33,16 @@ type SecretDebugProgress = {
 };
 
 const DEFAULT_SECRET_TARGET_USER_SLUG = 'jeszi';
+const DEFAULT_SECRET_ALWAYS_UNLOCK_USER_SLUG = 'joey';
 const DEFAULT_SECRET_THOUGHT_TARGET = 150;
 const DEFAULT_SECRET_MINIMUM_DAYS = 90;
 
 function getSecretTargetUserSlug(): string {
   return Deno.env.get('SECRET_TARGET_USER_SLUG') || DEFAULT_SECRET_TARGET_USER_SLUG;
+}
+
+function getSecretAlwaysUnlockUserSlug(): string {
+  return Deno.env.get('SECRET_ALWAYS_UNLOCK_USER_SLUG') ?? DEFAULT_SECRET_ALWAYS_UNLOCK_USER_SLUG;
 }
 
 function getSecretThoughtTarget(): number {
@@ -70,6 +75,13 @@ export async function getSecretState(
   client: SupabaseClient,
   userSlug: string,
 ): Promise<SecretState> {
+  if (userSlug === getSecretAlwaysUnlockUserSlug()) {
+    return {
+      unlocked: true,
+      unlocked_at: null,
+    };
+  }
+
   if (userSlug !== getSecretTargetUserSlug()) {
     return {
       unlocked: false,
