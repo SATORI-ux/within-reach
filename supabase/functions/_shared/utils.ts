@@ -1,12 +1,93 @@
 import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push';
 
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+function getConfiguredAllowedOrigins(): string[] {
+  return [
+    Deno.env.get('WITHIN_REACH_APP_URL'),
+    Deno.env.get('WITHIN_REACH_ALLOWED_ORIGINS'),
+  ]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => {
+      try {
+        return new URL(value).origin;
+      } catch (_) {
+        return value.replace(/\/$/, '');
+      }
+    });
+}
+
+function isAllowedOrigin(origin: string): boolean {
+  const allowedOrigins = new Set([
+    ...DEFAULT_ALLOWED_ORIGINS,
+    ...getConfiguredAllowedOrigins(),
+  ]);
+
+  return allowedOrigins.has(origin);
+}
+
+export function getCorsHeaders(req?: Request): Record<string, string> {
+  const origin = req?.headers.get('origin') || '';
+  const allowOrigin = origin && isAllowedOrigin(origin)
+    ? origin
+    : getConfiguredAllowedOrigins()[0] || DEFAULT_ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+  };
+}
+
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
+  ...getCorsHeaders(),
 };
+
+export type JsonOptions = {
+  req?: Request;
+};
+
+const RATE_LIMIT_MESSAGES: Record<string, string> = {
+  check_in: 'Give that little signal a moment before sending another.',
+  note: 'Give the note a moment before sending another.',
+  urgent: 'Give that private signal a little room before sending another.',
+};
+
+export async function assertWriteCooldown(
+  client: SupabaseClient,
+  table: string,
+  userSlug: string,
+  seconds: number,
+  label: keyof typeof RATE_LIMIT_MESSAGES,
+): Promise<void> {
+  const since = new Date(Date.now() - seconds * 1000).toISOString();
+  const { count, error } = await client
+    .from(table)
+    .select('*', { count: 'exact', head: true })
+    .eq('from_user_slug', userSlug)
+    .gte('created_at', since);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if ((count ?? 0) > 0) {
+    throw new Error(RATE_LIMIT_MESSAGES[label] || 'Give that a moment before trying again.');
+  }
+}
+
+export function getPrivateFeedStateEnabled(): boolean {
+  return Deno.env.get('WITHIN_REACH_PRIVATE_FEED_STATE_ENABLED') === 'true';
+}
 
 export const ALLOWED_REACTIONS = ['❤️', '✨', '🥹', '🌙', '🐞', '🌸'];
 
@@ -31,6 +112,7 @@ type DeviceSessionRow = {
   label?: string | null;
   is_active: boolean;
   last_seen_at?: string | null;
+  expires_at?: string | null;
 };
 
 type PushSendResult = {
@@ -53,16 +135,16 @@ let vapidConfigured = false;
 const APP_BASE_URL_ENV = 'WITHIN_REACH_APP_URL';
 const LEGACY_APP_BASE_URL_ENV = 'WITHIN_REACH_APP_PATH';
 
-export function json(data: unknown, status = 200): Response {
+export function json(data: unknown, status = 200, options: JsonOptions = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: corsHeaders,
+    headers: getCorsHeaders(options.req),
   });
 }
 
 export function handleOptions(req: Request): Response | null {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(req) });
   }
 
   return null;
@@ -70,7 +152,7 @@ export function handleOptions(req: Request): Response | null {
 
 export function requirePost(req: Request): Response | null {
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed.' }, 405);
+    return json({ error: 'Method not allowed.' }, 405, { req });
   }
 
   return null;
@@ -224,7 +306,7 @@ export async function getActiveDeviceSession(
 ): Promise<DeviceSessionRow | null> {
   const { data: session, error: sessionError } = await client
     .from('device_sessions')
-    .select('id, user_slug, label, is_active, last_seen_at')
+    .select('id, user_slug, label, is_active, last_seen_at, expires_at')
     .eq('session_token', sessionToken)
     .maybeSingle<DeviceSessionRow>();
 
@@ -233,6 +315,14 @@ export async function getActiveDeviceSession(
   }
 
   if (!session || !session.is_active) {
+    return null;
+  }
+
+  if (session.expires_at && new Date(session.expires_at) <= new Date()) {
+    await client
+      .from('device_sessions')
+      .update({ is_active: false })
+      .eq('id', session.id);
     return null;
   }
 
@@ -311,9 +401,13 @@ export async function issueDeviceSessionForUser(
   client: SupabaseClient,
   userSlug: string,
   label: string | null = null,
+  maxAgeSeconds: number | null = null,
 ): Promise<string> {
   const sessionToken = generateSessionToken();
   const now = new Date().toISOString();
+  const expiresAt = maxAgeSeconds && maxAgeSeconds > 0
+    ? new Date(Date.now() + maxAgeSeconds * 1000).toISOString()
+    : null;
 
   const { error } = await client
     .from('device_sessions')
@@ -324,6 +418,7 @@ export async function issueDeviceSessionForUser(
       is_active: true,
       created_at: now,
       last_seen_at: now,
+      expires_at: expiresAt,
     });
 
   if (error) {

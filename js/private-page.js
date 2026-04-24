@@ -55,6 +55,14 @@ const emptyKeptPageContent = {
   closing_line: 'Still here.',
 };
 
+const ALLOWED_VIDEO_EMBED_HOSTS = new Set([
+  'www.youtube.com',
+  'youtube.com',
+  'www.youtube-nocookie.com',
+  'youtube-nocookie.com',
+  'player.vimeo.com',
+]);
+
 function getCookie(name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = document.cookie.match(new RegExp(`(?:^|; )${escapedName}=([^;]*)`));
@@ -152,6 +160,37 @@ function appendParagraphs(container, paragraphs = []) {
     });
 }
 
+function getAllowedEmbedUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  try {
+    const url = new URL(raw, window.location.href);
+    return ALLOWED_VIDEO_EMBED_HOSTS.has(url.hostname) ? url.href : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function getEmbedSrcFromHtml(embedHtml) {
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(String(embedHtml || ''), 'text/html');
+  const iframe = parsed.querySelector('iframe[src]');
+  return getAllowedEmbedUrl(iframe?.getAttribute('src'));
+}
+
+function createVideoEmbed(src) {
+  const iframe = document.createElement('iframe');
+  iframe.src = src;
+  iframe.title = 'Kept video';
+  iframe.loading = 'lazy';
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+  iframe.allowFullscreen = true;
+  iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+  return iframe;
+}
+
 function renderMeaningCards(cards = []) {
   meaningCards.innerHTML = '';
 
@@ -216,8 +255,12 @@ function renderVideo(video) {
     media.playsInline = true;
     if (video.poster) media.poster = video.poster;
     videoSlot.appendChild(media);
+  } else if (video?.embed_url) {
+    const src = getAllowedEmbedUrl(video.embed_url);
+    if (src) videoSlot.appendChild(createVideoEmbed(src));
   } else if (video?.embed_html) {
-    videoSlot.innerHTML = video.embed_html;
+    const src = getEmbedSrcFromHtml(video.embed_html);
+    if (src) videoSlot.appendChild(createVideoEmbed(src));
   } else if (video?.placeholder) {
     const paragraph = document.createElement('p');
     paragraph.textContent = video.placeholder;
@@ -265,7 +308,7 @@ function renderPage(content, thoughtCounts = []) {
     appendParagraphs(meaningBody, content.meaning?.paragraphs || []);
   }
 
-  const hasVideo = Boolean(content.video?.src || content.video?.embed_html || content.video?.placeholder);
+  const hasVideo = Boolean(content.video?.src || content.video?.embed_url || content.video?.embed_html || content.video?.placeholder);
   videoSection.hidden = !hasVideo;
   if (hasVideo) {
     videoLabel.textContent = content.video?.label || 'A moving piece';

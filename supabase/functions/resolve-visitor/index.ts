@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
       accent_color: visitor.accent_color,
       push_enabled,
       push_debug,
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to resolve visitor.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to resolve visitor.' }, 400, { req });
   }
 });

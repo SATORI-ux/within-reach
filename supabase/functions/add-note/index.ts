@@ -1,5 +1,6 @@
 import {
   getAdminClient,
+  assertWriteCooldown,
   handleOptions,
   json,
   readJson,
@@ -34,6 +35,8 @@ Deno.serve(async (req) => {
       throw new Error('Keep notes at 300 characters or fewer.');
     }
 
+    await assertWriteCooldown(client, 'notes', visitor.user_slug, 10, 'note');
+
     const { data: note, error } = await client
       .from('notes')
       .insert({
@@ -54,8 +57,8 @@ Deno.serve(async (req) => {
         accent_color: visitor.accent_color,
         reactions: [],
       },
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to add note.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to add note.' }, 400, { req });
   }
 });

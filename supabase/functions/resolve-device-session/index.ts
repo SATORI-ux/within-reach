@@ -1,17 +1,52 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+]
+
+function getConfiguredAllowedOrigins(): string[] {
+  return [
+    Deno.env.get('WITHIN_REACH_APP_URL'),
+    Deno.env.get('WITHIN_REACH_ALLOWED_ORIGINS'),
+  ]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => {
+      try {
+        return new URL(value).origin
+      } catch (_) {
+        return value.replace(/\/$/, '')
+      }
+    })
 }
 
-function json(data: unknown, status = 200) {
+function getCorsHeaders(req?: Request): Record<string, string> {
+  const allowedOrigins = new Set([
+    ...DEFAULT_ALLOWED_ORIGINS,
+    ...getConfiguredAllowedOrigins(),
+  ])
+  const origin = req?.headers.get('origin') || ''
+  const allowOrigin = origin && allowedOrigins.has(origin)
+    ? origin
+    : getConfiguredAllowedOrigins()[0] || DEFAULT_ALLOWED_ORIGINS[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
+}
+
+function json(data: unknown, status = 200, req?: Request) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      ...corsHeaders,
+      ...getCorsHeaders(req),
       'Content-Type': 'application/json',
     },
   })
@@ -19,18 +54,18 @@ function json(data: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed.' }, 405)
+    return json({ error: 'Method not allowed.' }, 405, req)
   }
 
   try {
     const { session_token } = await req.json()
 
     if (!session_token || typeof session_token !== 'string') {
-      return json({ error: 'Missing session token.' }, 400)
+      return json({ error: 'Missing session token.' }, 400, req)
     }
 
     const supabase = createClient(
@@ -40,13 +75,22 @@ Deno.serve(async (req) => {
 
     const { data: session, error: sessionError } = await supabase
       .from('device_sessions')
-      .select('id, user_slug')
+      .select('id, user_slug, expires_at')
       .eq('session_token', session_token)
       .eq('is_active', true)
       .single()
 
     if (sessionError || !session) {
-      return json({ error: 'Invalid session token.' }, 401)
+      return json({ error: 'Invalid session token.' }, 401, req)
+    }
+
+    if (session.expires_at && new Date(session.expires_at) <= new Date()) {
+      await supabase
+        .from('device_sessions')
+        .update({ is_active: false })
+        .eq('id', session.id)
+
+      return json({ error: 'Invalid session token.' }, 401, req)
     }
 
     const { data: tile, error: tileError } = await supabase
@@ -57,7 +101,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (tileError || !tile) {
-      return json({ error: 'Could not resolve session user.' }, 404)
+      return json({ error: 'Could not resolve session user.' }, 404, req)
     }
 
     await supabase
@@ -70,8 +114,8 @@ Deno.serve(async (req) => {
       user_slug: tile.user_slug,
       display_name: tile.display_name,
       accent_color: tile.accent_color,
-    })
+    }, 200, req)
   } catch (error) {
-    return json({ error: String(error) }, 500)
+    return json({ error: String(error) }, 500, req)
   }
 })

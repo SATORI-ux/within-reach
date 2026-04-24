@@ -2,6 +2,7 @@ import {
   getAdminClient,
   getThoughtCounts,
   getReactionsSummary,
+  getPrivateFeedStateEnabled,
   handleOptions,
   json,
   readJson,
@@ -83,6 +84,7 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
+    const includePrivateFeedState = getPrivateFeedStateEnabled();
 
     const checkInsLimit = normalizeLimit(body.check_ins_limit, DEFAULT_CHECK_INS_LIMIT, MAX_CHECK_INS_LIMIT);
     const notesLimit = normalizeLimit(body.notes_limit, DEFAULT_NOTES_LIMIT, MAX_NOTES_LIMIT);
@@ -142,14 +144,14 @@ Deno.serve(async (req) => {
         display_name: visitor.display_name,
         accent_color: visitor.accent_color,
       },
-      thought_counts: await getThoughtCounts(client),
-      secret_state: await getSecretState(client, visitor.user_slug),
+      thought_counts: includePrivateFeedState ? await getThoughtCounts(client) : [],
+      secret_state: includePrivateFeedState ? await getSecretState(client, visitor.user_slug) : null,
       check_ins: checkIns,
       check_ins_page: checkInsPage,
       notes: withNoteReactions(notes, reactionMap),
       notes_page: notesPage,
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to read feed.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to read feed.' }, 400, { req });
   }
 });

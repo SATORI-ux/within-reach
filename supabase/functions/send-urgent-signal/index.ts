@@ -2,6 +2,7 @@ import {
   getCounterpartSlug,
   getAdminClient,
   getAppBaseUrl,
+  assertWriteCooldown,
   handleOptions,
   issueDeviceSessionForUser,
   json,
@@ -17,6 +18,8 @@ type Payload = {
 };
 
 type PreferredResponse = 'call' | 'text' | 'either';
+const URGENT_LINK_SESSION_TTL_SECONDS = 60 * 60 * 2;
+const URGENT_SIGNAL_COOLDOWN_SECONDS = 60 * 2;
 
 function normalizePreferredResponse(value: string | undefined): PreferredResponse {
   if (value === 'call' || value === 'text' || value === 'either') return value;
@@ -50,7 +53,20 @@ Deno.serve(async (req) => {
       throw new Error('No counterpart is configured for this signal.');
     }
 
-    const recipientSessionToken = await issueDeviceSessionForUser(client, counterpartSlug, 'urgent-link');
+    await assertWriteCooldown(
+      client,
+      'urgent_signals',
+      visitor.user_slug,
+      URGENT_SIGNAL_COOLDOWN_SECONDS,
+      'urgent',
+    );
+
+    const recipientSessionToken = await issueDeviceSessionForUser(
+      client,
+      counterpartSlug,
+      'urgent-link',
+      URGENT_LINK_SESSION_TTL_SECONDS,
+    );
 
     const { data: created, error: insertError } = await client
       .from('urgent_signals')
@@ -126,8 +142,8 @@ Deno.serve(async (req) => {
           attempted: pushNotification.attempted,
         },
       },
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to send urgent signal.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to send urgent signal.' }, 400, { req });
   }
 });

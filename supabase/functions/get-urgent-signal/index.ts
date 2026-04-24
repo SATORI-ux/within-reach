@@ -95,8 +95,8 @@ Deno.serve(async (req) => {
         acknowledged_by: signal.acknowledged_by,
         contact_phone: contactPhone,
       },
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to read urgent signal.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to read urgent signal.' }, 400, { req });
   }
 });

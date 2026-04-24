@@ -76,7 +76,8 @@ create table if not exists public.device_sessions (
   label text,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
-  last_seen_at timestamptz not null default now()
+  last_seen_at timestamptz not null default now(),
+  expires_at timestamptz
 );
 
 create table if not exists public.push_subscriptions (
@@ -96,6 +97,9 @@ alter table if exists public.push_subscriptions
 
 alter table if exists public.push_subscriptions
   add column if not exists device_label text;
+
+alter table if exists public.device_sessions
+  add column if not exists expires_at timestamptz;
 
 create or replace view public.check_in_feed as
 select
@@ -134,6 +138,7 @@ create index if not exists idx_secret_unlocks_unlocked_at on public.secret_unloc
 create index if not exists idx_private_pages_updated_at on public.private_pages (updated_at desc);
 create index if not exists idx_device_sessions_user_slug on public.device_sessions (user_slug);
 create index if not exists idx_device_sessions_last_seen_at on public.device_sessions (last_seen_at desc);
+create index if not exists idx_device_sessions_expires_at on public.device_sessions (expires_at);
 create index if not exists idx_push_subscriptions_user_slug on public.push_subscriptions (user_slug);
 create index if not exists idx_push_subscriptions_device_session_id on public.push_subscriptions (device_session_id);
 

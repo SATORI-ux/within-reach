@@ -80,6 +80,12 @@ Set the app base URL once for Edge Functions so push notifications and urgent li
 npx supabase secrets set WITHIN_REACH_APP_URL=https://kept.satori-ux.com/
 ```
 
+Set allowed browser origins for Edge Function responses. Include localhost while developing against deployed functions:
+
+```bash
+npx supabase secrets set WITHIN_REACH_ALLOWED_ORIGINS=https://kept.satori-ux.com,http://localhost:5173,http://127.0.0.1:5173
+```
+
 Deploy changed functions with the Supabase CLI, for example:
 
 ```bash

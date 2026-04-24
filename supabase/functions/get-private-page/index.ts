@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         updated_at: null,
         content: null,
         thought_counts: [],
-      });
+      }, 200, { req });
     }
 
     const { data, error } = await client
@@ -63,11 +63,12 @@ Deno.serve(async (req) => {
       updated_at: data?.updated_at ?? null,
       content: data?.content ?? null,
       thought_counts: await getThoughtCounts(client),
-    });
+    }, 200, { req });
   } catch (error) {
     return json(
       { error: error instanceof Error ? error.message : 'Unable to read private page.' },
       400,
+      { req },
     );
   }
 });

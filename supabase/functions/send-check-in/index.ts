@@ -1,6 +1,8 @@
 import {
   getAdminClient,
   getThoughtCounts,
+  assertWriteCooldown,
+  getPrivateFeedStateEnabled,
   handleOptions,
   json,
   readJson,
@@ -29,6 +31,9 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
+    const includePrivateFeedState = getPrivateFeedStateEnabled();
+
+    await assertWriteCooldown(client, 'check_ins', visitor.user_slug, 15, 'check_in');
 
     const notification = await sendPushToCounterpart(
       client,
@@ -71,7 +76,7 @@ Deno.serve(async (req) => {
         client,
         visitor.user_slug,
         created.created_at,
-        body.debug_secret_progress,
+        includePrivateFeedState ? body.debug_secret_progress : undefined,
       );
     } catch (secretError) {
       console.error('Secret unlock update failed', {
@@ -81,9 +86,9 @@ Deno.serve(async (req) => {
     }
 
     return json({
-      total_count: count ?? 0,
-      thought_counts: await getThoughtCounts(client),
-      secret_state: secretState,
+      total_count: includePrivateFeedState ? count ?? 0 : null,
+      thought_counts: includePrivateFeedState ? await getThoughtCounts(client) : [],
+      secret_state: includePrivateFeedState ? secretState : null,
       check_in: {
         id: created.id,
         from_user_slug: created.from_user_slug,
@@ -98,8 +103,8 @@ Deno.serve(async (req) => {
         failed: notification.failed,
         attempted: notification.attempted,
       },
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to send check-in.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to send check-in.' }, 400, { req });
   }
 });

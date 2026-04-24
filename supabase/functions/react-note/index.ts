@@ -96,8 +96,8 @@ Deno.serve(async (req) => {
       note_id: noteId,
       action,
       reactions: reactionMap.get(noteId) ?? [],
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to react to note.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to react to note.' }, 400, { req });
   }
 });

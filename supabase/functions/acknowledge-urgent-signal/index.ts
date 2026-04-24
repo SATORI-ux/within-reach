@@ -67,8 +67,8 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       signal: updated,
-    });
+    }, 200, { req });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : 'Unable to acknowledge urgent signal.' }, 400);
+    return json({ error: error instanceof Error ? error.message : 'Unable to acknowledge urgent signal.' }, 400, { req });
   }
 });
