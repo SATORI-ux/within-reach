@@ -281,7 +281,8 @@ function getDebugThoughtToastAppendage(result, debugSecretProgress) {
 
   const count = Number.isFinite(debugCount) ? debugCount : 0;
   const noun = count === 1 ? 'thought' : 'thoughts';
-  return ` DEBUG: ${count} ${noun}.`;
+  const reason = debugState?.reason ? `, ${debugState.reason}` : '';
+  return ` DEBUG: ${count} ${noun}${reason}.`;
 }
 
 function updateSecretDebugProgress(result, debugSecretProgress) {

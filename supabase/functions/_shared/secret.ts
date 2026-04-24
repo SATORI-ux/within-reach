@@ -135,6 +135,23 @@ function getSecretSoftReveal(progress: ThoughtProgress, thoughtTarget: number): 
   };
 }
 
+async function getPersistedSecretUnlock(
+  client: SupabaseClient,
+  userSlug: string,
+): Promise<Pick<SecretUnlockRow, 'unlocked_at'> | null> {
+  const { data, error } = await client
+    .from('secret_unlocks')
+    .select('unlocked_at')
+    .eq('user_slug', userSlug)
+    .maybeSingle<Pick<SecretUnlockRow, 'unlocked_at'>>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? null;
+}
+
 export async function getSecretState(
   client: SupabaseClient,
   userSlug: string,
@@ -156,6 +173,16 @@ export async function getSecretState(
   const thoughtTarget = getSecretThoughtTarget();
   const progress = await getThoughtProgress(client, userSlug);
   const softReveal = getSecretSoftReveal(progress, thoughtTarget);
+  const persistedUnlock = await getPersistedSecretUnlock(client, userSlug);
+
+  if (persistedUnlock?.unlocked_at) {
+    return {
+      unlocked: true,
+      unlocked_at: persistedUnlock.unlocked_at,
+      soft_reveal: softReveal,
+    };
+  }
+
   const unlockedByThresholds = hasMetSecretThresholds(
     progress,
     thoughtTarget,
@@ -170,19 +197,9 @@ export async function getSecretState(
     };
   }
 
-  const { data, error } = await client
-    .from('secret_unlocks')
-    .select('unlocked_at')
-    .eq('user_slug', userSlug)
-    .maybeSingle<Pick<SecretUnlockRow, 'unlocked_at'>>();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
   return {
     unlocked: true,
-    unlocked_at: data?.unlocked_at ?? null,
+    unlocked_at: null,
     soft_reveal: softReveal,
   };
 }
