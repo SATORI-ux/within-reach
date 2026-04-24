@@ -21,10 +21,16 @@ type SecretSoftReveal = {
   tagline: string;
 };
 
+type SecretUnlockNotice = {
+  active: boolean;
+  id: string;
+};
+
 export type SecretState = {
   unlocked: boolean;
   unlocked_at: string | null;
   soft_reveal?: SecretSoftReveal;
+  unlock_notice?: SecretUnlockNotice;
   debug?: {
     requested: boolean;
     enabled: boolean;
@@ -135,6 +141,13 @@ function getSecretSoftReveal(progress: ThoughtProgress, thoughtTarget: number): 
   };
 }
 
+function getSecretUnlockNotice(id: string): SecretUnlockNotice {
+  return {
+    active: true,
+    id,
+  };
+}
+
 async function getPersistedSecretUnlock(
   client: SupabaseClient,
   userSlug: string,
@@ -180,6 +193,7 @@ export async function getSecretState(
       unlocked: true,
       unlocked_at: persistedUnlock.unlocked_at,
       soft_reveal: softReveal,
+      unlock_notice: getSecretUnlockNotice(`persisted:${persistedUnlock.unlocked_at}`),
     };
   }
 
@@ -201,6 +215,7 @@ export async function getSecretState(
     unlocked: true,
     unlocked_at: null,
     soft_reveal: softReveal,
+    unlock_notice: getSecretUnlockNotice(`threshold:${thoughtTarget}:${getSecretMinimumDays()}`),
   };
 }
 
@@ -330,6 +345,9 @@ export async function updateSecretUnlockAfterThought(
         active: true,
         tagline: SECRET_SOFT_REVEAL_TAGLINE,
       },
+      unlock_notice: unlocked?.unlocked_at
+        ? getSecretUnlockNotice(`persisted:${unlocked.unlocked_at}`)
+        : undefined,
     },
     'unlocked',
     {

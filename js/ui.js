@@ -393,21 +393,21 @@ export function setHiddenDoorUnlocked(unlocked) {
   hiddenDoorUnlocked = IS_PRIVATE_BUILD && Boolean(unlocked);
 }
 
-function getSecretNoticeAckKey(visitorSlug, unlockedAt) {
-  if (!visitorSlug || !unlockedAt) return '';
-  return `${SECRET_NOTICE_ACK_PREFIX}${visitorSlug}.${unlockedAt}`;
+function getSecretNoticeAckKey(visitorSlug, noticeId) {
+  if (!visitorSlug || !noticeId) return '';
+  return `${SECRET_NOTICE_ACK_PREFIX}${visitorSlug}.${noticeId}`;
 }
 
-function isSecretNoticeAcknowledged(visitorSlug, unlockedAt) {
-  const key = getSecretNoticeAckKey(visitorSlug, unlockedAt);
+function isSecretNoticeAcknowledged(visitorSlug, noticeId) {
+  const key = getSecretNoticeAckKey(visitorSlug, noticeId);
   return Boolean(key && window.localStorage.getItem(key) === '1');
 }
 
-function showSecretNotice(visitorSlug, unlockedAt) {
+function showSecretNotice(visitorSlug, noticeId) {
   if (!secretNoticeEl || !ackSecretNoticeButton) return;
 
-  pendingSecretNoticeKey = getSecretNoticeAckKey(visitorSlug, unlockedAt);
-  if (!pendingSecretNoticeKey || isSecretNoticeAcknowledged(visitorSlug, unlockedAt)) return;
+  pendingSecretNoticeKey = getSecretNoticeAckKey(visitorSlug, noticeId);
+  if (!pendingSecretNoticeKey || isSecretNoticeAcknowledged(visitorSlug, noticeId)) return;
 
   secretNoticeEl.hidden = false;
   window.setTimeout(() => ackSecretNoticeButton.focus(), 40);
@@ -425,8 +425,9 @@ function acknowledgeSecretNotice() {
 export function renderSecretState(secretState, visitorSlug = '') {
   setHiddenDoorUnlocked(secretState?.unlocked);
 
-  if (IS_PRIVATE_BUILD && secretState?.unlocked && secretState?.unlocked_at) {
-    showSecretNotice(visitorSlug, secretState.unlocked_at);
+  const unlockNoticeId = secretState?.unlock_notice?.active ? secretState.unlock_notice.id : '';
+  if (IS_PRIVATE_BUILD && secretState?.unlocked && unlockNoticeId) {
+    showSecretNotice(visitorSlug, unlockNoticeId);
   }
 }
 
