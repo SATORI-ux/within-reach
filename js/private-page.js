@@ -10,6 +10,7 @@ const statusTitle = document.querySelector('#statusTitle');
 const statusBody = document.querySelector('#statusBody');
 const privatePage = document.querySelector('#privatePage');
 const themeToggle = document.querySelector('#themeToggle');
+const themeWhisper = document.querySelector('#themeWhisper');
 
 const heroEyebrow = document.querySelector('#heroEyebrow');
 const heroTitle = document.querySelector('#heroTitle');
@@ -38,6 +39,7 @@ const imagesTitle = document.querySelector('#imagesTitle');
 const imagesGrid = document.querySelector('#imagesGrid');
 
 const closingLine = document.querySelector('#closingLine');
+let themeWhisperTimer = null;
 
 const emptyKeptPageContent = {
   hero: {
@@ -146,6 +148,25 @@ async function resolveSessionToken() {
 function setStatus(title, body) {
   statusTitle.textContent = title;
   statusBody.textContent = body;
+}
+
+function revealThemeWhisper() {
+  if (!themeWhisper) return;
+
+  document.documentElement.dataset.keptThemeHint = 'noticed';
+  themeWhisper.hidden = false;
+  themeWhisper.classList.add('is-visible');
+
+  if (themeWhisperTimer) {
+    window.clearTimeout(themeWhisperTimer);
+  }
+
+  themeWhisperTimer = window.setTimeout(() => {
+    themeWhisper.classList.remove('is-visible');
+    themeWhisperTimer = window.setTimeout(() => {
+      themeWhisper.hidden = true;
+    }, 420);
+  }, 3400);
 }
 
 function appendParagraphs(container, paragraphs = []) {
@@ -333,7 +354,14 @@ function renderPage(content, thoughtCounts = []) {
 async function bootstrap() {
   cleanPageUrl();
   setDocumentTheme(document.documentElement.dataset.theme);
-  initializeThemeToggle(themeToggle);
+  initializeThemeToggle(
+    themeToggle,
+    IS_PRIVATE_BUILD
+      ? {
+          onHold: revealThemeWhisper,
+        }
+      : {}
+  );
 
   if (!IS_PRIVATE_BUILD) {
     setStatus('This page is not available here.', 'The kept page only opens in the private build.');

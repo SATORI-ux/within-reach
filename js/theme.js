@@ -72,12 +72,50 @@ export function syncThemeToggle(button) {
   }
 }
 
-export function initializeThemeToggle(button) {
+export function initializeThemeToggle(button, options = {}) {
   if (!button) return;
+
+  const holdDelay = Number(options.holdDelay) || 1050;
+  let holdTimer = null;
+  let holdTriggered = false;
 
   syncThemeToggle(button);
 
-  button.addEventListener('click', () => {
+  const clearHoldTimer = () => {
+    if (!holdTimer) return;
+    window.clearTimeout(holdTimer);
+    holdTimer = null;
+  };
+
+  const handleHoldStart = () => {
+    if (typeof options.onHold !== 'function' || holdTimer) return;
+
+    holdTriggered = false;
+    holdTimer = window.setTimeout(() => {
+      holdTimer = null;
+      holdTriggered = true;
+      options.onHold();
+    }, holdDelay);
+  };
+
+  const handleHoldEnd = () => {
+    clearHoldTimer();
+  };
+
+  if (typeof options.onHold === 'function') {
+    button.addEventListener('pointerdown', handleHoldStart);
+    button.addEventListener('pointerup', handleHoldEnd);
+    button.addEventListener('pointercancel', handleHoldEnd);
+    button.addEventListener('pointerleave', handleHoldEnd);
+  }
+
+  button.addEventListener('click', (event) => {
+    if (holdTriggered) {
+      event.preventDefault();
+      holdTriggered = false;
+      return;
+    }
+
     const currentTheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
     const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
