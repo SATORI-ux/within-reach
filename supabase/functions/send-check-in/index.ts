@@ -8,10 +8,14 @@ import {
   sendPushToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
-import { updateSecretUnlockAfterThought } from '../_shared/secret.ts';
+import { type SecretState, updateSecretUnlockAfterThought } from '../_shared/secret.ts';
 
 type Payload = {
   tile_key?: string;
+  debug_secret_progress?: {
+    prior_thought_count?: number;
+    first_thought_days_ago?: number;
+  };
 };
 
 Deno.serve(async (req) => {
@@ -57,7 +61,7 @@ Deno.serve(async (req) => {
       throw new Error(countError.message);
     }
 
-    let secretState = {
+    let secretState: SecretState = {
       unlocked: false,
       unlocked_at: null,
     };
@@ -67,6 +71,7 @@ Deno.serve(async (req) => {
         client,
         visitor.user_slug,
         created.created_at,
+        body.debug_secret_progress,
       );
     } catch (secretError) {
       console.error('Secret unlock update failed', {

@@ -16,9 +16,15 @@ type ThoughtProgress = {
   firstThoughtAt: string | null;
 };
 
+type SecretSoftReveal = {
+  active: boolean;
+  tagline: string;
+};
+
 export type SecretState = {
   unlocked: boolean;
   unlocked_at: string | null;
+  soft_reveal?: SecretSoftReveal;
   debug?: {
     requested: boolean;
     enabled: boolean;
@@ -41,6 +47,7 @@ const DEFAULT_SECRET_TARGET_USER_SLUG = 'jeszi';
 const DEFAULT_SECRET_ALWAYS_UNLOCK_USER_SLUG = 'joey';
 const DEFAULT_SECRET_THOUGHT_TARGET = 150;
 const DEFAULT_SECRET_MINIMUM_DAYS = 90;
+const SECRET_SOFT_REVEAL_TAGLINE = 'Something in this little place has started keeping your name.';
 
 function getSecretTargetUserSlug(): string {
   return Deno.env.get('SECRET_TARGET_USER_SLUG') || DEFAULT_SECRET_TARGET_USER_SLUG;
@@ -119,6 +126,15 @@ function hasMetSecretThresholds(
   return now >= eligibleAt;
 }
 
+function getSecretSoftReveal(progress: ThoughtProgress, thoughtTarget: number): SecretSoftReveal | undefined {
+  if (progress.thoughtCount < thoughtTarget) return undefined;
+
+  return {
+    active: true,
+    tagline: SECRET_SOFT_REVEAL_TAGLINE,
+  };
+}
+
 export async function getSecretState(
   client: SupabaseClient,
   userSlug: string,
@@ -137,10 +153,12 @@ export async function getSecretState(
     };
   }
 
+  const thoughtTarget = getSecretThoughtTarget();
   const progress = await getThoughtProgress(client, userSlug);
+  const softReveal = getSecretSoftReveal(progress, thoughtTarget);
   const unlockedByThresholds = hasMetSecretThresholds(
     progress,
-    getSecretThoughtTarget(),
+    thoughtTarget,
     getSecretMinimumDays(),
   );
 
@@ -148,6 +166,7 @@ export async function getSecretState(
     return {
       unlocked: false,
       unlocked_at: null,
+      soft_reveal: softReveal,
     };
   }
 
@@ -164,6 +183,7 @@ export async function getSecretState(
   return {
     unlocked: true,
     unlocked_at: data?.unlocked_at ?? null,
+    soft_reveal: softReveal,
   };
 }
 
@@ -258,7 +278,13 @@ export async function updateSecretUnlockAfterThought(
   const currentThoughtAt = new Date(createdAt);
 
   if (currentThoughtAt < eligibleAt) {
-    return buildDebugState(existingState, 'below-minimum-days', {
+    return buildDebugState({
+      ...existingState,
+      soft_reveal: {
+        active: true,
+        tagline: SECRET_SOFT_REVEAL_TAGLINE,
+      },
+    }, 'below-minimum-days', {
       effective_thought_count: thoughtCount,
     });
   }
@@ -283,6 +309,10 @@ export async function updateSecretUnlockAfterThought(
     {
       unlocked: Boolean(unlocked?.unlocked_at),
       unlocked_at: unlocked?.unlocked_at ?? null,
+      soft_reveal: {
+        active: true,
+        tagline: SECRET_SOFT_REVEAL_TAGLINE,
+      },
     },
     'unlocked',
     {

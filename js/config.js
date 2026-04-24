@@ -84,7 +84,7 @@ export const ARRIVAL_AMBIENT_LINE_WEIGHTING = {
   private: 0.2,
 };
 
-export const SECRET_CLUE_FRAGMENT_CHANCE = 0.02;
+export const SECRET_CLUE_FRAGMENT_CHANCE = 0.05;
 export const SECRET_CLUE_FRAGMENTS = [
   'there is',
   'a note here',

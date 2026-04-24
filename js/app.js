@@ -25,10 +25,10 @@ import {
   renderCheckIns,
   renderMissingKeyState,
   renderNotes,
+  renderSecretState,
   renderThoughtCounts,
   revealMainContent,
   setActionMessage,
-  setHiddenDoorUnlocked,
   setNoteMessage,
   setReady,
   showToast,
@@ -417,7 +417,7 @@ function applyInitialFeedPayload(feed) {
   state.checkIns = feed.check_ins || [];
   state.notes = feed.notes || [];
   state.thoughtCounts = feed.thought_counts || [];
-  setHiddenDoorUnlocked(feed.secret_state?.unlocked);
+  renderSecretState(feed.secret_state);
 
   state.feed.checkIns.hasMore = Boolean(feed.check_ins_page?.has_more);
   state.feed.checkIns.nextBeforeId = feed.check_ins_page?.next_before_id ?? null;
@@ -916,7 +916,7 @@ async function handleCheckIn() {
 
   try {
     const result = await sendCheckIn(state.sessionToken);
-    setHiddenDoorUnlocked(result.secret_state?.unlocked);
+    renderSecretState(result.secret_state);
     state.thoughtCounts = result.thought_counts || state.thoughtCounts;
 
     if (result.check_in) {

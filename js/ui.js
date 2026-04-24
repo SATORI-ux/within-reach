@@ -389,6 +389,15 @@ export function setHiddenDoorUnlocked(unlocked) {
   hiddenDoorUnlocked = IS_PRIVATE_BUILD && Boolean(unlocked);
 }
 
+export function renderSecretState(secretState) {
+  setHiddenDoorUnlocked(secretState?.unlocked);
+
+  const tagline = secretState?.soft_reveal?.active ? secretState.soft_reveal.tagline : '';
+  if (tagline) {
+    setFactInterlude(tagline);
+  }
+}
+
 export function bindHiddenDoor() {
   if (!footerLineEl) return;
 
