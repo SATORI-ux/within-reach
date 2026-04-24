@@ -42,7 +42,6 @@ const noteMessageEl = document.querySelector('#noteMessage');
 const appShellEl = document.querySelector('.app-shell');
 const mainContentEl = document.querySelector('#mainContent');
 const arrivalSectionEl = document.querySelector('#arrivalSection');
-const thoughtLedgerGridEl = document.querySelector('#thoughtLedgerGrid');
 
 const loadOlderCheckInsButton = document.querySelector('#loadOlderCheckInsButton');
 const collapseCheckInsButton = document.querySelector('#collapseCheckInsButton');
@@ -479,26 +478,7 @@ export function renderCheckIns(checkIns = []) {
 }
 
 export function renderThoughtCounts(thoughtCounts = []) {
-  if (!thoughtLedgerGridEl) return;
-
-  thoughtLedgerGridEl.innerHTML = '';
-
-  thoughtCounts.forEach((entry) => {
-    const chip = document.createElement('article');
-    chip.className = 'thought-chip';
-    chip.style.setProperty('--thought-accent', entry.accent_color || '#6e8d62');
-
-    const labelEl = document.createElement('p');
-    labelEl.className = 'thought-chip__label';
-    labelEl.textContent = `${entry.display_name}'s thoughts`;
-
-    const valueEl = document.createElement('p');
-    valueEl.className = 'thought-chip__value';
-    valueEl.textContent = String(entry.count || 0);
-
-    chip.append(labelEl, valueEl);
-    thoughtLedgerGridEl.appendChild(chip);
-  });
+  return thoughtCounts;
 }
 
 export function renderNotes(notes = [], viewerSlug) {

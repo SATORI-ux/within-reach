@@ -1,5 +1,6 @@
 import {
   getAdminClient,
+  getThoughtCounts,
   handleOptions,
   json,
   readJson,
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
         unlocked: false,
         updated_at: null,
         content: null,
+        thought_counts: [],
       });
     }
 
@@ -60,6 +62,7 @@ Deno.serve(async (req) => {
       unlocked: true,
       updated_at: data?.updated_at ?? null,
       content: data?.content ?? null,
+      thought_counts: await getThoughtCounts(client),
     });
   } catch (error) {
     return json(

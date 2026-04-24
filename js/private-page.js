@@ -18,6 +18,8 @@ const heroOpening = document.querySelector('#heroOpening');
 const letterLabel = document.querySelector('#letterLabel');
 const letterTitle = document.querySelector('#letterTitle');
 const letterBody = document.querySelector('#letterBody');
+const thoughtReveal = document.querySelector('#thoughtReveal');
+const thoughtRevealList = document.querySelector('#thoughtRevealList');
 
 const meaningSection = document.querySelector('#meaningSection');
 const meaningLabel = document.querySelector('#meaningLabel');
@@ -136,6 +138,29 @@ function renderMeaningCards(cards = []) {
   });
 }
 
+function formatThoughtLine(entry) {
+  const name = entry?.display_name || 'Someone';
+  const count = Number(entry?.count) || 0;
+  const noun = count === 1 ? 'thought' : 'thoughts';
+  return `${name} has left ${count} ${noun}.`;
+}
+
+function renderThoughtReveal(thoughtCounts = []) {
+  if (!thoughtReveal || !thoughtRevealList) return;
+
+  const counts = thoughtCounts.filter((entry) => entry?.display_name);
+  thoughtReveal.hidden = counts.length === 0;
+  thoughtReveal.open = false;
+  thoughtRevealList.innerHTML = '';
+
+  counts.forEach((entry) => {
+    const line = document.createElement('p');
+    line.className = 'thought-reveal__line';
+    line.textContent = formatThoughtLine(entry);
+    thoughtRevealList.appendChild(line);
+  });
+}
+
 function renderVideo(video) {
   videoSlot.innerHTML = '';
 
@@ -175,7 +200,7 @@ function renderImages(images = []) {
   });
 }
 
-function renderPage(content) {
+function renderPage(content, thoughtCounts = []) {
   heroEyebrow.textContent = content.hero?.eyebrow || 'Quietly kept';
   heroTitle.textContent = content.hero?.title || 'A note that stayed.';
   heroOpening.textContent = content.hero?.opening || '';
@@ -183,6 +208,7 @@ function renderPage(content) {
   letterLabel.textContent = content.letter?.label || 'For you';
   letterTitle.textContent = content.letter?.title || 'There has been a note here.';
   appendParagraphs(letterBody, content.letter?.paragraphs || []);
+  renderThoughtReveal(thoughtCounts);
 
   const hasMeaningCards = Array.isArray(content.meaning?.cards) && content.meaning.cards.length > 0;
   const hasMeaningBody = Array.isArray(content.meaning?.paragraphs) && content.meaning.paragraphs.length > 0;
@@ -248,7 +274,7 @@ async function bootstrap() {
       return;
     }
 
-    renderPage(result.content);
+    renderPage(result.content, result.thought_counts || []);
   } catch (error) {
     console.error(error);
     setStatus('This private page could not load.', error?.message || 'Try again in a moment.');

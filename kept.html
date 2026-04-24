@@ -277,6 +277,46 @@
         text-align: center;
       }
 
+      .thought-reveal {
+        margin-top: 1rem;
+        padding: 0.85rem 0.95rem;
+        border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--surface-strong) 72%, transparent);
+        color: var(--text-soft);
+      }
+
+      .thought-reveal summary {
+        cursor: pointer;
+        color: var(--text-soft);
+        line-height: 1.65;
+      }
+
+      .thought-reveal summary:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus-ring);
+      }
+
+      .thought-reveal[open] summary {
+        color: var(--text);
+      }
+
+      .thought-reveal__list {
+        display: grid;
+        gap: 0.35rem;
+        margin-top: 0.7rem;
+        padding-top: 0.7rem;
+        border-top: 1px solid color-mix(in srgb, var(--line) 120%, transparent);
+      }
+
+      .thought-reveal__line {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        color: var(--text-muted);
+      }
+
       .video-slot {
         aspect-ratio: 16 / 9;
         min-height: auto;
@@ -379,6 +419,10 @@
           <p class="section-label" id="letterLabel">For you</p>
           <h2 id="letterTitle">There has been a note here.</h2>
           <div class="stack" id="letterBody"></div>
+          <details class="thought-reveal" id="thoughtReveal" hidden>
+            <summary>The letter is holding what you've both left.</summary>
+            <div class="thought-reveal__list" id="thoughtRevealList"></div>
+          </details>
         </section>
 
         <section aria-labelledby="meaningTitle" id="meaningSection" hidden>

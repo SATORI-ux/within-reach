@@ -38,7 +38,7 @@ The goal is to make connection feel immediate, quiet, and intentional without tu
 
 ## Local Development
 
-Create a local `.env` from `.env.example`, then set the Supabase project used by this frontend:
+Create a local `.env` from `.env.example`, then set the Supabase project used by this frontend. The app does not fall back to a default Supabase project; this keeps environment mixups visible.
 
 ```bash
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
