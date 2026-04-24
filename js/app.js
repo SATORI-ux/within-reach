@@ -168,6 +168,7 @@ const urgentState = document.querySelector('#urgentState');
 const urgentStateTitle = document.querySelector('#urgentStateTitle');
 const urgentStateGuidance = document.querySelector('#urgentStateGuidance');
 const urgentStateTime = document.querySelector('#urgentStateTime');
+const urgentContactStatus = document.querySelector('#urgentContactStatus');
 const urgentCallLink = document.querySelector('#urgentCallLink');
 const urgentTextLink = document.querySelector('#urgentTextLink');
 const ackUrgentButton = document.querySelector('#ackUrgentButton');
@@ -483,16 +484,37 @@ function setResponseLink(link, href, visible) {
   link.href = visible ? href : '#';
 }
 
+function normalizePhoneForUri(phone) {
+  const raw = String(phone || '').trim();
+  if (!raw) return '';
+
+  const compact = raw.replace(/[^\d+]/g, '');
+  if (compact.startsWith('+')) return compact;
+
+  const digits = compact.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+
+  return compact;
+}
+
+function setUrgentContactStatus(message) {
+  if (!urgentContactStatus) return;
+  urgentContactStatus.textContent = message;
+  urgentContactStatus.hidden = !message;
+}
+
 function renderUrgentSignal(signal) {
   state.urgentSignal = signal;
 
   if (!signal || signal.status === 'acknowledged') {
     urgentState.hidden = true;
     setUrgentStateMessage('');
+    setUrgentContactStatus('');
     return;
   }
 
-  const phone = signal.contact_phone || '';
+  const phone = normalizePhoneForUri(signal.contact_phone);
   const allowsCall = signal.preferred_response === 'call' || signal.preferred_response === 'either';
   const allowsText = signal.preferred_response === 'text' || signal.preferred_response === 'either';
 
@@ -504,6 +526,11 @@ function renderUrgentSignal(signal) {
 
   setResponseLink(urgentCallLink, `tel:${phone}`, Boolean(phone && allowsCall));
   setResponseLink(urgentTextLink, `sms:${phone}`, Boolean(phone && allowsText));
+  setUrgentContactStatus(
+    phone
+      ? ''
+      : 'Call and text details are not set up here yet. Let them know you saw this when you can.'
+  );
 
   ackUrgentButton.disabled = false;
   setUrgentStateMessage('');

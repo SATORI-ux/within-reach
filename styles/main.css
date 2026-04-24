@@ -833,6 +833,15 @@ a.ghost-button {
   color: var(--text-muted);
 }
 
+.urgent-state__contact {
+  margin: 0.8rem 0 0;
+  max-width: 30rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+
 .urgent-state__actions,
 .urgent-state__ack {
   display: flex;
@@ -1005,13 +1014,10 @@ a.ghost-button {
 }
 
 .note-card__reaction-picker {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.42rem;
   margin-top: 0.65rem;
-  overflow-x: auto;
-  padding-bottom: 0.15rem;
-  -webkit-overflow-scrolling: touch;
 }
 
 .reaction-chip {
@@ -1043,10 +1049,9 @@ a.ghost-button {
 }
 
 .reaction-chip--picker {
-  width: auto;
-  min-width: 2.9rem;
+  width: 100%;
+  min-width: 0;
   padding: 0.42rem 0.62rem;
-  flex: 0 0 auto;
 }
 
 .reaction-chip.is-active {
@@ -1227,12 +1232,11 @@ a.ghost-button {
   }
 
   .reaction-chip--picker {
-    flex: 0 0 auto;
-    min-width: 2.7rem;
-    padding: 0.34rem 0.5rem;
+    min-width: 0;
+    padding: 0.34rem 0.22rem;
   }
 
-  .reaction-chip span:first-child {
+  .reaction-chip:not(.reaction-chip--picker) span:first-child {
     font-size: 0.8rem;
   }
 }
