@@ -2,11 +2,11 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './config.js';
 
 function assertConfig() {
   if (!SUPABASE_URL || !SUPABASE_URL.startsWith('http')) {
-    throw new Error('Set a valid SUPABASE_URL in js/config.js before running the app.');
+    throw new Error('Set a valid VITE_SUPABASE_URL before running the app.');
   }
 
   if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('YOUR_')) {
-    throw new Error('Set your Supabase publishable key in js/config.js before running the app.');
+    throw new Error('Set VITE_SUPABASE_PUBLISHABLE_KEY before running the app.');
   }
 }
 

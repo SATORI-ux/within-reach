@@ -38,6 +38,13 @@ The goal is to make connection feel immediate, quiet, and intentional without tu
 
 ## Local Development
 
+Create a local `.env` from `.env.example`, then set the Supabase project used by this frontend:
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_REPLACE_ME
+```
+
 ```bash
 npm install
 npm run dev
@@ -65,7 +72,7 @@ npm.cmd run build
 
 The app uses Supabase tables and Edge Functions for identity validation, feed reads, check-ins, notes, reactions, push subscriptions, and urgent signals. The frontend renders state and initiates actions, but Supabase Edge Functions remain the authority for identity, validation, protected writes, and push send attempts.
 
-Apply the SQL files in `sql/` to the project database as needed, then deploy the Edge Functions in `supabase/functions/`.
+Apply the SQL files in `sql/` to the intended project database as needed, then deploy the Edge Functions in `supabase/functions/`. Keep environment-specific project URLs, publishable keys, and Edge Function secrets outside source edits.
 
 Set the app base URL once for Edge Functions so push notifications and urgent links return to the canonical host:
 

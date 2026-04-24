@@ -1,5 +1,9 @@
-export const SUPABASE_URL = 'https://lxpoanjmobqpcqdbdcgk.supabase.co';
-export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_PSLuNWv6OqCqRSIPBAIGpA_g7BwlBUO';
+const DEFAULT_SUPABASE_URL = 'https://lxpoanjmobqpcqdbdcgk.supabase.co';
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_PSLuNWv6OqCqRSIPBAIGpA_g7BwlBUO';
+
+export const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+export const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
 function parsePrivateLines(value) {
   return String(value || '')
