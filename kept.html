@@ -8,7 +8,7 @@
       name="description"
       content="A protected note kept inside Within Reach."
     />
-    <meta name="theme-color" content="#e8e0d4" />
+    <meta name="theme-color" content="#e6dccd" />
     <script>
       (() => {
         const storageKey = 'withinReachAppearance';
@@ -23,25 +23,25 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'dark' ? '#231d1a' : '#e8e0d4');
+          themeMeta.setAttribute('content', theme === 'dark' ? '#181915' : '#e6dccd');
         }
       })();
     </script>
     <style>
       :root {
-        --bg: #f2ede4;
-        --bg-top-glow: rgba(172, 153, 130, 0.22);
-        --bg-start: #f4f0e9;
-        --bg-mid: #eee8de;
-        --bg-end: #e7dfd3;
-        --surface: rgba(255, 252, 246, 0.7);
-        --surface-strong: rgba(255, 251, 244, 0.9);
-        --line: rgba(84, 65, 50, 0.1);
-        --text: #3e332a;
-        --text-soft: #6f6257;
-        --text-muted: rgba(77, 66, 58, 0.62);
-        --text-faint: rgba(77, 66, 58, 0.58);
-        --accent: #6d8363;
+        --bg: #f1ece3;
+        --bg-top-glow: rgba(151, 169, 136, 0.2);
+        --bg-start: #f5f1e9;
+        --bg-mid: #eee7dc;
+        --bg-end: #e6dccd;
+        --surface: rgba(255, 252, 245, 0.74);
+        --surface-strong: rgba(255, 250, 241, 0.94);
+        --line: rgba(68, 64, 51, 0.12);
+        --text: #3a352d;
+        --text-soft: #665e52;
+        --text-muted: rgba(67, 60, 50, 0.62);
+        --text-faint: rgba(67, 60, 50, 0.54);
+        --accent: #748a68;
         --chrome-border: rgba(84, 65, 50, 0.1);
         --chrome-fill: rgba(255, 252, 247, 0.68);
         --chrome-fill-hover: rgba(255, 252, 247, 0.82);
@@ -53,19 +53,19 @@
       }
 
       :root[data-theme='dark'] {
-        --bg: #231d1a;
-        --bg-top-glow: rgba(140, 112, 90, 0.12);
-        --bg-start: #2b231f;
-        --bg-mid: #251f1c;
-        --bg-end: #1e1916;
-        --surface: rgba(52, 43, 38, 0.72);
-        --surface-strong: rgba(61, 51, 45, 0.88);
-        --line: rgba(209, 193, 177, 0.1);
-        --text: #eee3d6;
-        --text-soft: #c3b2a2;
-        --text-muted: rgba(211, 196, 181, 0.7);
-        --text-faint: rgba(211, 196, 181, 0.62);
-        --accent: #7d9273;
+        --bg: #1e1f1c;
+        --bg-top-glow: rgba(120, 142, 105, 0.12);
+        --bg-start: #252620;
+        --bg-mid: #20211d;
+        --bg-end: #181915;
+        --surface: rgba(45, 43, 37, 0.78);
+        --surface-strong: rgba(55, 51, 44, 0.92);
+        --line: rgba(221, 207, 187, 0.12);
+        --text: #f0e7da;
+        --text-soft: #c8bba9;
+        --text-muted: rgba(218, 204, 186, 0.7);
+        --text-faint: rgba(218, 204, 186, 0.58);
+        --accent: #8ea47f;
         --chrome-border: rgba(209, 193, 177, 0.14);
         --chrome-fill: rgba(71, 59, 52, 0.58);
         --chrome-fill-hover: rgba(80, 67, 60, 0.76);
@@ -197,6 +197,36 @@
         padding: 0 0.2rem 1.6rem;
       }
 
+      .kept-return {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 1.55rem;
+        color: var(--text-faint);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 0.88rem;
+        line-height: 1;
+        text-decoration: none;
+      }
+
+      .kept-return::before {
+        content: "";
+        width: 0.42rem;
+        height: 0.42rem;
+        border-left: 1px solid currentColor;
+        border-bottom: 1px solid currentColor;
+        transform: rotate(45deg);
+      }
+
+      .kept-return:hover {
+        color: var(--text-soft);
+      }
+
+      .kept-return:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px var(--focus-ring);
+      }
+
       h1 {
         margin: 0;
         max-width: 11ch;
@@ -287,9 +317,26 @@
       }
 
       .thought-reveal summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
         cursor: pointer;
         color: var(--text-soft);
         line-height: 1.65;
+      }
+
+      .thought-reveal summary::marker,
+      .thought-reveal summary::-webkit-details-marker {
+        display: none;
+        content: "";
+      }
+
+      .thought-reveal summary::after {
+        content: "+";
+        flex: 0 0 auto;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--text-faint);
       }
 
       .thought-reveal summary:focus-visible {
@@ -301,20 +348,49 @@
         color: var(--text);
       }
 
+      .thought-reveal[open] summary::after {
+        content: "-";
+      }
+
       .thought-reveal__list {
         display: grid;
-        gap: 0.35rem;
+        gap: 0.5rem;
         margin-top: 0.7rem;
         padding-top: 0.7rem;
         border-top: 1px solid color-mix(in srgb, var(--line) 120%, transparent);
       }
 
       .thought-reveal__line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
         margin: 0;
         font-family: Arial, Helvetica, sans-serif;
         font-size: 0.9rem;
         line-height: 1.55;
         color: var(--text-muted);
+      }
+
+      .thought-reveal__name {
+        color: var(--text-soft);
+      }
+
+      .thought-reveal__count {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.35rem;
+        color: var(--text);
+        white-space: nowrap;
+      }
+
+      .thought-reveal__number {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1.15rem;
+      }
+
+      .thought-reveal__noun {
+        color: var(--text-faint);
       }
 
       .video-slot {
@@ -402,6 +478,8 @@
     </div>
 
     <main>
+      <a class="kept-return" href="./index.html">Return to the shared place</a>
+
       <section class="status-card" id="statusCard" aria-live="polite">
         <p class="section-label">Quietly kept</p>
         <h1 id="statusTitle">Opening the kept page.</h1>
@@ -420,7 +498,7 @@
           <h2 id="letterTitle">There has been a note here.</h2>
           <div class="stack" id="letterBody"></div>
           <details class="thought-reveal" id="thoughtReveal" hidden>
-            <summary>The letter is holding what you've both left.</summary>
+            <summary>What the letter is holding.</summary>
             <div class="thought-reveal__list" id="thoughtRevealList"></div>
           </details>
         </section>

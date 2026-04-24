@@ -154,13 +154,6 @@ function renderMeaningCards(cards = []) {
   });
 }
 
-function formatThoughtLine(entry) {
-  const name = entry?.display_name || 'Someone';
-  const count = Number(entry?.count) || 0;
-  const noun = count === 1 ? 'thought' : 'thoughts';
-  return `${name} has left ${count} ${noun}.`;
-}
-
 function renderThoughtReveal(thoughtCounts = []) {
   if (!thoughtReveal || !thoughtRevealList) return;
 
@@ -170,9 +163,27 @@ function renderThoughtReveal(thoughtCounts = []) {
   thoughtRevealList.innerHTML = '';
 
   counts.forEach((entry) => {
+    const name = entry?.display_name || 'Someone';
+    const count = Number(entry?.count) || 0;
+    const noun = count === 1 ? 'thought' : 'thoughts';
     const line = document.createElement('p');
+    const nameEl = document.createElement('span');
+    const countEl = document.createElement('span');
+    const numberEl = document.createElement('span');
+    const nounEl = document.createElement('span');
+
     line.className = 'thought-reveal__line';
-    line.textContent = formatThoughtLine(entry);
+    nameEl.className = 'thought-reveal__name';
+    countEl.className = 'thought-reveal__count';
+    numberEl.className = 'thought-reveal__number';
+    nounEl.className = 'thought-reveal__noun';
+
+    nameEl.textContent = name;
+    numberEl.textContent = String(count);
+    nounEl.textContent = noun;
+
+    countEl.append(numberEl, nounEl);
+    line.append(nameEl, countEl);
     thoughtRevealList.appendChild(line);
   });
 }

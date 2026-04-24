@@ -469,7 +469,7 @@ export function renderCheckIns(checkIns = []) {
     const templateIndex = pseudoRandomIndex(item.id, CHECK_IN_TEMPLATES.length);
     const text = CHECK_IN_TEMPLATES[templateIndex].replace('{name}', item.display_name);
 
-    marker.style.background = `${item.accent_color || ACCENT_BY_USER[item.from_user_slug] || '#6e8d62'}33`;
+    marker.style.setProperty('--marker-accent', item.accent_color || ACCENT_BY_USER[item.from_user_slug] || '#748a68');
     textEl.textContent = text;
     metaEl.textContent = formatTimestamp(item.created_at);
 

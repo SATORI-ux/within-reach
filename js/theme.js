@@ -4,8 +4,8 @@ const THEME_META_SELECTOR = 'meta[name="theme-color"]';
 const THEME_MEDIA = '(prefers-color-scheme: dark)';
 
 const THEME_COLORS = {
-  light: '#e8e0d4',
-  dark: '#231d1a',
+  light: '#e6dccd',
+  dark: '#181915',
 };
 
 const ICONS = {
