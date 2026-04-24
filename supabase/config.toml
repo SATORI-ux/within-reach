@@ -411,6 +411,9 @@ verify_jwt = false
 [functions.resolve-device-session]
 verify_jwt = false
 
+[functions.save-push-subscription]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

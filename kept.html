@@ -30,48 +30,48 @@
     <style>
       :root {
         --bg: #f2ede4;
-        --bg-top-glow: rgba(203, 184, 161, 0.34);
-        --bg-start: #f3efe7;
-        --bg-mid: #f0e9de;
-        --bg-end: #ece4d7;
-        --surface: rgba(255, 252, 246, 0.84);
-        --surface-strong: rgba(255, 250, 243, 0.96);
-        --line: rgba(84, 65, 50, 0.12);
+        --bg-top-glow: rgba(172, 153, 130, 0.22);
+        --bg-start: #f4f0e9;
+        --bg-mid: #eee8de;
+        --bg-end: #e7dfd3;
+        --surface: rgba(255, 252, 246, 0.7);
+        --surface-strong: rgba(255, 251, 244, 0.9);
+        --line: rgba(84, 65, 50, 0.1);
         --text: #3e332a;
         --text-soft: #6f6257;
         --text-muted: rgba(77, 66, 58, 0.62);
         --text-faint: rgba(77, 66, 58, 0.58);
-        --accent: #6e8d62;
+        --accent: #6d8363;
         --chrome-border: rgba(84, 65, 50, 0.1);
         --chrome-fill: rgba(255, 252, 247, 0.68);
         --chrome-fill-hover: rgba(255, 252, 247, 0.82);
         --chrome-icon: rgba(70, 58, 49, 0.82);
         --focus-ring: rgba(110, 141, 98, 0.14);
-        --shadow: 0 18px 60px rgba(57, 44, 35, 0.12);
+        --shadow: 0 10px 28px rgba(57, 44, 35, 0.055);
         --grain-strong: rgba(60, 45, 32, 0.16);
         --grain-soft: rgba(60, 45, 32, 0.12);
       }
 
       :root[data-theme='dark'] {
         --bg: #231d1a;
-        --bg-top-glow: rgba(140, 112, 90, 0.18);
+        --bg-top-glow: rgba(140, 112, 90, 0.12);
         --bg-start: #2b231f;
         --bg-mid: #251f1c;
         --bg-end: #1e1916;
-        --surface: rgba(52, 43, 38, 0.84);
-        --surface-strong: rgba(61, 51, 45, 0.96);
-        --line: rgba(209, 193, 177, 0.12);
+        --surface: rgba(52, 43, 38, 0.72);
+        --surface-strong: rgba(61, 51, 45, 0.88);
+        --line: rgba(209, 193, 177, 0.1);
         --text: #eee3d6;
         --text-soft: #c3b2a2;
         --text-muted: rgba(211, 196, 181, 0.7);
         --text-faint: rgba(211, 196, 181, 0.62);
-        --accent: #7a9871;
+        --accent: #7d9273;
         --chrome-border: rgba(209, 193, 177, 0.14);
         --chrome-fill: rgba(71, 59, 52, 0.58);
         --chrome-fill-hover: rgba(80, 67, 60, 0.76);
         --chrome-icon: rgba(241, 229, 215, 0.82);
         --focus-ring: rgba(122, 152, 113, 0.2);
-        --shadow: 0 22px 70px rgba(12, 9, 8, 0.34);
+        --shadow: 0 14px 40px rgba(12, 9, 8, 0.24);
         --grain-strong: rgba(255, 242, 230, 0.06);
         --grain-soft: rgba(255, 242, 230, 0.04);
       }
@@ -98,7 +98,7 @@
         position: fixed;
         inset: 0;
         pointer-events: none;
-        opacity: 0.08;
+        opacity: 0.055;
         background-image:
           radial-gradient(circle at 20% 20%, var(--grain-strong) 0, transparent 1.2px),
           radial-gradient(circle at 80% 60%, var(--grain-soft) 0, transparent 1px),
@@ -130,7 +130,7 @@
         border-radius: 999px;
         background: var(--chrome-fill);
         color: var(--chrome-icon);
-        box-shadow: 0 12px 30px rgba(25, 18, 14, 0.08);
+        box-shadow: 0 8px 22px rgba(25, 18, 14, 0.06);
         backdrop-filter: blur(14px);
         cursor: pointer;
         transition: background 180ms ease, border-color 180ms ease, transform 180ms ease, color 180ms ease;
@@ -144,7 +144,7 @@
       .theme-toggle:focus-visible {
         outline: none;
         box-shadow:
-          0 12px 30px rgba(25, 18, 14, 0.08),
+          0 8px 22px rgba(25, 18, 14, 0.06),
           0 0 0 4px var(--focus-ring);
       }
 
@@ -202,7 +202,7 @@
         max-width: 11ch;
         font-size: clamp(3rem, 12vw, 6.2rem);
         line-height: 0.94;
-        letter-spacing: -0.04em;
+        letter-spacing: 0;
         font-weight: 600;
       }
 
@@ -219,9 +219,9 @@
         padding: 1.25rem;
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 24px;
+        border-radius: 8px;
         box-shadow: var(--shadow);
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(6px);
       }
 
       h2 {
