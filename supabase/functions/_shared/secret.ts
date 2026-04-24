@@ -165,6 +165,32 @@ async function getPersistedSecretUnlock(
   return data ?? null;
 }
 
+async function persistSecretUnlock(
+  client: SupabaseClient,
+  userSlug: string,
+  firstThoughtAt: string,
+  thoughtCount: number,
+  unlockedAt: string,
+): Promise<Pick<SecretUnlockRow, 'unlocked_at'>> {
+  const { data, error } = await client
+    .from('secret_unlocks')
+    .upsert({
+      user_slug: userSlug,
+      first_thought_at: firstThoughtAt,
+      thought_count_at_unlock: thoughtCount,
+      unlocked_at: unlockedAt,
+      updated_at: unlockedAt,
+    }, { onConflict: 'user_slug' })
+    .select('unlocked_at')
+    .single<Pick<SecretUnlockRow, 'unlocked_at'>>();
+
+  if (error || !data?.unlocked_at) {
+    throw new Error(error?.message || 'Could not record secret unlock.');
+  }
+
+  return data;
+}
+
 export async function getSecretState(
   client: SupabaseClient,
   userSlug: string,
@@ -211,11 +237,27 @@ export async function getSecretState(
     };
   }
 
+  if (!progress.firstThoughtAt) {
+    return {
+      unlocked: false,
+      unlocked_at: null,
+      soft_reveal: softReveal,
+    };
+  }
+
+  const unlocked = await persistSecretUnlock(
+    client,
+    userSlug,
+    progress.firstThoughtAt,
+    progress.thoughtCount,
+    new Date().toISOString(),
+  );
+
   return {
     unlocked: true,
-    unlocked_at: null,
+    unlocked_at: unlocked.unlocked_at,
     soft_reveal: softReveal,
-    unlock_notice: getSecretUnlockNotice(`threshold:${thoughtTarget}:${getSecretMinimumDays()}`),
+    unlock_notice: getSecretUnlockNotice(`persisted:${unlocked.unlocked_at}`),
   };
 }
 
@@ -321,21 +363,7 @@ export async function updateSecretUnlockAfterThought(
     });
   }
 
-  const { data: unlocked, error: unlockError } = await client
-    .from('secret_unlocks')
-    .upsert({
-      user_slug: userSlug,
-      first_thought_at: firstThoughtAt,
-      thought_count_at_unlock: thoughtCount,
-      unlocked_at: createdAt,
-      updated_at: createdAt,
-    }, { onConflict: 'user_slug' })
-    .select('unlocked_at')
-    .single<Pick<SecretUnlockRow, 'unlocked_at'>>();
-
-  if (unlockError) {
-    throw new Error(unlockError.message);
-  }
+  const unlocked = await persistSecretUnlock(client, userSlug, firstThoughtAt, thoughtCount, createdAt);
 
   return buildDebugState(
     {
