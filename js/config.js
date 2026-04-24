@@ -182,4 +182,4 @@ export const FOOTER_LINES = [
   'Waiting softly.',
 ];
 
-export const VAPID_PUBLIC_KEY = 'BFtJms2W7rtiu8GqF9rvu8SllB2V5530N7DeB3esHyJTrBdp9LFaxhT1RxB62UgcSec274FS8XM1YBlOVyEaosA';
+export const VAPID_PUBLIC_KEY = 'BBXgJE0ZgO2vqWiUVc8YNNlhEgu-jJvFIeywoyrZ7pBvvldjKRE2wGfwZyQxLj1ov3iYuFccj63Ly_5lx_jyjGc';
