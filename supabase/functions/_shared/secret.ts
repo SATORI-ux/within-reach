@@ -11,6 +11,11 @@ type CheckInProgressRow = {
   created_at: string | null;
 };
 
+type ThoughtProgress = {
+  thoughtCount: number;
+  firstThoughtAt: string | null;
+};
+
 export type SecretState = {
   unlocked: boolean;
   unlocked_at: string | null;
@@ -71,6 +76,49 @@ function canUseSecretDebugProgress(debugProgress?: SecretDebugProgress): debugPr
   return Deno.env.get('SECRET_DEBUG_UNLOCKS') === 'true' && Boolean(debugProgress);
 }
 
+async function getThoughtProgress(
+  client: SupabaseClient,
+  userSlug: string,
+): Promise<ThoughtProgress> {
+  const { count, error: countError } = await client
+    .from('check_ins')
+    .select('*', { count: 'exact', head: true })
+    .eq('from_user_slug', userSlug);
+
+  if (countError) {
+    throw new Error(countError.message);
+  }
+
+  const { data: firstThought, error: firstError } = await client
+    .from('check_ins')
+    .select('created_at')
+    .eq('from_user_slug', userSlug)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle<CheckInProgressRow>();
+
+  if (firstError) {
+    throw new Error(firstError.message);
+  }
+
+  return {
+    thoughtCount: count ?? 0,
+    firstThoughtAt: firstThought?.created_at ?? null,
+  };
+}
+
+function hasMetSecretThresholds(
+  progress: ThoughtProgress,
+  thoughtTarget: number,
+  minimumDays: number,
+  now = new Date(),
+): boolean {
+  if (progress.thoughtCount < thoughtTarget || !progress.firstThoughtAt) return false;
+
+  const eligibleAt = addDays(new Date(progress.firstThoughtAt), minimumDays);
+  return now >= eligibleAt;
+}
+
 export async function getSecretState(
   client: SupabaseClient,
   userSlug: string,
@@ -89,6 +137,20 @@ export async function getSecretState(
     };
   }
 
+  const progress = await getThoughtProgress(client, userSlug);
+  const unlockedByThresholds = hasMetSecretThresholds(
+    progress,
+    getSecretThoughtTarget(),
+    getSecretMinimumDays(),
+  );
+
+  if (!unlockedByThresholds) {
+    return {
+      unlocked: false,
+      unlocked_at: null,
+    };
+  }
+
   const { data, error } = await client
     .from('secret_unlocks')
     .select('unlocked_at')
@@ -100,7 +162,7 @@ export async function getSecretState(
   }
 
   return {
-    unlocked: Boolean(data?.unlocked_at),
+    unlocked: true,
     unlocked_at: data?.unlocked_at ?? null,
   };
 }
@@ -159,7 +221,7 @@ export async function updateSecretUnlockAfterThought(
   }
 
   const existingState = await getSecretState(client, userSlug);
-  if (existingState.unlocked) return buildDebugState(existingState, 'already-unlocked');
+  if (existingState.unlocked && existingState.unlocked_at) return buildDebugState(existingState, 'already-unlocked');
 
   const usingDebugProgress = canUseSecretDebugProgress(debugProgress);
   let thoughtCount: number;
@@ -169,16 +231,9 @@ export async function updateSecretUnlockAfterThought(
     thoughtCount = requestedDebugThoughtCount ?? 1;
     firstThoughtAt = subtractDays(new Date(createdAt), requestedDebugDaysAgo ?? 0).toISOString();
   } else {
-    const { count, error: countError } = await client
-      .from('check_ins')
-      .select('*', { count: 'exact', head: true })
-      .eq('from_user_slug', userSlug);
-
-    if (countError) {
-      throw new Error(countError.message);
-    }
-
-    thoughtCount = count ?? 0;
+    const progress = await getThoughtProgress(client, userSlug);
+    thoughtCount = progress.thoughtCount;
+    firstThoughtAt = progress.firstThoughtAt;
   }
 
   if (debugRequested && !debugEnabled) {
@@ -191,22 +246,6 @@ export async function updateSecretUnlockAfterThought(
     return buildDebugState(existingState, 'below-thought-target', {
       effective_thought_count: thoughtCount,
     });
-  }
-
-  if (!usingDebugProgress) {
-    const { data: firstThought, error: firstError } = await client
-      .from('check_ins')
-      .select('created_at')
-      .eq('from_user_slug', userSlug)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle<CheckInProgressRow>();
-
-    if (firstError) {
-      throw new Error(firstError.message);
-    }
-
-    firstThoughtAt = firstThought?.created_at ?? null;
   }
 
   if (!firstThoughtAt) {

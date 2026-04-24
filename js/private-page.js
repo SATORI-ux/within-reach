@@ -39,6 +39,22 @@ const imagesGrid = document.querySelector('#imagesGrid');
 
 const closingLine = document.querySelector('#closingLine');
 
+const emptyKeptPageContent = {
+  hero: {
+    eyebrow: 'Quietly kept',
+    title: 'A page kept open.',
+    opening: 'The note itself has not been placed here yet.',
+  },
+  letter: {
+    label: 'Held here',
+    title: 'The letter is still unwritten.',
+    paragraphs: [
+      'For now, this page can still hold the small trace count without becoming a public tally.',
+    ],
+  },
+  closing_line: 'Still here.',
+};
+
 function getCookie(name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = document.cookie.match(new RegExp(`(?:^|; )${escapedName}=([^;]*)`));
@@ -266,15 +282,7 @@ async function bootstrap() {
       return;
     }
 
-    if (!result.content) {
-      setStatus(
-        'The private page is ready, but still empty.',
-        'Run sql/private_pages_starter.sql for this private build, then edit that payload when the kept note is ready.'
-      );
-      return;
-    }
-
-    renderPage(result.content, result.thought_counts || []);
+    renderPage(result.content || emptyKeptPageContent, result.thought_counts || []);
   } catch (error) {
     console.error(error);
     setStatus('This private page could not load.', error?.message || 'Try again in a moment.');

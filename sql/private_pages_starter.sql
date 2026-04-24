@@ -6,31 +6,6 @@
 
 begin;
 
--- For private-preview setup, make the hidden door available to the default
--- private target. Remove this block if the real unlock ritual should be the
--- only way to open the page in this database.
-insert into public.secret_unlocks (
-  user_slug,
-  first_thought_at,
-  thought_count_at_unlock,
-  unlocked_at,
-  updated_at
-)
-select
-  'jeszi',
-  now() - interval '91 days',
-  150,
-  now(),
-  now()
-where exists (
-  select 1
-  from public.tile_keys
-  where user_slug = 'jeszi'
-)
-on conflict (user_slug) do update
-set
-  updated_at = excluded.updated_at;
-
 insert into public.private_pages (user_slug, content)
 values (
   'jeszi',

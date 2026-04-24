@@ -333,7 +333,11 @@ function renderPushDebugPanel() {
 function syncPushUiWithVisitorTruth() {
   const enabled = Boolean(state.visitor?.push_enabled);
   const hasStatus = Boolean(pushStatusEl?.textContent);
-  const showPrompt = Boolean(state.visitor?.user_slug) && !enabled && !isPushPromptDismissed(state.visitor.user_slug);
+  const showPrompt =
+    supportsPushNotifications() &&
+    Boolean(state.visitor?.user_slug) &&
+    !enabled &&
+    !isPushPromptDismissed(state.visitor.user_slug);
   const showDebug = getPushDebugMode();
 
   setPushEnabledState(enabled);
@@ -520,7 +524,11 @@ async function loadUrgentRoute(route) {
 }
 
 function supportsPushNotifications() {
-  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+}
+
+function getNotificationPermission() {
+  return typeof Notification === 'undefined' ? 'unsupported' : Notification.permission;
 }
 
 async function getCurrentPushSubscription() {
@@ -535,13 +543,13 @@ async function inspectCurrentDevicePushSubscription() {
     const subscription = await getCurrentPushSubscription();
     return {
       hasDeviceSubscription: Boolean(subscription),
-      permission: Notification.permission,
+      permission: getNotificationPermission(),
     };
   } catch (error) {
     console.warn('Could not read current push subscription.', error);
     return {
       hasDeviceSubscription: false,
-      permission: Notification.permission,
+      permission: getNotificationPermission(),
       error,
     };
   }
