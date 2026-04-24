@@ -213,6 +213,7 @@ const state = {
   urgentSignal: null,
   pushDebug: null,
   pushDeviceState: null,
+  secretDebugProgress: null,
   checkIns: [],
   notes: [],
   thoughtCounts: [],
@@ -252,6 +253,7 @@ function getPushDebugMode() {
 
 function getSecretDebugProgress() {
   if (!IS_PRIVATE_BUILD) return null;
+  if (state.secretDebugProgress) return state.secretDebugProgress;
 
   const params = new URLSearchParams(window.location.search);
   const priorThoughtCount = Number(params.get('debugSecretPriorThoughts'));
@@ -261,10 +263,12 @@ function getSecretDebugProgress() {
 
   if (!hasPriorThoughts && !hasDays) return null;
 
-  return {
+  state.secretDebugProgress = {
     prior_thought_count: hasPriorThoughts ? priorThoughtCount : 0,
     first_thought_days_ago: hasDays ? firstThoughtDaysAgo : 0,
   };
+
+  return state.secretDebugProgress;
 }
 
 function getDebugThoughtToastAppendage(result, debugSecretProgress) {
@@ -278,6 +282,20 @@ function getDebugThoughtToastAppendage(result, debugSecretProgress) {
   const count = Number.isFinite(debugCount) ? debugCount : 0;
   const noun = count === 1 ? 'thought' : 'thoughts';
   return ` DEBUG: ${count} ${noun}.`;
+}
+
+function updateSecretDebugProgress(result, debugSecretProgress) {
+  if (!debugSecretProgress) return;
+
+  const debugState = result?.secret_state?.debug;
+  const effectiveThoughtCount = Number(debugState?.effective_thought_count ?? result?.total_count);
+
+  if (!Number.isFinite(effectiveThoughtCount)) return;
+
+  state.secretDebugProgress = {
+    ...debugSecretProgress,
+    prior_thought_count: Math.max(0, Math.floor(effectiveThoughtCount)),
+  };
 }
 
 function getPushPromptDismissKey(userSlug) {
@@ -971,6 +989,7 @@ async function handleCheckIn() {
       debugSecretProgress ? { debug_secret_progress: debugSecretProgress } : {}
     );
     renderSecretState(result.secret_state);
+    updateSecretDebugProgress(result, debugSecretProgress);
     state.thoughtCounts = result.thought_counts || state.thoughtCounts;
 
     if (result.check_in) {
