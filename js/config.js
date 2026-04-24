@@ -72,10 +72,10 @@ export const ENV_PRIVATE_ARRIVAL_LINES = {
 };
 
 export const LANDING_SECONDARY_LINE_WEIGHTING = {
-  none: 0.2,
-  shared: 0.6,
-  personal: 0.15,
-  secret: 0.05,
+  none: 0.1,
+  shared: 0.65,
+  personal: 0.18,
+  secret: 0.07,
 };
 
 export const ARRIVAL_AMBIENT_LINE_WEIGHTING = {
@@ -86,10 +86,10 @@ export const ARRIVAL_AMBIENT_LINE_WEIGHTING = {
 
 export const SECRET_CLUE_FRAGMENT_CHANCE = 0.05;
 export const SECRET_CLUE_FRAGMENTS = [
-  'there is',
-  'a note here',
-  'if you keep',
-  'returning.',
+  'not everything here says its name.',
+  'some quiet doors look like endings.',
+  'one part of this place remembers you.',
+  'something here is waiting in the margins.',
 ];
 export const HIDDEN_LETTER_PATH = './kept.html';
 

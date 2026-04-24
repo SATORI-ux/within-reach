@@ -12,6 +12,7 @@ import {
 } from './api.js';
 import {
   ARRIVAL_REVEAL_DELAY_MS,
+  IS_PRIVATE_BUILD,
   MAX_NOTE_LENGTH,
   REACTIONS,
   VAPID_PUBLIC_KEY,
@@ -229,6 +230,23 @@ const PUSH_PROMPT_DISMISS_PREFIX = 'within-reach.push-prompt-dismissed.';
 
 function getPushDebugMode() {
   return new URLSearchParams(window.location.search).get('debugPush') === '1';
+}
+
+function getSecretDebugProgress() {
+  if (!IS_PRIVATE_BUILD) return null;
+
+  const params = new URLSearchParams(window.location.search);
+  const priorThoughtCount = Number(params.get('debugSecretPriorThoughts'));
+  const firstThoughtDaysAgo = Number(params.get('debugSecretDays'));
+  const hasPriorThoughts = Number.isFinite(priorThoughtCount);
+  const hasDays = Number.isFinite(firstThoughtDaysAgo);
+
+  if (!hasPriorThoughts && !hasDays) return null;
+
+  return {
+    prior_thought_count: hasPriorThoughts ? priorThoughtCount : 0,
+    first_thought_days_ago: hasDays ? firstThoughtDaysAgo : 0,
+  };
 }
 
 function getPushPromptDismissKey(userSlug) {
@@ -915,7 +933,11 @@ async function handleCheckIn() {
   thinkingButton.disabled = true;
 
   try {
-    const result = await sendCheckIn(state.sessionToken);
+    const debugSecretProgress = getSecretDebugProgress();
+    const result = await sendCheckIn(
+      state.sessionToken,
+      debugSecretProgress ? { debug_secret_progress: debugSecretProgress } : {}
+    );
     renderSecretState(result.secret_state);
     state.thoughtCounts = result.thought_counts || state.thoughtCounts;
 
