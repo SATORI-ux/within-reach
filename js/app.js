@@ -275,6 +275,8 @@ function getDebugThoughtToastAppendage(result, debugSecretProgress) {
   if (!debugSecretProgress) return '';
 
   const debugState = result?.secret_state?.debug;
+  if (debugState?.enabled === false) return '';
+
   const debugCount = Number(debugState?.effective_thought_count ?? result?.total_count);
 
   if (!Number.isFinite(debugCount)) return ' DEBUG: thought count unavailable.';
@@ -289,6 +291,8 @@ function updateSecretDebugProgress(result, debugSecretProgress) {
   if (!debugSecretProgress) return;
 
   const debugState = result?.secret_state?.debug;
+  if (debugState?.enabled === false) return;
+
   const effectiveThoughtCount = Number(debugState?.effective_thought_count ?? result?.total_count);
 
   if (!Number.isFinite(effectiveThoughtCount)) return;
