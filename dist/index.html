@@ -8,7 +8,7 @@
       name="description"
       content="A small private shared space for quiet check-ins, notes, and gentle signals."
     />
-    <meta name="theme-color" content="#e8e0d4" />
+    <meta name="theme-color" content="#e6dccd" />
     <script>
       (() => {
         const storageKey = 'withinReachAppearance';
@@ -23,13 +23,14 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'dark' ? '#231d1a' : '#e8e0d4');
+          themeMeta.setAttribute('content', theme === 'dark' ? '#181915' : '#e6dccd');
         }
       })();
     </script>
     <link rel="manifest" href="/assets/manifest-a-bKHd93.webmanifest" />
-    <script type="module" crossorigin src="/assets/main-2WE9P-XS.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-B7JUhB61.css">
+    <script type="module" crossorigin src="/assets/main-BfmurhPM.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-BE-3pL_C.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-rtGqgrM7.css">
   </head>
   <body class="is-booting">
     <div class="grain"></div>
@@ -65,6 +66,7 @@
           <h2 id="urgentStateTitle">Someone needs you.</h2>
           <p class="urgent-state__guidance" id="urgentStateGuidance"></p>
           <p class="urgent-state__time" id="urgentStateTime"></p>
+          <p class="urgent-state__contact" id="urgentContactStatus" hidden></p>
           <div class="urgent-state__actions" id="urgentStateResponseActions">
             <a class="solid-button solid-button--urgent urgent-state__link" id="urgentCallLink" href="#">Call now</a>
             <a class="ghost-button urgent-state__link" id="urgentTextLink" href="#">Text now</a>
