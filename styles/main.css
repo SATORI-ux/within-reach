@@ -1152,6 +1152,7 @@ a.ghost-button {
 
 .secret-notice__actions {
   justify-content: flex-start;
+  margin-top: 1.35rem;
 }
 
 .feed-item--placeholder,
