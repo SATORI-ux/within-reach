@@ -77,11 +77,29 @@ function getStoredSessionToken() {
   return (localStorage.getItem(SESSION_KEY) || '').trim();
 }
 
+function getCleanKeptPathname() {
+  return window.location.pathname.replace(/(?:^|\/)kept\.html$/, (match) =>
+    match.startsWith('/') ? '/kept' : 'kept'
+  );
+}
+
+function cleanPageUrl() {
+  const cleanPathname = getCleanKeptPathname();
+  if (cleanPathname === window.location.pathname) return;
+
+  window.history.replaceState(
+    {},
+    '',
+    `${cleanPathname}${window.location.search}${window.location.hash}` || '/kept'
+  );
+}
+
 function replaceUrlParams(mutator) {
   const params = new URLSearchParams(window.location.search);
   mutator(params);
   const cleanSearch = params.toString();
-  const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
+  const cleanPathname = getCleanKeptPathname();
+  const cleanUrl = `${cleanPathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
   window.history.replaceState({}, '', cleanUrl || '/');
 }
 
@@ -270,6 +288,7 @@ function renderPage(content, thoughtCounts = []) {
 }
 
 async function bootstrap() {
+  cleanPageUrl();
   setDocumentTheme(document.documentElement.dataset.theme);
   initializeThemeToggle(themeToggle);
 

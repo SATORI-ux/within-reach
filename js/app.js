@@ -64,6 +64,23 @@ function clearSessionPersistence() {
   document.cookie = `${SESSION_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
 }
 
+function getCleanHomePathname() {
+  return window.location.pathname.replace(/(?:^|\/)index\.html$/, (match) =>
+    match.startsWith('/') ? '/' : ''
+  );
+}
+
+function cleanPageUrl() {
+  const cleanPathname = getCleanHomePathname();
+  if (cleanPathname === window.location.pathname) return;
+
+  window.history.replaceState(
+    {},
+    '',
+    `${cleanPathname}${window.location.search}${window.location.hash}` || '/'
+  );
+}
+
 function getStoredSessionToken() {
   const cookieToken = getCookie(SESSION_COOKIE_NAME).trim();
   if (cookieToken) return cookieToken;
@@ -75,7 +92,8 @@ function replaceUrlParams(mutator) {
   const params = new URLSearchParams(window.location.search);
   mutator(params);
   const cleanSearch = params.toString();
-  const cleanUrl = `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
+  const cleanPathname = getCleanHomePathname();
+  const cleanUrl = `${cleanPathname}${cleanSearch ? `?${cleanSearch}` : ''}${window.location.hash}`;
   window.history.replaceState({}, '', cleanUrl || '/');
 }
 
@@ -247,6 +265,19 @@ function getSecretDebugProgress() {
     prior_thought_count: hasPriorThoughts ? priorThoughtCount : 0,
     first_thought_days_ago: hasDays ? firstThoughtDaysAgo : 0,
   };
+}
+
+function getDebugThoughtToastAppendage(result, debugSecretProgress) {
+  if (!debugSecretProgress) return '';
+
+  const debugState = result?.secret_state?.debug;
+  const debugCount = Number(debugState?.effective_thought_count ?? result?.total_count);
+
+  if (!Number.isFinite(debugCount)) return ' DEBUG: thought count unavailable.';
+
+  const count = Number.isFinite(debugCount) ? debugCount : 0;
+  const noun = count === 1 ? 'thought' : 'thoughts';
+  return ` DEBUG: ${count} ${noun}.`;
 }
 
 function getPushPromptDismissKey(userSlug) {
@@ -845,6 +876,7 @@ function handleCollapseNotes() {
 }
 
 async function bootstrap() {
+  cleanPageUrl();
   setDocumentTheme(document.documentElement.dataset.theme);
   initializeThemeToggle(themeToggle);
   setReady();
@@ -951,7 +983,7 @@ async function handleCheckIn() {
       renderCurrentCheckIns();
     }
 
-    showToast('A little thought sent.', state.visitor.accent_color);
+    showToast(`A little thought sent.${getDebugThoughtToastAppendage(result, debugSecretProgress)}`, state.visitor.accent_color);
     setActionMessage('');
   } catch (error) {
     console.error(error);
