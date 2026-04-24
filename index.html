@@ -182,6 +182,20 @@
 
     <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
 
+    <div class="dialog-shell secret-notice" id="secretNotice" hidden>
+      <div class="dialog-backdrop"></div>
+      <div class="dialog-card secret-notice__card" role="dialog" aria-modal="true" aria-labelledby="secretNoticeTitle">
+        <p class="section__label">Something kept</p>
+        <h2 id="secretNoticeTitle">A quiet doorway has opened.</h2>
+        <p class="dialog-card__body">
+          Something in this little place has been waiting for enough small thoughts to gather. It is here now, not loudly, but no longer out of reach.
+        </p>
+        <div class="dialog-card__actions secret-notice__actions">
+          <button class="solid-button" id="ackSecretNoticeButton" type="button">I will keep this</button>
+        </div>
+      </div>
+    </div>
+
     <div class="dialog-shell" id="urgentDialog" hidden>
       <div class="dialog-backdrop" data-close-urgent="true"></div>
       <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="urgentDialogTitle">

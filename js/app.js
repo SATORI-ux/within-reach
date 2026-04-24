@@ -485,7 +485,7 @@ function applyInitialFeedPayload(feed) {
   state.checkIns = feed.check_ins || [];
   state.notes = feed.notes || [];
   state.thoughtCounts = feed.thought_counts || [];
-  renderSecretState(feed.secret_state);
+  renderSecretState(feed.secret_state, state.visitor?.user_slug);
 
   state.feed.checkIns.hasMore = Boolean(feed.check_ins_page?.has_more);
   state.feed.checkIns.nextBeforeId = feed.check_ins_page?.next_before_id ?? null;
@@ -989,7 +989,7 @@ async function handleCheckIn() {
       state.sessionToken,
       debugSecretProgress ? { debug_secret_progress: debugSecretProgress } : {}
     );
-    renderSecretState(result.secret_state);
+    renderSecretState(result.secret_state, state.visitor?.user_slug);
     updateSecretDebugProgress(result, debugSecretProgress);
     state.thoughtCounts = result.thought_counts || state.thoughtCounts;
 

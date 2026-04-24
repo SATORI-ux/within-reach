@@ -35,6 +35,8 @@ const factInterludeLineEl = document.querySelector('#factInterludeLine');
 const checkInsFeedEl = document.querySelector('#checkInsFeed');
 const notesFeedEl = document.querySelector('#notesFeed');
 const toastStackEl = document.querySelector('#toastStack');
+const secretNoticeEl = document.querySelector('#secretNotice');
+const ackSecretNoticeButton = document.querySelector('#ackSecretNoticeButton');
 const checkInTemplate = document.querySelector('#checkInItemTemplate');
 const noteCardTemplate = document.querySelector('#noteCardTemplate');
 const actionMessageEl = document.querySelector('#actionMessage');
@@ -49,9 +51,11 @@ const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
 const collapseNotesButton = document.querySelector('#collapseNotesButton');
 
 const CLUE_FRAGMENT_INDEX_KEY = 'within-reach.secret-clue-fragment-index';
+const SECRET_NOTICE_ACK_PREFIX = 'within-reach.secret-notice-ack.';
 const FOOTER_HOLD_DURATION_MS = 1200;
 let hiddenDoorUnlocked = false;
 let footerHoldTimer = null;
+let pendingSecretNoticeKey = '';
 
 function getArrivalDebugMode() {
   return new URLSearchParams(window.location.search).get('debugArrival') === '1';
@@ -389,12 +393,40 @@ export function setHiddenDoorUnlocked(unlocked) {
   hiddenDoorUnlocked = IS_PRIVATE_BUILD && Boolean(unlocked);
 }
 
-export function renderSecretState(secretState) {
+function getSecretNoticeAckKey(visitorSlug, unlockedAt) {
+  if (!visitorSlug || !unlockedAt) return '';
+  return `${SECRET_NOTICE_ACK_PREFIX}${visitorSlug}.${unlockedAt}`;
+}
+
+function isSecretNoticeAcknowledged(visitorSlug, unlockedAt) {
+  const key = getSecretNoticeAckKey(visitorSlug, unlockedAt);
+  return Boolean(key && window.localStorage.getItem(key) === '1');
+}
+
+function showSecretNotice(visitorSlug, unlockedAt) {
+  if (!secretNoticeEl || !ackSecretNoticeButton) return;
+
+  pendingSecretNoticeKey = getSecretNoticeAckKey(visitorSlug, unlockedAt);
+  if (!pendingSecretNoticeKey || isSecretNoticeAcknowledged(visitorSlug, unlockedAt)) return;
+
+  secretNoticeEl.hidden = false;
+  window.setTimeout(() => ackSecretNoticeButton.focus(), 40);
+}
+
+function acknowledgeSecretNotice() {
+  if (pendingSecretNoticeKey) {
+    window.localStorage.setItem(pendingSecretNoticeKey, '1');
+  }
+
+  pendingSecretNoticeKey = '';
+  if (secretNoticeEl) secretNoticeEl.hidden = true;
+}
+
+export function renderSecretState(secretState, visitorSlug = '') {
   setHiddenDoorUnlocked(secretState?.unlocked);
 
-  const tagline = secretState?.soft_reveal?.active ? secretState.soft_reveal.tagline : '';
-  if (tagline) {
-    setFactInterlude(tagline);
+  if (IS_PRIVATE_BUILD && secretState?.unlocked && secretState?.unlocked_at) {
+    showSecretNotice(visitorSlug, secretState.unlocked_at);
   }
 }
 
@@ -408,6 +440,10 @@ export function bindHiddenDoor() {
   footerLineEl.addEventListener('contextmenu', (event) => {
     if (hiddenDoorUnlocked) event.preventDefault();
   });
+}
+
+if (ackSecretNoticeButton) {
+  ackSecretNoticeButton.addEventListener('click', acknowledgeSecretNotice);
 }
 
 export async function renderArrival(visitor) {
