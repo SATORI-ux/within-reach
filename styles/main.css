@@ -117,6 +117,9 @@ textarea {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .page-chrome {
@@ -361,6 +364,9 @@ body.content-revealed .main-content {
 .solid-button {
   border: 0;
   cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
   transition: transform var(--transition), opacity var(--transition), background var(--transition), border-color var(--transition);
 }
 
@@ -492,6 +498,9 @@ a.ghost-button {
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .solid-button--urgent {
@@ -656,6 +665,9 @@ a.ghost-button {
   line-height: 1.5;
   font-style: italic;
   color: color-mix(in srgb, var(--text-muted) 94%, var(--text));
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .fact-interlude__line::before,
@@ -1035,6 +1047,9 @@ a.ghost-button {
   line-height: 1;
   color: var(--text-soft);
   cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .reaction-chip span:first-child {
@@ -1066,6 +1081,9 @@ a.ghost-button {
   border: 0;
   box-shadow: none;
   color: var(--text-faint);
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .toast-stack {
