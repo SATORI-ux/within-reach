@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => {
   const privateLetterPath = fileURLToPath(new URL('./kept.html', import.meta.url))
   const privateCopyPath = fileURLToPath(new URL('./js/private-copy.js', import.meta.url))
   const publicCopyPath = fileURLToPath(new URL('./js/private-copy.public.js', import.meta.url))
+  const privateWhisperPath = fileURLToPath(new URL('./js/private-whisper.js', import.meta.url))
+  const publicWhisperPath = fileURLToPath(new URL('./js/private-whisper.public.js', import.meta.url))
   const input = {
     main: fileURLToPath(new URL('./index.html', import.meta.url)),
   }
@@ -30,6 +32,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         './private-copy.js': isPrivateBuild && existsSync(privateCopyPath) ? privateCopyPath : publicCopyPath,
+        './private-whisper.js':
+          isPrivateBuild && existsSync(privateWhisperPath) ? privateWhisperPath : publicWhisperPath,
       },
     },
     build: {

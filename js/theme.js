@@ -87,8 +87,16 @@ export function initializeThemeToggle(button, options = {}) {
     holdTimer = null;
   };
 
-  const handleHoldStart = () => {
+  const handleHoldStart = (event) => {
     if (typeof options.onHold !== 'function' || holdTimer) return;
+
+    if (typeof button.setPointerCapture === 'function' && event?.pointerId !== undefined) {
+      try {
+        button.setPointerCapture(event.pointerId);
+      } catch (_) {
+        // Pointer capture is only a hold-stability enhancement.
+      }
+    }
 
     holdTriggered = false;
     holdTimer = window.setTimeout(() => {
@@ -107,6 +115,9 @@ export function initializeThemeToggle(button, options = {}) {
     button.addEventListener('pointerup', handleHoldEnd);
     button.addEventListener('pointercancel', handleHoldEnd);
     button.addEventListener('pointerleave', handleHoldEnd);
+    button.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
   }
 
   button.addEventListener('click', (event) => {

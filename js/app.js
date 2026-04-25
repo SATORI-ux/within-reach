@@ -17,6 +17,7 @@ import {
   REACTIONS,
   VAPID_PUBLIC_KEY,
 } from './config.js';
+import { THEME_WHISPER_LINE } from './private-whisper.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 import {
   applyAccent,
@@ -246,6 +247,8 @@ const state = {
 };
 
 const PUSH_PROMPT_DISMISS_PREFIX = 'within-reach.push-prompt-dismissed.';
+let themeWhisperEl = null;
+let themeWhisperTimer = null;
 
 function getPushDebugMode() {
   return new URLSearchParams(window.location.search).get('debugPush') === '1';
@@ -269,6 +272,39 @@ function getSecretDebugProgress() {
   };
 
   return state.secretDebugProgress;
+}
+
+function getThemeWhisper() {
+  const line = String(THEME_WHISPER_LINE || '').trim();
+  if (!line || themeWhisperEl || !themeToggle?.parentElement) return themeWhisperEl;
+
+  themeWhisperEl = document.createElement('p');
+  themeWhisperEl.className = 'theme-whisper';
+  themeWhisperEl.hidden = true;
+  themeWhisperEl.textContent = line;
+  themeToggle.parentElement.appendChild(themeWhisperEl);
+
+  return themeWhisperEl;
+}
+
+function revealThemeWhisper() {
+  const whisper = getThemeWhisper();
+  if (!whisper) return;
+
+  document.documentElement.dataset.themeHint = 'noticed';
+  whisper.hidden = false;
+  whisper.classList.add('is-visible');
+
+  if (themeWhisperTimer) {
+    window.clearTimeout(themeWhisperTimer);
+  }
+
+  themeWhisperTimer = window.setTimeout(() => {
+    whisper.classList.remove('is-visible');
+    themeWhisperTimer = window.setTimeout(() => {
+      whisper.hidden = true;
+    }, 420);
+  }, 3400);
 }
 
 function getDebugThoughtToastAppendage(result, debugSecretProgress) {
@@ -901,7 +937,14 @@ function handleCollapseNotes() {
 async function bootstrap() {
   cleanPageUrl();
   setDocumentTheme(document.documentElement.dataset.theme);
-  initializeThemeToggle(themeToggle);
+  initializeThemeToggle(
+    themeToggle,
+    IS_PRIVATE_BUILD
+      ? {
+          onHold: revealThemeWhisper,
+        }
+      : {}
+  );
   setReady();
   setActionsDisabled(true);
   bindHiddenDoor();
