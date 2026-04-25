@@ -157,6 +157,15 @@ button {
   transform: translateY(-1px);
 }
 
+.theme-toggle:active {
+  background: color-mix(in srgb, var(--chrome-fill-hover) 86%, var(--accent));
+  border-color: color-mix(in srgb, var(--chrome-border) 74%, var(--accent));
+  box-shadow:
+    0 4px 12px rgba(25, 18, 14, 0.05),
+    inset 0 2px 5px rgba(25, 18, 14, 0.08);
+  transform: translateY(1px) scale(0.97);
+}
+
 .theme-toggle:focus-visible {
   outline: none;
   box-shadow:
@@ -168,6 +177,11 @@ button {
   display: inline-flex;
   width: 1.15rem;
   height: 1.15rem;
+  transition: transform 160ms ease;
+}
+
+.theme-toggle:active .theme-toggle__icon {
+  transform: scale(0.92);
 }
 
 .theme-toggle__icon svg {
