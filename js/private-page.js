@@ -1,9 +1,11 @@
 import { getPrivatePage, issueDeviceSession } from './api.js';
 import { IS_PRIVATE_BUILD } from './config.js';
+import { THEME_WHISPER_COPY } from './private-whisper.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
 const SESSION_KEY = 'within-reach.session-token';
 const SESSION_COOKIE_NAME = 'within_reach_session_token';
+const THEME_HINT_TRAIL_KEY = 'within-reach.theme-hint-trail';
 
 const statusCard = document.querySelector('#statusCard');
 const statusTitle = document.querySelector('#statusTitle');
@@ -154,7 +156,10 @@ function revealThemeWhisper() {
   if (!themeWhisper) return;
 
   document.documentElement.dataset.keptThemeHint = 'noticed';
+  window.localStorage.setItem(THEME_HINT_TRAIL_KEY, 'kept');
+  themeWhisper.textContent = String(THEME_WHISPER_COPY.keptReveal || '').trim();
   themeWhisper.hidden = false;
+  themeWhisper.classList.remove('is-settled');
   themeWhisper.classList.add('is-visible');
 
   if (themeWhisperTimer) {
@@ -163,10 +168,39 @@ function revealThemeWhisper() {
 
   themeWhisperTimer = window.setTimeout(() => {
     themeWhisper.classList.remove('is-visible');
-    themeWhisperTimer = window.setTimeout(() => {
-      themeWhisper.hidden = true;
-    }, 420);
+    settleThemeWhisper();
   }, 3400);
+}
+
+function hideThemeWhisper() {
+  if (!themeWhisper) return;
+
+  if (themeWhisperTimer) {
+    window.clearTimeout(themeWhisperTimer);
+    themeWhisperTimer = null;
+  }
+
+  themeWhisper.classList.remove('is-visible', 'is-settled');
+  themeWhisperTimer = window.setTimeout(() => {
+    themeWhisper.hidden = true;
+  }, 420);
+}
+
+function settleThemeWhisper() {
+  if (!themeWhisper || document.documentElement.dataset.theme !== 'secret') return;
+
+  const settledLine = String(THEME_WHISPER_COPY.keptSettled || '').trim();
+  if (!settledLine) return;
+
+  themeWhisper.textContent = settledLine;
+  themeWhisper.hidden = false;
+  themeWhisper.classList.remove('is-visible');
+  themeWhisper.classList.add('is-settled');
+}
+
+function handleSecretThemeChange(theme) {
+  if (theme === 'secret') return;
+  hideThemeWhisper();
 }
 
 function appendParagraphs(container, paragraphs = []) {
@@ -358,10 +392,19 @@ async function bootstrap() {
     themeToggle,
     IS_PRIVATE_BUILD
       ? {
+          enableSecretTheme: true,
           onHold: revealThemeWhisper,
+          onSecretThemeChange: handleSecretThemeChange,
         }
       : {}
   );
+  if (
+    IS_PRIVATE_BUILD &&
+    document.documentElement.dataset.theme === 'secret' &&
+    window.localStorage.getItem(THEME_HINT_TRAIL_KEY)
+  ) {
+    settleThemeWhisper();
+  }
 
   if (!IS_PRIVATE_BUILD) {
     setStatus('This page is not available here.', 'The kept page only opens in the private build.');

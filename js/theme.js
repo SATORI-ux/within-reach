@@ -122,8 +122,15 @@ export function initializeThemeToggle(button, options = {}) {
   if (!button) return;
 
   const holdDelay = Number(options.holdDelay) || SECRET_HOLD_MS;
+  const secretThemeEnabled = options.enableSecretTheme === true;
   let holdTimer = null;
   let holdTriggered = false;
+
+  if (!secretThemeEnabled && document.documentElement.dataset.theme === 'secret') {
+    const baseTheme = getBaseAppearance();
+    persistAppearance(baseTheme);
+    setDocumentTheme(baseTheme);
+  }
 
   syncThemeToggle(button);
 
@@ -134,6 +141,7 @@ export function initializeThemeToggle(button, options = {}) {
   };
 
   const handleHoldStart = (event) => {
+    if (!secretThemeEnabled) return;
     if (holdTimer) return;
 
     if (typeof button.setPointerCapture === 'function' && event?.pointerId !== undefined) {
@@ -149,6 +157,9 @@ export function initializeThemeToggle(button, options = {}) {
       holdTimer = null;
       holdTriggered = true;
       const nextTheme = toggleSecretTheme(button);
+      if (typeof options.onSecretThemeChange === 'function') {
+        options.onSecretThemeChange(nextTheme);
+      }
       if (nextTheme === 'secret' && typeof options.onHold === 'function') {
         options.onHold();
       }

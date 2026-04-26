@@ -17,7 +17,7 @@ import {
   REACTIONS,
   VAPID_PUBLIC_KEY,
 } from './config.js';
-import { THEME_WHISPER_LINE } from './private-whisper.js';
+import { THEME_WHISPER_COPY, THEME_WHISPER_LINE } from './private-whisper.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 import {
   applyAccent,
@@ -247,6 +247,7 @@ const state = {
 };
 
 const PUSH_PROMPT_DISMISS_PREFIX = 'within-reach.push-prompt-dismissed.';
+const THEME_HINT_TRAIL_KEY = 'within-reach.theme-hint-trail';
 let themeWhisperEl = null;
 let themeWhisperTimer = null;
 
@@ -287,12 +288,41 @@ function getThemeWhisper() {
   return themeWhisperEl;
 }
 
+function hideThemeWhisper() {
+  const whisper = getThemeWhisper();
+  if (!whisper) return;
+
+  if (themeWhisperTimer) {
+    window.clearTimeout(themeWhisperTimer);
+    themeWhisperTimer = null;
+  }
+
+  whisper.classList.remove('is-visible', 'is-settled');
+  themeWhisperTimer = window.setTimeout(() => {
+    whisper.hidden = true;
+  }, 420);
+}
+
+function settleThemeWhisper() {
+  const whisper = getThemeWhisper();
+  const settledLine = String(THEME_WHISPER_COPY.sharedSettled || '').trim();
+  if (!whisper || !settledLine || document.documentElement.dataset.theme !== 'secret') return;
+
+  whisper.textContent = settledLine;
+  whisper.hidden = false;
+  whisper.classList.remove('is-visible');
+  whisper.classList.add('is-settled');
+}
+
 function revealThemeWhisper() {
   const whisper = getThemeWhisper();
   if (!whisper) return;
 
   document.documentElement.dataset.themeHint = 'noticed';
+  window.localStorage.setItem(THEME_HINT_TRAIL_KEY, 'shared');
+  whisper.textContent = String(THEME_WHISPER_COPY.sharedReveal || THEME_WHISPER_LINE || '').trim();
   whisper.hidden = false;
+  whisper.classList.remove('is-settled');
   whisper.classList.add('is-visible');
 
   if (themeWhisperTimer) {
@@ -301,10 +331,13 @@ function revealThemeWhisper() {
 
   themeWhisperTimer = window.setTimeout(() => {
     whisper.classList.remove('is-visible');
-    themeWhisperTimer = window.setTimeout(() => {
-      whisper.hidden = true;
-    }, 420);
+    settleThemeWhisper();
   }, 3400);
+}
+
+function handleSecretThemeChange(theme) {
+  if (theme === 'secret') return;
+  hideThemeWhisper();
 }
 
 function getDebugThoughtToastAppendage(result, debugSecretProgress) {
@@ -958,10 +991,19 @@ async function bootstrap() {
     themeToggle,
     IS_PRIVATE_BUILD
       ? {
+          enableSecretTheme: true,
           onHold: revealThemeWhisper,
+          onSecretThemeChange: handleSecretThemeChange,
         }
       : {}
   );
+  if (
+    IS_PRIVATE_BUILD &&
+    document.documentElement.dataset.theme === 'secret' &&
+    window.localStorage.getItem(THEME_HINT_TRAIL_KEY)
+  ) {
+    settleThemeWhisper();
+  }
   setReady();
   setActionsDisabled(true);
   bindHiddenDoor();
