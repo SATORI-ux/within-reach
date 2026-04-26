@@ -22,6 +22,8 @@ import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 import {
   applyAccent,
   bindHiddenDoor,
+  closeAllReactionPickers,
+  closeReactionPicker,
   clearMessages,
   renderArrival,
   renderCheckIns,
@@ -1198,6 +1200,7 @@ async function handleReactionClick(event) {
       };
     }
     updateRenderedNoteReactions(noteId, result.reactions || [], state.visitor.user_slug);
+    closeReactionPicker(noteId);
   } catch (error) {
     console.error(error);
     const rawMessage = error?.message || '';
@@ -1323,6 +1326,13 @@ confirmUrgentButton.addEventListener('click', handleUrgentConfirm);
 ackUrgentButton.addEventListener('click', handleUrgentAck);
 notesFeed.addEventListener('click', handleReactionClick);
 
+document.addEventListener('click', (event) => {
+  if (!(event.target instanceof Element)) return;
+  if (event.target.closest('.note-card__reaction-toggle, .note-card__reaction-picker')) return;
+
+  closeAllReactionPickers();
+});
+
 if (enablePushButton) {
   enablePushButton.addEventListener('click', handleEnablePush);
 }
@@ -1355,6 +1365,7 @@ urgentDialog.addEventListener('click', (event) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
+    closeAllReactionPickers();
     closeUrgentDialog();
   }
 });

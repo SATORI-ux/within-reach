@@ -297,14 +297,16 @@ function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'su
   return button;
 }
 
-function buildReactionToggle(noteId, hasReactions, pickerOpen) {
+function buildReactionToggle(noteId, pickerOpen) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'note-card__reaction-toggle';
   button.dataset.noteId = String(noteId);
   button.dataset.action = 'toggle-reaction-picker';
+  button.setAttribute('aria-label', 'React to this note');
   button.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
-  button.textContent = hasReactions ? 'Add a small response' : 'Leave a small response';
+  button.setAttribute('aria-controls', `note-reaction-picker-${noteId}`);
+  button.textContent = '...';
   return button;
 }
 
@@ -564,17 +566,19 @@ export function renderNotes(notes = [], viewerSlug) {
     const pickerOpen = openPickers.has(String(note.id));
     card.dataset.reactionPickerOpen = pickerOpen ? 'true' : 'false';
     const reactions = note.reactions || [];
-    const hasVisibleReactions = reactions.some((reaction) => reaction.count > 0);
 
     renderReactionSet(reactionsEl, note.id, reactions, viewerSlug, {
       includeEmpty: false,
       variant: 'summary',
     });
 
-    const toggleButton = buildReactionToggle(note.id, hasVisibleReactions, pickerOpen);
+    const toggleButton = buildReactionToggle(note.id, pickerOpen);
     reactionToggleSlot.replaceWith(toggleButton);
 
     reactionPickerEl.hidden = !pickerOpen;
+    reactionPickerEl.id = `note-reaction-picker-${note.id}`;
+    reactionPickerEl.setAttribute('role', 'group');
+    reactionPickerEl.setAttribute('aria-label', 'Choose a reaction');
     renderReactionSet(reactionPickerEl, note.id, reactions, viewerSlug, {
       includeEmpty: true,
       variant: 'picker',
@@ -595,7 +599,6 @@ export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
 
   const pickerOpen = card.dataset.reactionPickerOpen === 'true';
   const nextReactions = reactions || [];
-  const hasVisibleReactions = nextReactions.some((reaction) => reaction.count > 0);
 
   renderReactionSet(reactionsEl, noteId, nextReactions, viewerSlug, {
     includeEmpty: false,
@@ -605,8 +608,28 @@ export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
     includeEmpty: true,
     variant: 'picker',
   });
-  toggleButton.textContent = hasVisibleReactions ? 'Add a small response' : 'Leave a small response';
+  toggleButton.textContent = '...';
+  toggleButton.setAttribute('aria-label', 'React to this note');
   toggleButton.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
+}
+
+export function closeReactionPicker(noteId) {
+  const card = notesFeedEl.querySelector(`[data-note-id="${noteId}"]`);
+  if (!card) return;
+
+  const picker = card.querySelector('.note-card__reaction-picker');
+  const toggleButton = card.querySelector('.note-card__reaction-toggle');
+  if (!picker || !toggleButton) return;
+
+  card.dataset.reactionPickerOpen = 'false';
+  picker.hidden = true;
+  toggleButton.setAttribute('aria-expanded', 'false');
+}
+
+export function closeAllReactionPickers() {
+  notesFeedEl.querySelectorAll('[data-note-id][data-reaction-picker-open="true"]').forEach((card) => {
+    closeReactionPicker(card.dataset.noteId);
+  });
 }
 
 export function toggleReactionPicker(noteId) {
@@ -618,6 +641,7 @@ export function toggleReactionPicker(noteId) {
   if (!picker || !toggleButton) return;
 
   const nextOpen = card.dataset.reactionPickerOpen !== 'true';
+  closeAllReactionPickers();
   card.dataset.reactionPickerOpen = nextOpen ? 'true' : 'false';
   picker.hidden = !nextOpen;
   toggleButton.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
@@ -633,8 +657,8 @@ export function updateFeedHistoryControls({
     hasMore: Boolean(checkIns.hasMore),
     loadingOlder: Boolean(checkIns.loadingOlder),
     expanded: Boolean(checkIns.expanded),
-    defaultLabel: 'Show older check-ins',
-    loadingLabel: 'Loading older check-ins...',
+    defaultLabel: 'Show older',
+    loadingLabel: 'Loading...',
     collapseAriaLabel: 'Return to recent check-ins',
   });
 
@@ -644,8 +668,8 @@ export function updateFeedHistoryControls({
     hasMore: Boolean(notes.hasMore),
     loadingOlder: Boolean(notes.loadingOlder),
     expanded: Boolean(notes.expanded),
-    defaultLabel: 'Show older notes',
-    loadingLabel: 'Loading older notes...',
+    defaultLabel: 'Show older',
+    loadingLabel: 'Loading...',
     collapseAriaLabel: 'Return to recent notes',
   });
 }
