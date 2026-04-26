@@ -14,7 +14,7 @@
         const storageKey = 'withinReachAppearance';
         const saved = window.localStorage.getItem(storageKey);
         const theme =
-          saved === 'dark' || saved === 'light'
+          saved === 'dark' || saved === 'light' || saved === 'secret'
             ? saved
             : window.matchMedia('(prefers-color-scheme: dark)').matches
               ? 'dark'
@@ -23,7 +23,7 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'dark' ? '#181915' : '#e6dccd');
+          themeMeta.setAttribute('content', theme === 'secret' ? '#d8bcae' : theme === 'dark' ? '#181915' : '#e6dccd');
         }
       })();
     </script>
@@ -76,20 +76,28 @@
         --grain-soft: rgba(255, 242, 230, 0.04);
       }
 
-      :root[data-kept-theme-hint='noticed'] {
-        --bg-top-glow: rgba(177, 150, 103, 0.24);
-        --bg-start: #f6f0e5;
-        --bg-mid: #eee3d3;
-        --bg-end: #e5d8c3;
-        --accent: #967d5e;
-      }
-
-      :root[data-theme='dark'][data-kept-theme-hint='noticed'] {
-        --bg-top-glow: rgba(178, 140, 91, 0.16);
-        --bg-start: #29251e;
-        --bg-mid: #221f1a;
-        --bg-end: #1a1713;
-        --accent: #b49a73;
+      :root[data-theme='secret'] {
+        --bg: #e6cfc4;
+        --bg-top-glow: rgba(144, 92, 79, 0.2);
+        --bg-start: #f2ded3;
+        --bg-mid: #e4c9bd;
+        --bg-end: #d6b5a6;
+        --surface: rgba(255, 244, 236, 0.72);
+        --surface-strong: rgba(255, 238, 229, 0.93);
+        --line: rgba(91, 52, 45, 0.14);
+        --text: #49332f;
+        --text-soft: #75584f;
+        --text-muted: rgba(92, 58, 52, 0.66);
+        --text-faint: rgba(92, 58, 52, 0.54);
+        --accent: #8b5f58;
+        --chrome-border: rgba(95, 55, 47, 0.12);
+        --chrome-fill: rgba(255, 240, 231, 0.64);
+        --chrome-fill-hover: rgba(255, 240, 231, 0.82);
+        --chrome-icon: rgba(78, 44, 39, 0.82);
+        --focus-ring: rgba(139, 95, 88, 0.17);
+        --shadow: 0 12px 32px rgba(80, 43, 36, 0.08);
+        --grain-strong: rgba(80, 39, 35, 0.14);
+        --grain-soft: rgba(80, 39, 35, 0.1);
       }
 
       * {

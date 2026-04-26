@@ -385,8 +385,10 @@ export function revealMainContent() {
 
 export function applyAccent(userSlug) {
   const accent = ACCENT_BY_USER[userSlug] || '#6e8d62';
-  document.documentElement.style.setProperty('--accent', accent);
-  document.documentElement.style.setProperty('--accent-soft', `${accent}22`);
+  document.documentElement.style.removeProperty('--accent');
+  document.documentElement.style.removeProperty('--accent-soft');
+  document.documentElement.style.setProperty('--personal-accent', accent);
+  document.documentElement.style.setProperty('--personal-accent-soft', `${accent}22`);
 }
 
 export function setHiddenDoorUnlocked(unlocked) {

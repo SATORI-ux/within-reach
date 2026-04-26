@@ -14,7 +14,7 @@
         const storageKey = 'withinReachAppearance';
         const saved = window.localStorage.getItem(storageKey);
         const theme =
-          saved === 'dark' || saved === 'light'
+          saved === 'dark' || saved === 'light' || saved === 'secret'
             ? saved
             : window.matchMedia('(prefers-color-scheme: dark)').matches
               ? 'dark'
@@ -23,7 +23,7 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'dark' ? '#181915' : '#e6dccd');
+          themeMeta.setAttribute('content', theme === 'secret' ? '#d8bcae' : theme === 'dark' ? '#181915' : '#e6dccd');
         }
       })();
     </script>
