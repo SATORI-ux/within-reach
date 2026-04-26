@@ -401,13 +401,14 @@ function renderPushDebugPanel() {
   pushDebugPanelEl.hidden = !debugMode;
   if (!debugMode) return;
 
-  const backendEnabled = state.visitor?.push_enabled ? 'on' : 'off';
+  const currentDeviceEnabled = state.visitor?.push_enabled ? 'on' : 'off';
+  const otherDeviceEnabled = state.visitor?.push_enabled_elsewhere ? 'yes' : 'no';
   const deviceSubscribed = deviceState?.hasDeviceSubscription ? 'yes' : 'no';
   const permission = deviceState?.permission || 'unknown';
   const currentLabel = debug?.current_device?.label || 'unknown';
 
   pushDebugSummaryEl.textContent =
-    `Backend push: ${backendEnabled}. Browser permission: ${permission}. This device subscribed: ${deviceSubscribed}. This-device id: ${currentLabel}.`;
+    `This-device push: ${currentDeviceEnabled}. Other saved device: ${otherDeviceEnabled}. Browser permission: ${permission}. Local subscription: ${deviceSubscribed}. Session label: ${currentLabel}.`;
 
   pushDebugDevicesEl.innerHTML = '';
 
@@ -456,6 +457,9 @@ function syncPushUiWithVisitorTruth() {
   }
 
   if (pushCopyEl) {
+    pushCopyEl.textContent = state.visitor?.push_enabled_elsewhere
+      ? 'This device can receive its own gentle taps too, if you would like.'
+      : 'If you would like, this place can tap you gently when something arrives.';
     pushCopyEl.hidden = !showPrompt;
   }
 
@@ -678,12 +682,14 @@ async function inspectCurrentDevicePushSubscription() {
     const subscription = await getCurrentPushSubscription();
     return {
       hasDeviceSubscription: Boolean(subscription),
+      endpoint: subscription?.endpoint || null,
       permission: getNotificationPermission(),
     };
   } catch (error) {
     console.warn('Could not read current push subscription.', error);
     return {
       hasDeviceSubscription: false,
+      endpoint: null,
       permission: getNotificationPermission(),
       error,
     };
@@ -695,12 +701,12 @@ async function logPushTruthMismatch() {
 
   const deviceState = await inspectCurrentDevicePushSubscription();
   state.pushDeviceState = deviceState;
-  const visitorPushEnabled = Boolean(state.visitor.push_enabled);
+  const currentDevicePushEnabled = Boolean(state.visitor.push_enabled);
 
-  if (deviceState.hasDeviceSubscription !== visitorPushEnabled) {
+  if (deviceState.hasDeviceSubscription !== currentDevicePushEnabled) {
     console.warn('Push truth mismatch detected.', {
       userSlug: state.visitor.user_slug,
-      visitorPushEnabled,
+      currentDevicePushEnabled,
       hasDeviceSubscription: deviceState.hasDeviceSubscription,
       permission: deviceState.permission,
     });
@@ -711,12 +717,23 @@ async function refreshPushDebugState() {
   state.pushDeviceState = await inspectCurrentDevicePushSubscription();
 }
 
+async function getPushResolveOptions(options = {}) {
+  const deviceState = await inspectCurrentDevicePushSubscription();
+  state.pushDeviceState = deviceState;
+
+  return {
+    ...options,
+    current_push_endpoint: deviceState.endpoint || null,
+  };
+}
+
 async function refreshVisitorPushTruth() {
   if (!state.sessionToken || !state.visitor) return null;
 
   try {
+    const pushOptions = await getPushResolveOptions({ debug_push: getPushDebugMode() });
     const refreshedVisitor = await withTimeout(
-      resolveVisitor(state.sessionToken, { debug_push: getPushDebugMode() }),
+      resolveVisitor(state.sessionToken, pushOptions),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
@@ -968,13 +985,13 @@ async function bootstrap() {
   }
 
   try {
+    const pushOptions = await getPushResolveOptions({ debug_push: getPushDebugMode() });
     state.visitor = await withTimeout(
-      resolveVisitor(state.sessionToken, { debug_push: getPushDebugMode() }),
+      resolveVisitor(state.sessionToken, pushOptions),
       VISITOR_RESOLVE_TIMEOUT_MS,
       'Still finding your place...'
     );
     state.pushDebug = state.visitor.push_debug || null;
-    await refreshPushDebugState();
 
     applyAccent(state.visitor.user_slug);
     await renderArrival(state.visitor);

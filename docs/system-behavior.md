@@ -204,14 +204,14 @@ When editing `README.md` or any repo-overview documentation, explicitly verify:
 If unsure, leave it out.
 
 ## Push truth
-Push truth is per-user, not merely per-browser-origin.
+Push truth for the local notification CTA is per-device, not merely per-user or per-browser-origin.
 
 Do not infer:
 - “notifications allowed in browser”
 as equivalent to:
-- “current user has a valid active push subscription row”
+- “this resolved visitor has a valid active push subscription row for this device endpoint”
 
-The system should prefer backend-derived push-enabled truth for the current resolved identity.
+The system should prefer backend-derived push-enabled truth for the current resolved identity and current device endpoint.
 
 This is an important boundary because the app is two-person and may be used on shared or reused devices.
 

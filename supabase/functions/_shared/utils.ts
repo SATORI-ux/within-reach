@@ -214,6 +214,53 @@ export async function getPushEnabledForUser(
   return (count ?? 0) > 0;
 }
 
+export async function getPushEnabledForDevice(
+  client: SupabaseClient,
+  userSlug: string,
+  endpoint: string | null | undefined,
+): Promise<boolean> {
+  const trimmedEndpoint = endpoint?.trim();
+  if (!trimmedEndpoint) return false;
+
+  const { count, error } = await client
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_slug', userSlug)
+    .eq('endpoint', trimmedEndpoint)
+    .eq('is_active', true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (count ?? 0) > 0;
+}
+
+export async function getPushEnabledForOtherDevices(
+  client: SupabaseClient,
+  userSlug: string,
+  endpoint: string | null | undefined,
+): Promise<boolean> {
+  const trimmedEndpoint = endpoint?.trim();
+
+  if (!trimmedEndpoint) {
+    return await getPushEnabledForUser(client, userSlug);
+  }
+
+  const { count, error } = await client
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_slug', userSlug)
+    .eq('is_active', true)
+    .neq('endpoint', trimmedEndpoint);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (count ?? 0) > 0;
+}
+
 export async function getThoughtCounts(client: SupabaseClient): Promise<ThoughtCount[]> {
   const { data: visitors, error: visitorError } = await client
     .from('tile_keys')

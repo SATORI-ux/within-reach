@@ -1,7 +1,8 @@
 import {
   getActiveDeviceSession,
   getAdminClient,
-  getPushEnabledForUser,
+  getPushEnabledForDevice,
+  getPushEnabledForOtherDevices,
   handleOptions,
   json,
   readJson,
@@ -12,6 +13,7 @@ import {
 type Payload = {
   tile_key?: string;
   debug_push?: boolean;
+  current_push_endpoint?: string | null;
 };
 
 Deno.serve(async (req) => {
@@ -25,8 +27,20 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
-    const push_enabled = await getPushEnabledForUser(client, visitor.user_slug);
     const currentSession = await getActiveDeviceSession(client, body.tile_key ?? '');
+    const currentPushEndpoint = typeof body.current_push_endpoint === 'string'
+      ? body.current_push_endpoint.trim()
+      : '';
+    const push_enabled = await getPushEnabledForDevice(
+      client,
+      visitor.user_slug,
+      currentPushEndpoint,
+    );
+    const push_enabled_elsewhere = await getPushEnabledForOtherDevices(
+      client,
+      visitor.user_slug,
+      currentPushEndpoint,
+    );
     let push_debug = undefined;
 
     if (body.debug_push) {
@@ -61,7 +75,9 @@ Deno.serve(async (req) => {
             label: subscription.device_label || `Device ${index + 1}`,
             endpoint_host: endpointHost,
             updated_at: subscription.updated_at ?? subscription.created_at ?? null,
-            this_device: Boolean(currentSession?.id && subscription.device_session_id === currentSession.id),
+            this_device: currentPushEndpoint
+              ? subscription.endpoint === currentPushEndpoint
+              : Boolean(currentSession?.id && subscription.device_session_id === currentSession.id),
           };
         }),
       };
@@ -72,6 +88,7 @@ Deno.serve(async (req) => {
       display_name: visitor.display_name,
       accent_color: visitor.accent_color,
       push_enabled,
+      push_enabled_elsewhere,
       push_debug,
     }, 200, { req });
   } catch (error) {

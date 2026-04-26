@@ -80,7 +80,7 @@ This repo is vulnerable to intent/code drift because it has evolved through iter
 - multiple layers hold competing versions of the same truth
 
 ### Current known risk areas
-- per-user push-enabled truth versus origin-level notification permission
+- current-device push-enabled truth versus user-level subscriptions or origin-level notification permission
 - older SMS/Twilio urgent experiments versus newer push-only urgent direction
 - private-build planning versus public-build behavior
 - boot/reveal and landing logic slipping back toward generic fallback flashes
