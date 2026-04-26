@@ -6,9 +6,9 @@ const THEME_MEDIA = '(prefers-color-scheme: dark)';
 const SECRET_HOLD_MS = 900;
 
 const THEME_COLORS = {
-  light: '#e6dccd',
-  dark: '#181915',
-  secret: '#d8bcae',
+  light: '#eee5d7',
+  dark: '#1a131a',
+  secret: '#33292c',
 };
 
 const ICONS = {

@@ -53,6 +53,39 @@ const collapseNotesButton = document.querySelector('#collapseNotesButton');
 const CLUE_FRAGMENT_INDEX_KEY = 'within-reach.secret-clue-fragment-index';
 const SECRET_NOTICE_ACK_PREFIX = 'within-reach.secret-notice-ack.';
 const FOOTER_HOLD_DURATION_MS = 1200;
+const THEMED_USER_ACCENTS = new Set(['joey', 'jeszi']);
+const REACTION_DISPLAY = {
+  '❤️': {
+    label: 'heart',
+    kind: 'heart',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19.2s-6.35-3.6-7.7-7.18c-.8-2.13.32-4.42 2.48-4.86 1.42-.28 2.8.36 3.62 1.48.82-1.12 2.2-1.76 3.62-1.48 2.16.44 3.28 2.73 2.48 4.86C18.35 15.6 12 19.2 12 19.2Z"></path></svg>',
+  },
+  '✨': {
+    label: 'sparkle',
+    kind: 'sparkle',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.8 13.7 9l5.1 1.7-5.1 1.7L12 17.6l-1.7-5.2-5.1-1.7L10.3 9 12 3.8Z"></path><path d="m18 16.5.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z"></path></svg>',
+  },
+  '🥹': {
+    label: 'soft face',
+    kind: 'soft',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7.1"></circle><path d="M8.8 10.1c.55-.65 1.35-.65 1.9 0M13.3 10.1c.55-.65 1.35-.65 1.9 0"></path><path d="M9.45 14.75c1.25.95 3.85.95 5.1 0"></path><path d="M8.55 12.1c-.55.7-.55 1.32 0 1.86.55-.54.55-1.16 0-1.86Z"></path></svg>',
+  },
+  '🌙': {
+    label: 'moon',
+    kind: 'moon',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.4 4.8a7.4 7.4 0 1 0 3.8 10.05 6.15 6.15 0 1 1-3.8-10.05Z"></path></svg>',
+  },
+  '🐞': {
+    label: 'ladybug',
+    kind: 'ladybug',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.2 12.1c0-3 2.1-5.25 4.8-5.25s4.8 2.25 4.8 5.25v2.05c0 2.65-1.95 4.55-4.8 4.55s-4.8-1.9-4.8-4.55v-2.05Z"></path><path d="M12 7.05V18.4M7.65 11.1h8.7M8.4 5.25l1.5 1.7M15.6 5.25l-1.5 1.7"></path><circle cx="10" cy="13.5" r=".55"></circle><circle cx="14" cy="13.5" r=".55"></circle></svg>',
+  },
+  '🌸': {
+    label: 'flower',
+    kind: 'flower',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.1c-.9-2.6.45-4.35 2.15-4.05 1.7.3 2.1 2.45-.2 4.05 2.6-.9 4.35.45 4.05 2.15-.3 1.7-2.45 2.1-4.05-.2.9 2.6-.45 4.35-2.15 4.05-1.7-.3-2.1-2.45.2-4.05-2.6.9-4.35-.45-4.05-2.15.3-1.7 2.45-2.1 4.05.2Z"></path><circle cx="12" cy="11.05" r="1.05"></circle></svg>',
+  },
+};
 let hiddenDoorUnlocked = false;
 let footerHoldTimer = null;
 let pendingSecretNoticeKey = '';
@@ -74,6 +107,12 @@ function pseudoRandomIndex(seedValue, length) {
 function pickRandom(items) {
   if (!items.length) return '';
   return items[Math.floor(Math.random() * items.length)];
+}
+
+function getUserAccentToken(userSlug, fallback = '#748a68') {
+  return THEMED_USER_ACCENTS.has(userSlug)
+    ? `var(--accent-${userSlug})`
+    : ACCENT_BY_USER[userSlug] || fallback;
 }
 
 async function getArrivalAmbientLine(visitor) {
@@ -274,18 +313,32 @@ function renderEmptyNotes() {
 }
 
 function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'summary' }) {
+  const display = REACTION_DISPLAY[emoji] || {
+    label: emoji,
+    kind: 'fallback',
+    svg: '',
+  };
   const button = document.createElement('button');
   button.type = 'button';
   button.className = `reaction-chip reaction-chip--${variant}`;
   button.dataset.noteId = String(noteId);
   button.dataset.reactionIndex = String(REACTIONS.indexOf(emoji));
+  button.dataset.reactionKind = display.kind;
+  button.setAttribute('aria-label', `React with ${display.label}`);
 
   const emojiEl = document.createElement('span');
-  emojiEl.textContent = emoji;
+  emojiEl.className = 'reaction-glyph';
+  emojiEl.dataset.reaction = display.kind;
+  if (display.svg) {
+    emojiEl.innerHTML = display.svg;
+  } else {
+    emojiEl.textContent = emoji;
+  }
   button.appendChild(emojiEl);
 
   if (variant === 'summary') {
     const countEl = document.createElement('span');
+    countEl.className = 'reaction-count';
     countEl.textContent = String(summary?.count || 0);
     button.appendChild(countEl);
   }
@@ -386,11 +439,22 @@ export function revealMainContent() {
 }
 
 export function applyAccent(userSlug) {
+  if (THEMED_USER_ACCENTS.has(userSlug)) {
+    document.documentElement.dataset.visitorAccent = userSlug;
+  } else {
+    delete document.documentElement.dataset.visitorAccent;
+  }
+
   const accent = ACCENT_BY_USER[userSlug] || '#6e8d62';
   document.documentElement.style.removeProperty('--accent');
   document.documentElement.style.removeProperty('--accent-soft');
-  document.documentElement.style.setProperty('--personal-accent', accent);
-  document.documentElement.style.setProperty('--personal-accent-soft', `${accent}22`);
+  document.documentElement.style.removeProperty('--personal-accent');
+  document.documentElement.style.removeProperty('--personal-accent-soft');
+
+  if (!THEMED_USER_ACCENTS.has(userSlug)) {
+    document.documentElement.style.setProperty('--personal-accent', accent);
+    document.documentElement.style.setProperty('--personal-accent-soft', `${accent}22`);
+  }
 }
 
 export function setHiddenDoorUnlocked(unlocked) {
@@ -519,7 +583,7 @@ export function renderCheckIns(checkIns = []) {
     const templateIndex = pseudoRandomIndex(item.id, CHECK_IN_TEMPLATES.length);
     const text = CHECK_IN_TEMPLATES[templateIndex].replace('{name}', item.display_name);
 
-    marker.style.setProperty('--marker-accent', item.accent_color || ACCENT_BY_USER[item.from_user_slug] || '#748a68');
+    marker.style.setProperty('--marker-accent', getUserAccentToken(item.from_user_slug, item.accent_color || '#748a68'));
     textEl.textContent = text;
     metaEl.textContent = formatTimestamp(item.created_at);
 
@@ -560,7 +624,8 @@ export function renderNotes(notes = [], viewerSlug) {
     metaEl.textContent = formatTimestamp(note.created_at);
     contentEl.textContent = note.content;
 
-    const accent = note.accent_color || ACCENT_BY_USER[note.from_user_slug] || '#6e8d62';
+    const accent = getUserAccentToken(note.from_user_slug, note.accent_color || '#6e8d62');
+    card.dataset.userAccent = THEMED_USER_ACCENTS.has(note.from_user_slug) ? note.from_user_slug : 'custom';
     card.style.setProperty('--note-accent', accent);
 
     const pickerOpen = openPickers.has(String(note.id));

@@ -8,7 +8,7 @@
       name="description"
       content="A small private shared space for quiet check-ins, notes, and gentle signals."
     />
-    <meta name="theme-color" content="#e6dccd" />
+    <meta name="theme-color" content="#eee5d7" />
     <script>
       (() => {
         const storageKey = 'withinReachAppearance';
@@ -23,7 +23,7 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'secret' ? '#d8bcae' : theme === 'dark' ? '#181915' : '#e6dccd');
+          themeMeta.setAttribute('content', theme === 'secret' ? '#33292c' : theme === 'dark' ? '#1a131a' : '#eee5d7');
         }
       })();
     </script>
@@ -79,6 +79,12 @@
         </section>
 
         <section class="section quick-actions" aria-labelledby="quickActionsTitle">
+          <div class="theme-stars" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
           <div class="section-heading">
             <p class="section__label">Signals</p>
             <h2 id="quickActionsTitle">I'm here. Thinking of you.</h2>
