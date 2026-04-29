@@ -246,6 +246,17 @@ Do not let hidden systems become puzzle systems.
 
 ---
 
+## Deployment notes
+When a change modifies Supabase Edge Functions, explicitly include the redeploy command for each affected function in the final response.
+
+Use this format:
+- `npx.cmd supabase functions deploy <function-name>`
+- For multiple changed functions: `npx.cmd supabase functions deploy <function-a> <function-b>`
+
+Do not mention Edge Function redeploys when no Edge Functions were changed.
+
+---
+
 ## Default implementation stance
 For this repo, the best default behavior is:
 

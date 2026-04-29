@@ -59,7 +59,7 @@ const REACTION_DISPLAY = {
   '❤️': {
     label: 'heart',
     kind: 'heart',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 18.6s-5.65-3.18-6.85-6.28c-.72-1.86.28-3.82 2.1-4.18 1.25-.25 2.45.35 3.15 1.35.7-1 1.9-1.6 3.15-1.35 1.82.36 2.82 2.32 2.1 4.18C17.65 15.42 12 18.6 12 18.6Z"></path></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 18.35 6.92 13.6c-1.72-1.62-1.82-3.82-.48-5.1 1.24-1.2 3.2-1.02 4.22.4L12 10.72l1.34-1.82c1.02-1.42 2.98-1.6 4.22-.4 1.34 1.28 1.24 3.48-.48 5.1L12 18.35Z"></path></svg>',
   },
   '✨': {
     label: 'sparkle',
@@ -69,7 +69,7 @@ const REACTION_DISPLAY = {
   '🥹': {
     label: 'soft smile',
     kind: 'smile',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="6.9"></circle><path d="M8.8 10.2c.5-.52 1.22-.52 1.72 0M13.48 10.2c.5-.52 1.22-.52 1.72 0"></path><path d="M9.3 14.65c1.35 1.05 4.05 1.05 5.4 0"></path><path d="M8.18 12.1c-.5.62-.5 1.16 0 1.64.5-.48.5-1.02 0-1.64Z"></path></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="6.8"></circle><path d="M9.2 10.75h.01M14.8 10.75h.01"></path><path d="M9.45 14.05c1.18 1.18 3.92 1.18 5.1 0"></path><path d="M8.25 12.35c-.46.58-.46 1.1 0 1.55.46-.45.46-.97 0-1.55Z"></path></svg>',
   },
   '🌙': {
     label: 'moon',
@@ -84,7 +84,7 @@ const REACTION_DISPLAY = {
   '🌸': {
     label: 'flower',
     kind: 'flower',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.28c-.78-2.5.48-4.12 2.05-3.88 1.62.25 2.02 2.3-.1 3.88 2.5-.78 4.12.48 3.88 2.05-.25 1.62-2.3 2.02-3.88-.1.78 2.5-.48 4.12-2.05 3.88-1.62-.25-2.02-2.3.1-3.88-2.5.78-4.12-.48-3.88-2.05.25-1.62 2.3-2.02 3.88.1Z"></path><circle cx="12" cy="11.25" r=".9"></circle></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.45c-.85-2.15.2-3.82 1.72-3.82 1.44 0 2.12 1.7.72 3.52 2.22-.54 3.7.72 3.28 2.1-.45 1.46-2.4 1.56-3.72-.28.85 2.15-.2 3.82-1.72 3.82-1.44 0-2.12-1.7-.72-3.52-2.22.54-3.7-.72-3.28-2.1.45-1.46 2.4-1.56 3.72.28Z"></path><circle cx="12" cy="11.2" r=".86"></circle></svg>',
   },
 };
 let hiddenDoorUnlocked = false;
@@ -307,7 +307,7 @@ function renderEmptyCheckIns() {
 function renderEmptyNotes() {
   notesFeedEl.innerHTML = `
     <article class="note-card note-card--placeholder">
-      <p class="note-card__meta">Waiting softly</p>
+      <p class="note-card__meta-line">Waiting softly</p>
       <p class="note-card__content">Notes will collect here in time.</p>
     </article>
   `;

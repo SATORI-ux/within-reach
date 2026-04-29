@@ -155,7 +155,7 @@
         width: 100%;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 1rem;
         min-height: 2.8rem;
         padding-left: 0.15rem;
@@ -169,6 +169,18 @@
         line-height: 1;
         opacity: 0.88;
         text-transform: lowercase;
+      }
+
+      .theme-dock {
+        position: fixed;
+        top: 0.95rem;
+        left: 50%;
+        z-index: 35;
+        display: flex;
+        justify-content: flex-end;
+        width: min(100% - 1.4rem, 760px);
+        transform: translateX(-50%);
+        pointer-events: none;
       }
 
       .theme-toggle {
@@ -562,6 +574,11 @@
           margin-top: 0.7rem;
         }
 
+        .theme-dock {
+          top: 0.7rem;
+          width: min(100% - 1rem, 760px);
+        }
+
         .theme-toggle {
           width: 2.7rem;
           height: 2.7rem;
@@ -574,12 +591,14 @@
     <div class="page-chrome">
       <div class="page-chrome__inner">
         <span class="site-wordmark" aria-hidden="true">within reach</span>
+      </div>
+    </div>
+    <div class="theme-dock">
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
           <span class="theme-toggle__icon" data-theme-toggle-icon></span>
           <span class="sr-only" data-theme-toggle-text>Switch to dark mode</span>
         </button>
         <p class="theme-whisper" id="themeWhisper" hidden></p>
-      </div>
     </div>
 
     <main>
