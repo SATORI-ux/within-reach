@@ -2,13 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Within Reach: Lamp Alternative</title>
     <meta
       name="description"
       content="A small private shared space for quiet check-ins, notes, and gentle signals."
     />
     <meta name="theme-color" content="#eee5d7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>
       (() => {
         const storageKey = 'withinReachAppearance';
@@ -20,10 +23,12 @@
               ? 'dark'
               : 'light';
 
+        const themeColor = theme === 'secret' ? '#342a2a' : theme === 'dark' ? '#1a131a' : '#eee5d7';
         document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--browser-chrome-bg', themeColor);
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'secret' ? '#342a2a' : theme === 'dark' ? '#1a131a' : '#eee5d7');
+          themeMeta.setAttribute('content', themeColor);
         }
       })();
     </script>
@@ -95,10 +100,12 @@
             <button class="action-card action-card--thinking action-card--primary" id="thinkingButton" type="button">
               <span class="action-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M8.7 9.3h6.6l1.35 4.25H7.35L8.7 9.3Z"></path>
-                  <path d="M12 13.55v4.15"></path>
-                  <path d="M8.95 19.05h6.1"></path>
-                  <path d="M10.25 7.6c.42-.92 1-1.38 1.75-1.38s1.33.46 1.75 1.38"></path>
+                  <path d="M7.7 9.3h8.6l1.42 4.45H6.28L7.7 9.3Z"></path>
+                  <path d="M12 13.75v4.35"></path>
+                  <path d="M8.55 18.95h6.9"></path>
+                  <path d="M8.1 20.2h7.8"></path>
+                  <path d="M17.7 13.75v2.65"></path>
+                  <circle cx="17.7" cy="17.1" r=".48"></circle>
                 </svg>
               </span>
               <span class="action-card__label">Thinking of you</span>
@@ -120,11 +127,14 @@
             <button class="action-card action-card--urgent" id="urgentButton" type="button">
               <span class="action-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
-                  <circle cx="12" cy="12" r="2.35"></circle>
-                  <path d="M7.85 8.25a5.65 5.65 0 0 0 0 7.5"></path>
-                  <path d="M16.15 8.25a5.65 5.65 0 0 1 0 7.5"></path>
-                  <path d="M5.2 6.05a8.95 8.95 0 0 0 0 11.9"></path>
-                  <path d="M18.8 6.05a8.95 8.95 0 0 1 0 11.9"></path>
+                  <circle cx="12" cy="8.95" r="1.35"></circle>
+                  <path d="M12 10.4v5.7"></path>
+                  <path d="M10.25 16.1h3.5"></path>
+                  <path d="m10.5 16.1-1.05 2.75h5.1L13.5 16.1"></path>
+                  <path d="M8.05 6.5a5.2 5.2 0 0 0 0 5.05"></path>
+                  <path d="M15.95 6.5a5.2 5.2 0 0 1 0 5.05"></path>
+                  <path d="M5.55 4.1a8.65 8.65 0 0 0 0 9.85"></path>
+                  <path d="M18.45 4.1a8.65 8.65 0 0 1 0 9.85"></path>
                 </svg>
               </span>
               <span class="action-card__label">Can you talk?</span>

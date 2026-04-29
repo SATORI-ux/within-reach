@@ -2,13 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Quietly Kept</title>
     <meta
       name="description"
       content="A protected note kept inside Within Reach."
     />
     <meta name="theme-color" content="#eee5d7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>
       (() => {
         const storageKey = 'withinReachAppearance';
@@ -20,15 +23,19 @@
               ? 'dark'
               : 'light';
 
+        const themeColor = theme === 'secret' ? '#342a2a' : theme === 'dark' ? '#1a131a' : '#eee5d7';
         document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--browser-chrome-bg', themeColor);
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'secret' ? '#342a2a' : theme === 'dark' ? '#1a131a' : '#eee5d7');
+          themeMeta.setAttribute('content', themeColor);
         }
       })();
     </script>
     <style>
       :root {
+        color-scheme: light;
+        --browser-chrome-bg: #eee5d7;
         --bg: #eee5d7;
         --bg-top-glow: rgba(251, 245, 234, 0.64);
         --bg-start: #f3eadc;
@@ -57,6 +64,8 @@
       }
 
       :root[data-theme='dark'] {
+        color-scheme: dark;
+        --browser-chrome-bg: #1a131a;
         --bg: #1a131a;
         --bg-top-glow: rgba(37, 24, 36, 0.86);
         --bg-start: #251824;
@@ -85,6 +94,8 @@
       }
 
       :root[data-theme='secret'] {
+        color-scheme: dark;
+        --browser-chrome-bg: #342a2a;
         --bg: #342a2a;
         --bg-top-glow: rgba(74, 58, 58, 0.78);
         --bg-start: #4a3a3a;
@@ -118,16 +129,33 @@
 
       html {
         scroll-behavior: smooth;
+        min-height: 100%;
+        background: var(--browser-chrome-bg);
       }
 
       body {
         margin: 0;
         min-height: 100vh;
+        min-height: 100dvh;
         font-family: Georgia, 'Times New Roman', serif;
         color: var(--text);
+        background-color: var(--browser-chrome-bg);
         background:
           radial-gradient(circle at top, var(--bg-top-glow), transparent 36%),
-          linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 46%, var(--bg-end) 100%);
+          linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 46%, var(--bg-end) 100%),
+          var(--browser-chrome-bg);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 34;
+        height: max(env(safe-area-inset-top), 0px);
+        background: var(--browser-chrome-bg);
+        pointer-events: none;
       }
 
       .grain {
@@ -146,7 +174,7 @@
         position: relative;
         z-index: 5;
         width: min(100% - 1.4rem, 760px);
-        margin: 0.95rem auto 0;
+        margin: calc(0.95rem + env(safe-area-inset-top)) auto 0;
         pointer-events: auto;
       }
 
@@ -173,7 +201,7 @@
 
       .theme-dock {
         position: fixed;
-        top: 0.95rem;
+        top: calc(0.95rem + env(safe-area-inset-top));
         left: 50%;
         z-index: 35;
         display: flex;
@@ -571,11 +599,11 @@
         }
 
         .page-chrome {
-          margin-top: 0.7rem;
+          margin-top: calc(0.7rem + env(safe-area-inset-top));
         }
 
         .theme-dock {
-          top: 0.7rem;
+          top: calc(0.7rem + env(safe-area-inset-top));
           width: min(100% - 1rem, 760px);
         }
 

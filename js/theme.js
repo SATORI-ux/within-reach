@@ -46,11 +46,13 @@ export function resolveAppearance() {
 
 export function setDocumentTheme(theme) {
   const resolvedTheme = theme === 'secret' ? 'secret' : theme === 'dark' ? 'dark' : 'light';
+  const themeColor = THEME_COLORS[resolvedTheme];
   document.documentElement.dataset.theme = resolvedTheme;
+  document.documentElement.style.setProperty('--browser-chrome-bg', themeColor);
 
   const meta = document.querySelector(THEME_META_SELECTOR);
   if (meta) {
-    meta.setAttribute('content', THEME_COLORS[resolvedTheme]);
+    meta.setAttribute('content', themeColor);
   }
 
   return resolvedTheme;

@@ -1,4 +1,6 @@
 :root {
+  color-scheme: light;
+  --browser-chrome-bg: #eee5d7;
   --color-bg: #eee5d7;
   --color-bg-radial: #fbf5ea;
   --color-surface: #fbf5ea;
@@ -75,6 +77,8 @@
 }
 
 :root[data-theme='dark'] {
+  color-scheme: dark;
+  --browser-chrome-bg: #1a131a;
   --color-bg: #1a131a;
   --color-bg-radial: #251824;
   --color-surface: #251824;
@@ -143,6 +147,8 @@
 }
 
 :root[data-theme='secret'] {
+  color-scheme: dark;
+  --browser-chrome-bg: #342a2a;
   --color-bg: #342a2a;
   --color-bg-radial: #4a3a3a;
   --color-surface: #483a3a;
@@ -232,16 +238,33 @@
 
 html {
   scroll-behavior: smooth;
+  min-height: 100%;
+  background: var(--browser-chrome-bg);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: Georgia, 'Times New Roman', serif;
   color: var(--text);
+  background-color: var(--browser-chrome-bg);
   background:
     radial-gradient(circle at top, var(--bg-top-glow), transparent 36%),
-    linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 46%, var(--bg-end) 100%);
+    linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 46%, var(--bg-end) 100%),
+    var(--browser-chrome-bg);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 34;
+  height: max(env(safe-area-inset-top), 0px);
+  background: var(--browser-chrome-bg);
+  pointer-events: none;
 }
 
 :root[data-theme='dark'] body,
@@ -249,7 +272,8 @@ body {
   background:
     radial-gradient(circle at 50% 0%, var(--bg-top-glow), transparent 34%),
     radial-gradient(circle at 50% 12%, color-mix(in srgb, var(--accent-jeszi) 10%, transparent), transparent 42%),
-    linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 48%, var(--bg-end) 100%);
+    linear-gradient(180deg, var(--bg-start) 0%, var(--bg-mid) 48%, var(--bg-end) 100%),
+    var(--browser-chrome-bg);
 }
 
 body:not(.content-revealed) {
@@ -272,7 +296,7 @@ button {
   position: relative;
   z-index: 5;
   width: min(100% - 1.4rem, 760px);
-  margin: 0.95rem auto 0;
+  margin: calc(0.95rem + env(safe-area-inset-top)) auto 0;
   pointer-events: auto;
 }
 
@@ -304,7 +328,7 @@ body:not(.content-revealed) .site-wordmark {
 
 .theme-dock {
   position: fixed;
-  top: 0.95rem;
+  top: calc(0.95rem + env(safe-area-inset-top));
   left: 50%;
   z-index: 35;
   display: flex;
@@ -699,8 +723,8 @@ body.content-revealed .main-content {
 .quick-actions__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 0.75rem;
+  gap: 0.9rem;
+  margin-top: 0.85rem;
 }
 
 .action-card,
@@ -725,21 +749,25 @@ body.content-revealed .main-content {
 .action-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.34rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
   width: 100%;
-  min-height: 6.25rem;
-  padding: 0.95rem 0.85rem 0.85rem;
+  min-height: 8.35rem;
+  padding: 1rem 0.82rem 0.92rem;
   border-radius: var(--radius-lg);
   background:
-    linear-gradient(180deg, color-mix(in srgb, white 8%, transparent), transparent),
-    color-mix(in srgb, var(--surface-strong) 82%, transparent);
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--action-glow, var(--icon-note)) 9%, transparent), transparent 56%),
+    linear-gradient(180deg, color-mix(in srgb, white 10%, transparent), transparent),
+    color-mix(in srgb, var(--surface-strong) 84%, transparent);
   border: 1px solid var(--button-border);
   color: var(--text);
-  text-align: left;
+  text-align: center;
   box-shadow:
-    0 10px 24px rgba(64, 45, 32, 0.052),
-    inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
+    0 14px 30px rgba(64, 45, 32, 0.065),
+    inset 0 1px 0 color-mix(in srgb, white 34%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--button-border) 58%, transparent);
+  touch-action: manipulation;
 }
 
 @media (hover: hover) {
@@ -787,9 +815,9 @@ body.content-revealed .main-content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.55rem;
-  height: 1.55rem;
-  margin-bottom: 0.18rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  margin-bottom: 0.16rem;
   color: var(--icon-note);
 }
 
@@ -811,74 +839,111 @@ body.content-revealed .main-content {
   color: var(--icon-thinking);
 }
 
+.action-card--thinking {
+  --action-glow: var(--icon-thinking);
+}
+
 .action-card--note .action-card__icon {
   color: var(--icon-note);
+}
+
+.action-card--note {
+  --action-glow: var(--icon-note);
 }
 
 .action-card--urgent .action-card__icon {
   color: var(--icon-urgent);
 }
 
+.action-card--urgent {
+  --action-glow: var(--icon-urgent);
+}
+
 .action-card__label {
-  font-size: 1rem;
-  line-height: 1.15;
+  max-width: 8.5ch;
+  font-size: clamp(1.08rem, 2.4vw, 1.28rem);
+  line-height: 1.12;
   color: var(--text-deep);
 }
 
 .action-card__body {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--text-soft);
+  max-width: 13ch;
+  font-size: clamp(0.7rem, 1.7vw, 0.82rem);
+  line-height: 1.28;
+  color: var(--text-faint);
 }
 
 .action-card--primary {
   background:
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--icon-thinking) 13%, transparent), transparent 58%),
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent),
     color-mix(in srgb, var(--accent-soft) 42%, var(--surface-strong));
   border-color: color-mix(in srgb, var(--accent) 22%, var(--button-border));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+  box-shadow:
+    0 14px 30px rgba(64, 45, 32, 0.062),
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
 }
 
 .action-card--primary:hover {
-  background: color-mix(in srgb, var(--accent-hover) 18%, var(--surface-strong));
+  background:
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--icon-thinking) 16%, transparent), transparent 58%),
+    color-mix(in srgb, var(--accent-hover) 18%, var(--surface-strong));
   border-color: color-mix(in srgb, var(--accent) 28%, var(--button-border));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+  box-shadow:
+    0 14px 30px rgba(64, 45, 32, 0.075),
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
 }
 
 .action-card--urgent {
-  background: linear-gradient(180deg, var(--accent-urgent-soft) 0%, color-mix(in srgb, var(--surface-strong) 98%, transparent) 100%);
+  background:
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--icon-urgent) 12%, transparent), transparent 58%),
+    linear-gradient(180deg, var(--accent-urgent-soft) 0%, color-mix(in srgb, var(--surface-strong) 98%, transparent) 100%);
 }
 
 .action-card--urgent .action-card__icon {
   color: var(--icon-urgent);
 }
 
+:root[data-theme='dark'] .action-card,
+:root[data-theme='secret'] .action-card {
+  box-shadow:
+    0 14px 30px rgba(7, 4, 8, 0.16),
+    inset 0 1px 0 color-mix(in srgb, white 14%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--button-border) 72%, transparent);
+}
+
+:root[data-theme='dark'] .action-card__icon,
+:root[data-theme='secret'] .action-card__icon {
+  filter: drop-shadow(0 0 0.38rem color-mix(in srgb, currentColor 30%, transparent));
+}
+
 @media (max-width: 520px) {
   .quick-actions__grid {
-    gap: 0.55rem;
+    gap: 0.5rem;
   }
 
   .action-card {
-    align-items: center;
-    min-height: 5.85rem;
-    padding: 0.78rem 0.42rem 0.68rem;
-    text-align: center;
+    min-height: 7.35rem;
+    padding: 0.82rem 0.36rem 0.72rem;
+    gap: 0.3rem;
   }
 
   .action-card__icon {
-    width: 1.44rem;
-    height: 1.44rem;
-    margin-bottom: 0.06rem;
+    width: clamp(1.76rem, 6.2vw, 2.08rem);
+    height: clamp(1.76rem, 6.2vw, 2.08rem);
+    margin-bottom: 0.05rem;
   }
 
   .action-card__label {
-    font-size: clamp(0.76rem, 3.2vw, 0.9rem);
-    line-height: 1.22;
+    font-size: clamp(0.78rem, 3.25vw, 0.96rem);
+    line-height: 1.16;
   }
 
   .action-card__body {
-    display: none;
+    display: block;
+    font-size: clamp(0.58rem, 2.35vw, 0.68rem);
+    line-height: 1.2;
   }
 }
 
@@ -1600,15 +1665,17 @@ a.ghost-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.22rem, 1.1cqi, 0.42rem);
+  gap: clamp(0.24rem, 1.1cqi, 0.44rem);
   width: 100%;
   --reaction-color: var(--accent-jeszi);
-  border: 1px solid color-mix(in srgb, var(--reaction-color) 28%, transparent);
+  --reaction-detail: color-mix(in srgb, var(--reaction-color) 68%, #33281f 32%);
+  --reaction-tile: color-mix(in srgb, var(--reaction-color) 10%, var(--surface-strong));
+  border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--reaction-color) 9%, transparent);
-  padding: clamp(0.26rem, 1.5cqi, 0.42rem) clamp(0.36rem, 2.4cqi, 0.62rem);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: clamp(0.76rem, 3cqi, 0.92rem);
+  background: transparent;
+  padding: clamp(0.12rem, 1.1cqi, 0.2rem) clamp(0.14rem, 1.6cqi, 0.3rem);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(0.78rem, 3cqi, 0.95rem);
   line-height: 1;
   color: var(--reaction-color);
   cursor: pointer;
@@ -1619,8 +1686,12 @@ a.ghost-button {
 }
 
 .reaction-chip:hover {
-  background: color-mix(in srgb, var(--reaction-color) 15%, transparent);
-  border-color: color-mix(in srgb, var(--reaction-color) 44%, transparent);
+  background: transparent;
+}
+
+.reaction-chip:hover .reaction-glyph {
+  background: color-mix(in srgb, var(--reaction-color) 16%, var(--surface-strong));
+  border-color: color-mix(in srgb, var(--reaction-color) 38%, transparent);
 }
 
 .reaction-chip:active {
@@ -1640,69 +1711,148 @@ a.ghost-button {
 
 .note-card__reactions .reaction-chip {
   width: auto;
-  padding: 0.24rem 0.46rem;
-  font-size: 0.8rem;
+  padding: 0.08rem 0.22rem;
+  font-size: 0.86rem;
 }
 
 .reaction-chip--picker {
   width: 100%;
   min-width: 0;
-  padding: 0.34rem 0.48rem;
+  padding: 0.18rem 0.2rem;
 }
 
 .reaction-chip.is-active {
-  border-color: color-mix(in srgb, var(--reaction-color) 58%, transparent);
-  background: color-mix(in srgb, var(--reaction-color) 18%, transparent);
+  background: transparent;
   color: var(--reaction-color);
+}
+
+.reaction-chip.is-active .reaction-glyph {
+  border-color: color-mix(in srgb, var(--reaction-color) 52%, transparent);
+  background: color-mix(in srgb, var(--reaction-color) 18%, var(--surface-strong));
 }
 
 .reaction-glyph {
   display: inline-grid;
   place-items: center;
-  width: 1.34rem;
-  height: 1.34rem;
+  width: 1.62rem;
+  height: 1.62rem;
   flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--reaction-color) 24%, transparent);
+  border-radius: 0.58rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 9%, transparent), transparent),
+    var(--reaction-tile);
   color: var(--reaction-color);
+  box-shadow:
+    0 4px 10px rgba(28, 18, 14, 0.055),
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .reaction-glyph svg {
-  width: 0.94rem;
-  height: 0.94rem;
+  width: 1.08rem;
+  height: 1.08rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.reaction-chip--picker .reaction-glyph {
+  width: 1.92rem;
+  height: 1.92rem;
+  border-radius: 0.68rem;
+}
+
+.reaction-chip--picker .reaction-glyph svg {
+  width: 1.28rem;
+  height: 1.28rem;
+}
+
+.reaction-fill {
+  fill: currentColor;
+  stroke: color-mix(in srgb, var(--reaction-detail) 34%, transparent);
+  stroke-width: 0.55;
+}
+
+.reaction-soft {
+  fill: color-mix(in srgb, currentColor 76%, white 24%);
+}
+
+.reaction-stroke {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.55;
+}
+
+.reaction-raised {
+  filter: drop-shadow(0 1px 0 color-mix(in srgb, white 22%, transparent));
+}
+
+.reaction-dot,
+.reaction-center {
+  fill: var(--reaction-detail);
+  stroke: none;
+}
+
+.reaction-leg {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text) 74%, var(--reaction-color) 26%);
+  stroke-width: 1.28;
   stroke-linecap: round;
-  stroke-linejoin: round;
+}
+
+.reaction-bug-line {
+  stroke: color-mix(in srgb, #2f211d 78%, var(--reaction-color) 22%);
+}
+
+.reaction-mark {
+  fill: color-mix(in srgb, #2f211d 82%, var(--reaction-color) 18%);
+  stroke: none;
+}
+
+.reaction-petal {
+  fill: currentColor;
+  stroke: color-mix(in srgb, var(--reaction-detail) 42%, transparent);
+  stroke-width: 0.55;
 }
 
 .reaction-chip[data-reaction-kind='heart'] {
   --reaction-color: var(--reaction-heart);
+  --reaction-detail: color-mix(in srgb, var(--reaction-heart) 78%, #5b2a22 22%);
 }
 
 .reaction-chip[data-reaction-kind='sparkle'] {
   --reaction-color: var(--reaction-sparkle);
+  --reaction-detail: color-mix(in srgb, var(--reaction-sparkle) 72%, #7a5520 28%);
 }
 
 .reaction-chip[data-reaction-kind='smile'] {
   --reaction-color: var(--reaction-smile);
+  --reaction-detail: color-mix(in srgb, var(--reaction-smile) 74%, #6f471f 26%);
 }
 
 .reaction-chip[data-reaction-kind='moon'] {
   --reaction-color: var(--reaction-moon);
+  --reaction-detail: color-mix(in srgb, var(--reaction-moon) 74%, #5d4867 26%);
 }
 
 .reaction-chip[data-reaction-kind='ladybug'] {
   --reaction-color: var(--reaction-ladybug);
+  --reaction-detail: color-mix(in srgb, var(--reaction-ladybug) 70%, #2f211d 30%);
 }
 
 .reaction-chip[data-reaction-kind='flower'] {
   --reaction-color: var(--reaction-flower);
+  --reaction-detail: color-mix(in srgb, var(--reaction-flower) 70%, #7c5164 30%);
 }
 
 .reaction-count {
   min-width: 0.55rem;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.88rem;
 }
 
 .quiet-footer {
@@ -1825,11 +1975,11 @@ a.ghost-button {
 
   .page-chrome {
     width: min(100% - 1rem, 760px);
-    margin-top: 0.7rem;
+    margin-top: calc(0.7rem + env(safe-area-inset-top));
   }
 
   .theme-dock {
-    top: 0.7rem;
+    top: calc(0.7rem + env(safe-area-inset-top));
     width: min(100% - 1rem, 760px);
   }
 
@@ -1887,27 +2037,33 @@ a.ghost-button {
   .reaction-chip {
     flex: 1 1 0;
     min-width: 0;
-    gap: 0.12rem;
-    padding: 0.3rem 0.18rem;
-    font-size: 0.68rem;
+    gap: 0.14rem;
+    padding: 0.16rem 0.06rem;
+    font-size: 0.72rem;
     white-space: nowrap;
   }
 
   .note-card__reactions .reaction-chip {
     flex: 0 0 auto;
     min-width: auto;
-    padding: 0.28rem 0.48rem;
-    font-size: 0.75rem;
+    padding: 0.1rem 0.2rem;
+    font-size: 0.78rem;
   }
 
   .reaction-chip--picker {
     min-width: 0;
-    padding: 0.34rem 0.22rem;
+    padding: 0.18rem 0.1rem;
   }
 
   .reaction-chip:not(.reaction-chip--picker) .reaction-glyph {
-    width: 1.22rem;
-    height: 1.22rem;
+    width: 1.34rem;
+    height: 1.34rem;
+    border-radius: 0.5rem;
+  }
+
+  .reaction-chip:not(.reaction-chip--picker) .reaction-glyph svg {
+    width: 0.92rem;
+    height: 0.92rem;
   }
 }
 
@@ -1939,7 +2095,7 @@ a.ghost-button {
   }
 
   .action-card {
-    padding: 0.78rem 0.42rem 0.68rem;
+    padding: 0.78rem 0.32rem 0.68rem;
   }
 
   .note-card__reaction-picker {

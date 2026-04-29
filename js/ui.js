@@ -87,6 +87,38 @@ const REACTION_DISPLAY = {
     svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.45c-.85-2.15.2-3.82 1.72-3.82 1.44 0 2.12 1.7.72 3.52 2.22-.54 3.7.72 3.28 2.1-.45 1.46-2.4 1.56-3.72-.28.85 2.15-.2 3.82-1.72 3.82-1.44 0-2.12-1.7-.72-3.52-2.22.54-3.7-.72-3.28-2.1.45-1.46 2.4-1.56 3.72.28Z"></path><circle cx="12" cy="11.2" r=".86"></circle></svg>',
   },
 };
+const REACTION_DISPLAY_BY_INDEX = [
+  {
+    label: 'heart',
+    kind: 'heart',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="reaction-fill reaction-raised" d="M12 19.15 6.72 14.2c-1.74-1.64-2.02-3.95-.62-5.36 1.28-1.28 3.35-1.1 4.55.36L12 10.84l1.35-1.64c1.2-1.46 3.27-1.64 4.55-.36 1.4 1.41 1.12 3.72-.62 5.36L12 19.15Z"></path></svg>',
+  },
+  {
+    label: 'sparkle',
+    kind: 'sparkle',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="reaction-fill reaction-raised" d="M11.15 3.8 13.3 9l5.15 1.9-5.15 1.9-2.15 5.2L9 12.8l-5.15-1.9L9 9l2.15-5.2Z"></path><path class="reaction-fill reaction-soft" d="m18.4 15.35.64 1.55 1.56.6-1.56.6-.64 1.55-.64-1.55-1.56-.6 1.56-.6.64-1.55Z"></path></svg>',
+  },
+  {
+    label: 'soft smile',
+    kind: 'smile',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="reaction-stroke reaction-raised" cx="12" cy="12" r="6.55"></circle><circle class="reaction-dot" cx="9.42" cy="10.65" r=".7"></circle><circle class="reaction-dot" cx="14.58" cy="10.65" r=".7"></circle><path class="reaction-stroke" d="M8.95 14.05c1.18 1.55 4.92 1.55 6.1 0"></path></svg>',
+  },
+  {
+    label: 'moon',
+    kind: 'moon',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="reaction-fill reaction-raised" d="M16.05 4.25a7.72 7.72 0 1 0 3.65 10.42 6.45 6.45 0 1 1-3.65-10.42Z"></path></svg>',
+  },
+  {
+    label: 'ladybug',
+    kind: 'ladybug',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="reaction-leg" d="M7.55 11.75 5.6 10.5M16.45 11.75l1.95-1.25M7.7 15.2l-2.08 1.06M16.3 15.2l2.08 1.06M9.15 7.65 7.65 5.9M14.85 7.65l1.5-1.75"></path><path class="reaction-fill reaction-raised" d="M7.45 12.2c0-3.05 1.98-5.22 4.55-5.22s4.55 2.17 4.55 5.22v1.88c0 2.74-1.82 4.72-4.55 4.72s-4.55-1.98-4.55-4.72V12.2Z"></path><path class="reaction-stroke reaction-bug-line" d="M12 7.1v11.5M7.85 11h8.3"></path><circle class="reaction-mark" cx="9.95" cy="13.25" r=".58"></circle><circle class="reaction-mark" cx="14.05" cy="13.25" r=".58"></circle><circle class="reaction-mark" cx="9.95" cy="15.88" r=".52"></circle><circle class="reaction-mark" cx="14.05" cy="15.88" r=".52"></circle></svg>',
+  },
+  {
+    label: 'flower',
+    kind: 'flower',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="reaction-petal" d="M12 10.4c-1.55-2.05-.95-4.05.62-4.42 1.62-.38 2.82 1.18 1.95 3.65 2.48-.74 4.05.5 3.68 2.08-.36 1.56-2.33 2.05-4.05.1 1.02 2.38-.04 4.05-1.66 4.05-1.62 0-2.48-1.78-1.28-4.04-1.92 1.74-3.82 1.08-4.05-.5-.22-1.6 1.5-2.68 3.88-1.68Z"></path><circle class="reaction-center" cx="12.25" cy="11.1" r="1.08"></circle></svg>',
+  },
+];
 let hiddenDoorUnlocked = false;
 let footerHoldTimer = null;
 let pendingSecretNoticeKey = '';
@@ -314,7 +346,8 @@ function renderEmptyNotes() {
 }
 
 function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'summary' }) {
-  const display = REACTION_DISPLAY[emoji] || {
+  const reactionIndex = REACTIONS.indexOf(emoji);
+  const display = REACTION_DISPLAY_BY_INDEX[reactionIndex] || REACTION_DISPLAY[emoji] || {
     label: emoji,
     kind: 'fallback',
     svg: '',
@@ -323,7 +356,7 @@ function buildReactionButton({ noteId, emoji, summary, viewerSlug, variant = 'su
   button.type = 'button';
   button.className = `reaction-chip reaction-chip--${variant}`;
   button.dataset.noteId = String(noteId);
-  button.dataset.reactionIndex = String(REACTIONS.indexOf(emoji));
+  button.dataset.reactionIndex = String(reactionIndex);
   button.dataset.reactionKind = display.kind;
   button.setAttribute('aria-label', `React with ${display.label}`);
 
