@@ -622,7 +622,7 @@ export function renderCheckIns(checkIns = []) {
 
     marker.style.setProperty('--marker-accent', getUserAccentToken(item.from_user_slug, item.accent_color || '#748a68'));
     textEl.textContent = text;
-    metaEl.textContent = `${item.display_name} • ${formatTimestamp(item.created_at)}`;
+    metaEl.textContent = formatTimestamp(item.created_at);
 
     checkInsFeedEl.appendChild(fragment);
   });
