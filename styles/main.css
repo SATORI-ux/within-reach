@@ -1,5 +1,7 @@
 :root {
   color-scheme: light;
+  --section-gap: 1rem;
+  --section-gap-tight: 0.55rem;
   --browser-chrome-bg: #eee5d7;
   --color-bg: #eee5d7;
   --color-bg-radial: #fbf5ea;
@@ -563,7 +565,7 @@ body.content-revealed .main-content {
 }
 
 .section {
-  margin-top: 1.25rem;
+  margin-top: var(--section-gap);
   padding: 1.25rem;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -587,7 +589,7 @@ body.content-revealed .main-content {
   background: transparent;
   border: 0;
   box-shadow: none;
-  padding: 1.15rem 0.2rem 0.35rem;
+  padding: 1rem 0.2rem 0.25rem;
   text-align: center;
 }
 
@@ -662,7 +664,8 @@ body.content-revealed .main-content {
 
 .quick-actions {
   position: relative;
-  padding: 1.25rem 0 1rem;
+  margin-top: var(--section-gap-tight);
+  padding: 0.4rem 0 0.95rem;
   background: transparent;
   border-color: transparent;
   box-shadow: none;
@@ -684,11 +687,20 @@ body.content-revealed .main-content {
 
 :root[data-theme='secret'] .hero-copy .theme-stars span {
   position: absolute;
-  width: 3px;
-  height: 3px;
-  border-radius: 999px;
+  width: 0.72rem;
+  height: 0.72rem;
   background: var(--secret-star);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--secret-star) 46%, transparent);
+  clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0 50%, 39% 38%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--secret-star) 48%, transparent);
+}
+
+:root[data-theme='secret'] .hero-copy .theme-stars span::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  background: color-mix(in srgb, white 55%, var(--secret-star));
+  clip-path: inherit;
+  opacity: 0.7;
 }
 
 :root[data-theme='secret'] .hero-copy .theme-stars span:nth-child(1) {
@@ -700,18 +712,21 @@ body.content-revealed .main-content {
   top: 4.9rem;
   left: 20%;
   opacity: 0.65;
+  transform: scale(0.72) rotate(18deg);
 }
 
 :root[data-theme='secret'] .hero-copy .theme-stars span:nth-child(3) {
   top: 0.35rem;
   right: 17%;
   opacity: 0.7;
+  transform: scale(0.84) rotate(9deg);
 }
 
 :root[data-theme='secret'] .hero-copy .theme-stars span:nth-child(4) {
   top: 4.85rem;
   right: 20%;
   opacity: 0.5;
+  transform: scale(0.62) rotate(24deg);
 }
 
 .quick-actions .section-heading {
@@ -730,7 +745,7 @@ body.content-revealed .main-content {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
-  margin-top: 0.85rem;
+  margin-top: 0;
 }
 
 .action-card,
@@ -1227,7 +1242,7 @@ a.ghost-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1.5rem 1rem 1.9rem;
+  padding: 1.05rem 1rem 1.25rem;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -1270,7 +1285,7 @@ a.ghost-button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 0.65rem;
+  margin-top: var(--section-gap-tight);
   gap: 0.35rem;
   padding: 0.2rem 1rem 1rem;
 }
@@ -1393,7 +1408,7 @@ a.ghost-button {
 }
 
 .urgent-state {
-  margin-top: 1.25rem;
+  margin-top: var(--section-gap);
   padding: 1.15rem;
   background: linear-gradient(180deg, var(--accent-urgent-soft-strong), color-mix(in srgb, var(--surface-strong) 98%, transparent));
   border: 1px solid color-mix(in srgb, var(--accent-urgent) 28%, transparent);
