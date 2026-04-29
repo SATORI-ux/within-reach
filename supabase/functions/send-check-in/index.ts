@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const visitor = await validateTileKey(client, body.tile_key ?? '');
     const includePrivateFeedState = getPrivateFeedStateEnabled();
 
-    await assertWriteCooldown(client, 'check_ins', visitor.user_slug, 15, 'check_in');
+    await assertWriteCooldown(client, 'check_ins', visitor.user_slug, 2, 'check_in');
 
     const notification = await sendPushToCounterpart(
       client,

@@ -8,7 +8,7 @@ const SECRET_HOLD_MS = 900;
 const THEME_COLORS = {
   light: '#eee5d7',
   dark: '#1a131a',
-  secret: '#33292c',
+  secret: '#342a2a',
 };
 
 const ICONS = {

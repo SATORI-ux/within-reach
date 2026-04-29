@@ -28,6 +28,7 @@ const privateCopyPromise = IS_PRIVATE_BUILD ? import('./private-copy.js') : Prom
 
 const arrivalGreetingEl = document.querySelector('#arrivalGreeting');
 const arrivalLineEl = document.querySelector('#arrivalLine');
+const heroGreetingEl = document.querySelector('#heroGreeting');
 const heroStatusEl = document.querySelector('#heroStatus');
 const footerLineEl = document.querySelector('#footerLine');
 const factInterludeEl = document.querySelector('#factInterlude');
@@ -58,17 +59,17 @@ const REACTION_DISPLAY = {
   '❤️': {
     label: 'heart',
     kind: 'heart',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19.2s-6.35-3.6-7.7-7.18c-.8-2.13.32-4.42 2.48-4.86 1.42-.28 2.8.36 3.62 1.48.82-1.12 2.2-1.76 3.62-1.48 2.16.44 3.28 2.73 2.48 4.86C18.35 15.6 12 19.2 12 19.2Z"></path></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 18.6s-5.65-3.18-6.85-6.28c-.72-1.86.28-3.82 2.1-4.18 1.25-.25 2.45.35 3.15 1.35.7-1 1.9-1.6 3.15-1.35 1.82.36 2.82 2.32 2.1 4.18C17.65 15.42 12 18.6 12 18.6Z"></path></svg>',
   },
   '✨': {
     label: 'sparkle',
     kind: 'sparkle',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.8 13.7 9l5.1 1.7-5.1 1.7L12 17.6l-1.7-5.2-5.1-1.7L10.3 9 12 3.8Z"></path><path d="m18 16.5.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z"></path></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4.6 13.45 9l4.25 1.45-4.25 1.45L12 16.3l-1.45-4.4-4.25-1.45L10.55 9 12 4.6Z"></path><path d="m18.05 15.75.55 1.45 1.45.55-1.45.55-.55 1.45-.55-1.45-1.45-.55 1.45-.55.55-1.45Z"></path></svg>',
   },
   '🥹': {
-    label: 'soft face',
-    kind: 'soft',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7.1"></circle><path d="M8.8 10.1c.55-.65 1.35-.65 1.9 0M13.3 10.1c.55-.65 1.35-.65 1.9 0"></path><path d="M9.45 14.75c1.25.95 3.85.95 5.1 0"></path><path d="M8.55 12.1c-.55.7-.55 1.32 0 1.86.55-.54.55-1.16 0-1.86Z"></path></svg>',
+    label: 'soft smile',
+    kind: 'smile',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="6.9"></circle><path d="M8.8 10.2c.5-.52 1.22-.52 1.72 0M13.48 10.2c.5-.52 1.22-.52 1.72 0"></path><path d="M9.3 14.65c1.35 1.05 4.05 1.05 5.4 0"></path><path d="M8.18 12.1c-.5.62-.5 1.16 0 1.64.5-.48.5-1.02 0-1.64Z"></path></svg>',
   },
   '🌙': {
     label: 'moon',
@@ -78,12 +79,12 @@ const REACTION_DISPLAY = {
   '🐞': {
     label: 'ladybug',
     kind: 'ladybug',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.2 12.1c0-3 2.1-5.25 4.8-5.25s4.8 2.25 4.8 5.25v2.05c0 2.65-1.95 4.55-4.8 4.55s-4.8-1.9-4.8-4.55v-2.05Z"></path><path d="M12 7.05V18.4M7.65 11.1h8.7M8.4 5.25l1.5 1.7M15.6 5.25l-1.5 1.7"></path><circle cx="10" cy="13.5" r=".55"></circle><circle cx="14" cy="13.5" r=".55"></circle></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.4 12.1c0-2.85 2.02-5 4.6-5s4.6 2.15 4.6 5v1.95c0 2.52-1.88 4.35-4.6 4.35s-4.6-1.83-4.6-4.35V12.1Z"></path><path d="M12 7.28v10.86M7.85 11h8.3M8.45 5.35l1.42 1.62M15.55 5.35l-1.42 1.62"></path><path d="M9.95 13.32h.01M14.05 13.32h.01M9.95 15.78h.01M14.05 15.78h.01"></path></svg>',
   },
   '🌸': {
     label: 'flower',
     kind: 'flower',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.1c-.9-2.6.45-4.35 2.15-4.05 1.7.3 2.1 2.45-.2 4.05 2.6-.9 4.35.45 4.05 2.15-.3 1.7-2.45 2.1-4.05-.2.9 2.6-.45 4.35-2.15 4.05-1.7-.3-2.1-2.45.2-4.05-2.6.9-4.35-.45-4.05-2.15.3-1.7 2.45-2.1 4.05.2Z"></path><circle cx="12" cy="11.05" r="1.05"></circle></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.28c-.78-2.5.48-4.12 2.05-3.88 1.62.25 2.02 2.3-.1 3.88 2.5-.78 4.12.48 3.88 2.05-.25 1.62-2.3 2.02-3.88-.1.78 2.5-.48 4.12-2.05 3.88-1.62-.25-2.02-2.3.1-3.88-2.5.78-4.12-.48-3.88-2.05.25-1.62 2.3-2.02 3.88.1Z"></path><circle cx="12" cy="11.25" r=".9"></circle></svg>',
   },
 };
 let hiddenDoorUnlocked = false;
@@ -359,7 +360,7 @@ function buildReactionToggle(noteId, pickerOpen) {
   button.setAttribute('aria-label', 'React to this note');
   button.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
   button.setAttribute('aria-controls', `note-reaction-picker-${noteId}`);
-  button.textContent = '...';
+  button.innerHTML = '<span aria-hidden="true">...</span>';
   return button;
 }
 
@@ -522,6 +523,7 @@ export async function renderArrival(visitor) {
   const clueLine = ENABLE_FUNNY_FACTS ? getFactWithClueFragment(debugType === 'clue') : null;
   const secondaryLine = clueLine ? clueLine.fact : ENABLE_FUNNY_FACTS ? await getWeightedLandingSecondaryLine() : '';
   const greeting = GREETING_BY_USER[visitor.user_slug] || `Hey ${visitor.display_name}`;
+  const heroGreeting = `Hey ${visitor.display_name}`;
 
   arrivalSectionEl.hidden = false;
   arrivalSectionEl.style.display = '';
@@ -530,9 +532,10 @@ export async function renderArrival(visitor) {
   arrivalGreetingEl.textContent = greeting;
   arrivalLineEl.textContent = ambientLine;
   arrivalLineEl.hidden = !ambientLine;
+  heroGreetingEl.textContent = heroGreeting;
   setFactInterlude(secondaryLine, clueLine?.fragment || '');
   footerLineEl.textContent = pickRandom(FOOTER_LINES);
-  const baseHeroStatus = `${visitor.display_name} arrived through a quiet little doorway.`;
+  const baseHeroStatus = ambientLine || 'You found your way back here.';
   if (getArrivalDebugMode()) {
     const debugStatus =
       ` build=${IS_PRIVATE_BUILD ? 'private' : 'public'}` +
@@ -563,6 +566,7 @@ export function renderMissingKeyState() {
   arrivalLineEl.hidden = false;
   setFactInterlude('');
   footerLineEl.textContent = 'Still here.';
+  heroGreetingEl.textContent = 'Hey there';
   heroStatusEl.textContent = 'Waiting softly.';
 }
 
@@ -585,7 +589,7 @@ export function renderCheckIns(checkIns = []) {
 
     marker.style.setProperty('--marker-accent', getUserAccentToken(item.from_user_slug, item.accent_color || '#748a68'));
     textEl.textContent = text;
-    metaEl.textContent = formatTimestamp(item.created_at);
+    metaEl.textContent = `${item.display_name} • ${formatTimestamp(item.created_at)}`;
 
     checkInsFeedEl.appendChild(fragment);
   });
@@ -612,6 +616,7 @@ export function renderNotes(notes = [], viewerSlug) {
   notes.forEach((note) => {
     const fragment = noteCardTemplate.content.cloneNode(true);
     const card = fragment.querySelector('.note-card');
+    const accentDotEl = fragment.querySelector('.note-card__accent-dot');
     const nameEl = fragment.querySelector('.note-card__name');
     const metaEl = fragment.querySelector('.note-card__meta');
     const contentEl = fragment.querySelector('.note-card__content');
@@ -627,6 +632,7 @@ export function renderNotes(notes = [], viewerSlug) {
     const accent = getUserAccentToken(note.from_user_slug, note.accent_color || '#6e8d62');
     card.dataset.userAccent = THEMED_USER_ACCENTS.has(note.from_user_slug) ? note.from_user_slug : 'custom';
     card.style.setProperty('--note-accent', accent);
+    accentDotEl.style.setProperty('--note-accent', accent);
 
     const pickerOpen = openPickers.has(String(note.id));
     card.dataset.reactionPickerOpen = pickerOpen ? 'true' : 'false';
@@ -673,7 +679,7 @@ export function updateRenderedNoteReactions(noteId, reactions, viewerSlug) {
     includeEmpty: true,
     variant: 'picker',
   });
-  toggleButton.textContent = '...';
+  toggleButton.innerHTML = '<span aria-hidden="true">...</span>';
   toggleButton.setAttribute('aria-label', 'React to this note');
   toggleButton.setAttribute('aria-expanded', pickerOpen ? 'true' : 'false');
 }

@@ -23,7 +23,7 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'secret' ? '#33292c' : theme === 'dark' ? '#1a131a' : '#eee5d7');
+          themeMeta.setAttribute('content', theme === 'secret' ? '#342a2a' : theme === 'dark' ? '#1a131a' : '#eee5d7');
         }
       })();
     </script>
@@ -55,11 +55,10 @@
       </section>
 
       <section class="main-content" id="mainContent" aria-hidden="true">
-        <header class="section hero-copy">
-          <p class="section__label">Shared check-in space</p>
-          <p class="hero-copy__text" id="heroStatus">
-            Quietly held.
-          </p>
+        <header class="section hero-copy" aria-labelledby="heroGreeting">
+          <h1 class="hero-copy__greeting" id="heroGreeting">Hey there</h1>
+          <p class="hero-copy__text" id="heroStatus">Finding your place...</p>
+          <p class="hero-copy__mark" aria-hidden="true">~</p>
         </header>
 
         <section class="urgent-state" id="urgentState" aria-labelledby="urgentStateTitle" hidden>
@@ -87,11 +86,11 @@
           </div>
           <div class="section-heading">
             <p class="section__label">Signals</p>
-            <h2 id="quickActionsTitle">I'm here. Thinking of you.</h2>
+            <h2 id="quickActionsTitle">Actions</h2>
           </div>
 
           <div class="quick-actions__grid">
-            <button class="action-card action-card--primary" id="thinkingButton" type="button">
+            <button class="action-card action-card--thinking action-card--primary" id="thinkingButton" type="button">
               <span class="action-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
                   <path d="M8.7 9.3h6.6l1.35 4.25H7.35L8.7 9.3Z"></path>
@@ -104,7 +103,7 @@
               <span class="action-card__body">A quiet light left on.</span>
             </button>
 
-            <button class="action-card" id="toggleNoteButton" type="button" aria-expanded="false" aria-controls="noteComposer">
+            <button class="action-card action-card--note" id="toggleNoteButton" type="button" aria-expanded="false" aria-controls="noteComposer">
               <span class="action-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
                   <path d="M6.6 17.6 7.7 13l6.95-6.95a1.55 1.55 0 0 1 2.2 2.2L9.9 15.2l-3.3 2.4Z"></path>
@@ -209,7 +208,7 @@
           </div>
           <div class="notes-feed" id="notesFeed">
             <article class="note-card note-card--placeholder">
-              <p class="note-card__meta">Waiting softly</p>
+              <p class="note-card__meta-line">Waiting softly</p>
               <p class="note-card__content">Notes will collect here in time.</p>
             </article>
           </div>
@@ -280,9 +279,11 @@
     <template id="noteCardTemplate">
       <article class="note-card">
         <div class="note-card__header">
-          <div>
-            <p class="note-card__name"></p>
-            <p class="note-card__meta"></p>
+          <div class="note-card__meta-line">
+            <span class="note-card__accent-dot" aria-hidden="true"></span>
+            <span class="note-card__name"></span>
+            <span class="note-card__separator" aria-hidden="true">&bull;</span>
+            <span class="note-card__meta"></span>
           </div>
         </div>
         <p class="note-card__content"></p>

@@ -8,7 +8,7 @@
       name="description"
       content="A protected note kept inside Within Reach."
     />
-    <meta name="theme-color" content="#e6dccd" />
+    <meta name="theme-color" content="#eee5d7" />
     <script>
       (() => {
         const storageKey = 'withinReachAppearance';
@@ -23,81 +23,93 @@
         document.documentElement.dataset.theme = theme;
         const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (themeMeta) {
-          themeMeta.setAttribute('content', theme === 'secret' ? '#d8bcae' : theme === 'dark' ? '#181915' : '#e6dccd');
+          themeMeta.setAttribute('content', theme === 'secret' ? '#342a2a' : theme === 'dark' ? '#1a131a' : '#eee5d7');
         }
       })();
     </script>
     <style>
       :root {
-        --bg: #f1ece3;
-        --bg-top-glow: rgba(151, 169, 136, 0.2);
-        --bg-start: #f5f1e9;
-        --bg-mid: #eee7dc;
-        --bg-end: #e6dccd;
-        --surface: rgba(255, 252, 245, 0.74);
-        --surface-strong: rgba(255, 250, 241, 0.94);
-        --line: rgba(68, 64, 51, 0.12);
-        --text: #3a352d;
-        --text-soft: #665e52;
-        --text-muted: rgba(67, 60, 50, 0.62);
-        --text-faint: rgba(67, 60, 50, 0.54);
-        --accent: #748a68;
-        --chrome-border: rgba(84, 65, 50, 0.1);
-        --chrome-fill: rgba(255, 252, 247, 0.68);
-        --chrome-fill-hover: rgba(255, 252, 247, 0.82);
-        --chrome-icon: rgba(70, 58, 49, 0.82);
-        --focus-ring: rgba(110, 141, 98, 0.14);
-        --shadow: 0 10px 28px rgba(57, 44, 35, 0.055);
-        --grain-strong: rgba(60, 45, 32, 0.16);
-        --grain-soft: rgba(60, 45, 32, 0.12);
+        --bg: #eee5d7;
+        --bg-top-glow: rgba(251, 245, 234, 0.64);
+        --bg-start: #f3eadc;
+        --bg-mid: #eee5d7;
+        --bg-end: #dfd3c4;
+        --surface: color-mix(in srgb, #fbf5ea 82%, transparent);
+        --surface-soft: color-mix(in srgb, #f3eadc 76%, transparent);
+        --surface-strong: color-mix(in srgb, #fff9ef 94%, transparent);
+        --line: rgba(64, 45, 32, 0.14);
+        --line-soft: rgba(64, 45, 32, 0.08);
+        --text: #33281f;
+        --text-soft: #5f5348;
+        --text-muted: #76685c;
+        --text-faint: rgba(95, 83, 72, 0.68);
+        --accent: #806a7c;
+        --accent-hover: #e7d9c7;
+        --accent-pressed: #d8c5ad;
+        --chrome-border: rgba(64, 45, 32, 0.13);
+        --chrome-fill: rgba(251, 245, 234, 0.62);
+        --chrome-fill-hover: rgba(251, 245, 234, 0.82);
+        --chrome-icon: rgba(51, 40, 31, 0.82);
+        --focus-ring: rgba(128, 106, 124, 0.2);
+        --shadow: 0 14px 38px rgba(67, 45, 24, 0.1);
+        --grain-strong: rgba(64, 45, 32, 0.11);
+        --grain-soft: rgba(64, 45, 32, 0.075);
       }
 
       :root[data-theme='dark'] {
-        --bg: #1e1f1c;
-        --bg-top-glow: rgba(120, 142, 105, 0.12);
-        --bg-start: #252620;
-        --bg-mid: #20211d;
-        --bg-end: #181915;
-        --surface: rgba(45, 43, 37, 0.78);
-        --surface-strong: rgba(55, 51, 44, 0.92);
-        --line: rgba(221, 207, 187, 0.12);
-        --text: #f0e7da;
-        --text-soft: #c8bba9;
-        --text-muted: rgba(218, 204, 186, 0.7);
-        --text-faint: rgba(218, 204, 186, 0.58);
-        --accent: #8ea47f;
-        --chrome-border: rgba(209, 193, 177, 0.14);
-        --chrome-fill: rgba(71, 59, 52, 0.58);
-        --chrome-fill-hover: rgba(80, 67, 60, 0.76);
-        --chrome-icon: rgba(241, 229, 215, 0.82);
-        --focus-ring: rgba(122, 152, 113, 0.2);
-        --shadow: 0 14px 40px rgba(12, 9, 8, 0.24);
-        --grain-strong: rgba(255, 242, 230, 0.06);
-        --grain-soft: rgba(255, 242, 230, 0.04);
+        --bg: #1a131a;
+        --bg-top-glow: rgba(37, 24, 36, 0.86);
+        --bg-start: #251824;
+        --bg-mid: #1a131a;
+        --bg-end: #141015;
+        --surface: color-mix(in srgb, #251824 82%, transparent);
+        --surface-soft: color-mix(in srgb, #2f2230 72%, transparent);
+        --surface-strong: color-mix(in srgb, #352739 90%, transparent);
+        --line: rgba(216, 203, 194, 0.16);
+        --line-soft: rgba(216, 203, 194, 0.09);
+        --text: #f4ede6;
+        --text-soft: #d8cbc2;
+        --text-muted: #b9aa9e;
+        --text-faint: rgba(185, 170, 158, 0.58);
+        --accent: #a88bb3;
+        --accent-hover: #3a273a;
+        --accent-pressed: #4a334b;
+        --chrome-border: rgba(216, 203, 194, 0.14);
+        --chrome-fill: rgba(37, 24, 36, 0.7);
+        --chrome-fill-hover: rgba(47, 34, 48, 0.84);
+        --chrome-icon: rgba(244, 237, 230, 0.84);
+        --focus-ring: rgba(168, 139, 179, 0.24);
+        --shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+        --grain-strong: rgba(244, 237, 230, 0.06);
+        --grain-soft: rgba(244, 237, 230, 0.038);
       }
 
       :root[data-theme='secret'] {
-        --bg: #e6cfc4;
-        --bg-top-glow: rgba(144, 92, 79, 0.2);
-        --bg-start: #f2ded3;
-        --bg-mid: #e4c9bd;
-        --bg-end: #d6b5a6;
-        --surface: rgba(255, 244, 236, 0.72);
-        --surface-strong: rgba(255, 238, 229, 0.93);
-        --line: rgba(91, 52, 45, 0.14);
-        --text: #49332f;
-        --text-soft: #75584f;
-        --text-muted: rgba(92, 58, 52, 0.66);
-        --text-faint: rgba(92, 58, 52, 0.54);
-        --accent: #8b5f58;
-        --chrome-border: rgba(95, 55, 47, 0.12);
-        --chrome-fill: rgba(255, 240, 231, 0.64);
-        --chrome-fill-hover: rgba(255, 240, 231, 0.82);
-        --chrome-icon: rgba(78, 44, 39, 0.82);
-        --focus-ring: rgba(139, 95, 88, 0.17);
-        --shadow: 0 12px 32px rgba(80, 43, 36, 0.08);
-        --grain-strong: rgba(80, 39, 35, 0.14);
-        --grain-soft: rgba(80, 39, 35, 0.1);
+        --bg: #342a2a;
+        --bg-top-glow: rgba(74, 58, 58, 0.78);
+        --bg-start: #4a3a3a;
+        --bg-mid: #342a2a;
+        --bg-end: #2a2222;
+        --surface: color-mix(in srgb, #483a3a 82%, transparent);
+        --surface-soft: color-mix(in srgb, #554545 72%, transparent);
+        --surface-strong: color-mix(in srgb, #5e4c4b 88%, transparent);
+        --line: rgba(245, 233, 218, 0.16);
+        --line-soft: rgba(245, 233, 218, 0.09);
+        --text: #f5e9da;
+        --text-soft: #d9c5b6;
+        --text-muted: #bda99c;
+        --text-faint: rgba(217, 197, 182, 0.66);
+        --accent: #b790c4;
+        --accent-hover: #634e51;
+        --accent-pressed: #725a5e;
+        --chrome-border: rgba(245, 233, 218, 0.16);
+        --chrome-fill: rgba(72, 58, 58, 0.66);
+        --chrome-fill-hover: rgba(85, 69, 69, 0.8);
+        --chrome-icon: rgba(245, 233, 218, 0.86);
+        --focus-ring: rgba(183, 144, 196, 0.24);
+        --shadow: 0 14px 38px rgba(18, 10, 10, 0.24);
+        --grain-strong: rgba(245, 233, 218, 0.055);
+        --grain-soft: rgba(245, 233, 218, 0.035);
       }
 
       * {
@@ -131,15 +143,32 @@
       }
 
       .page-chrome {
-        position: fixed;
-        top: 0.95rem;
-        left: 50%;
-        z-index: 20;
+        position: relative;
+        z-index: 5;
         width: min(100% - 1.4rem, 760px);
-        transform: translateX(-50%);
+        margin: 0.95rem auto 0;
+        pointer-events: auto;
+      }
+
+      .page-chrome__inner {
+        position: relative;
+        width: 100%;
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 2.8rem;
+        padding-left: 0.15rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
+      }
+
+      .site-wordmark {
         pointer-events: none;
+        color: var(--text);
+        font-size: 0.98rem;
+        line-height: 1;
+        opacity: 0.88;
+        text-transform: lowercase;
       }
 
       .theme-toggle {
@@ -248,7 +277,7 @@
         position: relative;
         width: min(100% - 1.4rem, 760px);
         margin: 0 auto;
-        padding: 3.5rem 0 4rem;
+        padding: 0.55rem 0 4rem;
       }
 
       .eyebrow,
@@ -262,14 +291,15 @@
       }
 
       .hero {
-        padding: 0 0.2rem 1.6rem;
+        padding: 1.15rem 0.2rem 1.35rem;
+        text-align: center;
       }
 
       .kept-return {
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
-        margin-bottom: 1.55rem;
+        margin-bottom: 1.2rem;
         color: var(--text-faint);
         font-family: Arial, Helvetica, sans-serif;
         font-size: 0.88rem;
@@ -300,16 +330,15 @@
 
       h1 {
         margin: 0;
-        max-width: 11ch;
-        font-size: clamp(3rem, 12vw, 6.2rem);
-        line-height: 0.94;
+        font-size: clamp(2rem, 8vw, 3.2rem);
+        line-height: 1.04;
         letter-spacing: 0;
-        font-weight: 600;
+        font-weight: 500;
       }
 
       .opening {
         max-width: 36rem;
-        margin: 1.2rem 0 0;
+        margin: 0.7rem auto 0;
         font-size: 1.12rem;
         line-height: 1.8;
         color: var(--text-soft);
@@ -319,7 +348,7 @@
         margin-top: 1.25rem;
         padding: 1.25rem;
         background: var(--surface);
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-soft);
         border-radius: 8px;
         box-shadow: var(--shadow);
         backdrop-filter: blur(6px);
@@ -348,7 +377,7 @@
 
       .name-card {
         padding: 1rem;
-        border: 1px solid var(--chrome-border);
+        border: 1px solid var(--line-soft);
         border-radius: 8px;
         background: var(--surface-strong);
       }
@@ -370,7 +399,7 @@
         min-height: 220px;
         margin-top: 1rem;
         padding: 1rem;
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-soft);
         border-radius: 8px;
         background:
           linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 78%, transparent), var(--surface-strong));
@@ -517,10 +546,6 @@
       }
 
       @media (min-width: 680px) {
-        main {
-          padding-top: 4.5rem;
-        }
-
         .name-pair,
         .image-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -534,7 +559,7 @@
         }
 
         .page-chrome {
-          top: 0.7rem;
+          margin-top: 0.7rem;
         }
 
         .theme-toggle {
@@ -547,11 +572,14 @@
   <body>
     <div class="grain"></div>
     <div class="page-chrome">
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
-        <span class="theme-toggle__icon" data-theme-toggle-icon></span>
-        <span class="sr-only" data-theme-toggle-text>Switch to dark mode</span>
-      </button>
-      <p class="theme-whisper" id="themeWhisper" hidden></p>
+      <div class="page-chrome__inner">
+        <span class="site-wordmark" aria-hidden="true">within reach</span>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+          <span class="theme-toggle__icon" data-theme-toggle-icon></span>
+          <span class="sr-only" data-theme-toggle-text>Switch to dark mode</span>
+        </button>
+        <p class="theme-whisper" id="themeWhisper" hidden></p>
+      </div>
     </div>
 
     <main>
