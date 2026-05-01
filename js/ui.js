@@ -52,8 +52,10 @@ const loadOlderNotesButton = document.querySelector('#loadOlderNotesButton');
 const collapseNotesButton = document.querySelector('#collapseNotesButton');
 
 const CLUE_FRAGMENT_INDEX_KEY = 'within-reach.secret-clue-fragment-index';
+const RECENT_FACTS_KEY = 'within-reach.recent-facts';
 const SECRET_NOTICE_ACK_PREFIX = 'within-reach.secret-notice-ack.';
 const FOOTER_HOLD_DURATION_MS = 1200;
+const RECENT_FACT_MEMORY_LIMIT = 8;
 const THEMED_USER_ACCENTS = new Set(['joey', 'jeszi']);
 const REACTION_DISPLAY = {
   '❤️': {
@@ -140,6 +142,40 @@ function pseudoRandomIndex(seedValue, length) {
 function pickRandom(items) {
   if (!items.length) return '';
   return items[Math.floor(Math.random() * items.length)];
+}
+
+function readRecentFacts() {
+  try {
+    const recent = JSON.parse(window.localStorage.getItem(RECENT_FACTS_KEY) || '[]');
+    return Array.isArray(recent) ? recent.filter((fact) => typeof fact === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberFact(fact, poolSize) {
+  if (!fact) return;
+
+  const memoryLimit = Math.min(RECENT_FACT_MEMORY_LIMIT, Math.max(1, poolSize - 1));
+  const recent = readRecentFacts().filter((item) => item !== fact);
+  recent.unshift(fact);
+
+  try {
+    window.localStorage.setItem(RECENT_FACTS_KEY, JSON.stringify(recent.slice(0, memoryLimit)));
+  } catch {
+    // The fact can still show if localStorage is unavailable.
+  }
+}
+
+function pickFact(items) {
+  if (!items.length) return '';
+
+  const recent = new Set(readRecentFacts());
+  const availableItems = items.filter((item) => !recent.has(item));
+  const fact = pickRandom(availableItems.length ? availableItems : items);
+  rememberFact(fact, items.length);
+
+  return fact;
 }
 
 function getUserAccentToken(userSlug, fallback = '#748a68') {
@@ -244,9 +280,9 @@ function getDebugSecondaryLine(privateCopy) {
   const debugType = new URLSearchParams(window.location.search).get('debugSecondary');
 
   if (debugType === 'none') return '';
-  if (debugType === 'fact' || debugType === 'shared') return pickRandom(getSharedFacts());
-  if (debugType === 'personal') return pickRandom(privateCopy.FUNNY_FACTS_PERSONAL);
-  if (debugType === 'secret' && ENABLE_SECRET_SECTION) return pickRandom(privateCopy.FUNNY_FACTS_SECRET);
+  if (debugType === 'fact' || debugType === 'shared') return pickFact(getSharedFacts());
+  if (debugType === 'personal') return pickFact(privateCopy.FUNNY_FACTS_PERSONAL);
+  if (debugType === 'secret' && ENABLE_SECRET_SECTION) return pickFact(privateCopy.FUNNY_FACTS_SECRET);
 
   return null;
 }
@@ -266,7 +302,7 @@ function getFactWithClueFragment(force = false) {
   const fragment = getNextClueFragment();
   if (!fragment) return null;
 
-  const fact = pickRandom(getSharedFacts());
+  const fact = pickFact(getSharedFacts());
   if (!fact) return null;
 
   return {
@@ -285,9 +321,9 @@ async function getWeightedLandingSecondaryLine() {
   const { none, shared, personal } = LANDING_SECONDARY_LINE_WEIGHTING;
 
   if (roll < none) return '';
-  if (roll < none + shared) return pickRandom(getSharedFacts());
-  if (roll < none + shared + personal) return pickRandom(privateCopy.FUNNY_FACTS_PERSONAL);
-  if (ENABLE_SECRET_SECTION) return pickRandom(privateCopy.FUNNY_FACTS_SECRET);
+  if (roll < none + shared) return pickFact(getSharedFacts());
+  if (roll < none + shared + personal) return pickFact(privateCopy.FUNNY_FACTS_PERSONAL);
+  if (ENABLE_SECRET_SECTION) return pickFact(privateCopy.FUNNY_FACTS_SECRET);
 
   return '';
 }
