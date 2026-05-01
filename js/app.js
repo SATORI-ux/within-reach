@@ -6,6 +6,7 @@ import {
   issueDeviceSession,
   reactNote,
   resolveVisitor,
+  saveNativePushToken,
   savePushSubscription,
   sendCheckIn,
   sendUrgentSignal,
@@ -216,6 +217,8 @@ const state = {
   urgentSignal: null,
   pushDebug: null,
   pushDeviceState: null,
+  nativePushToken: '',
+  nativePushSaved: false,
   secretDebugProgress: null,
   checkIns: [],
   notes: [],
@@ -255,6 +258,16 @@ let themeWhisperTimer = null;
 
 function getPushDebugMode() {
   return new URLSearchParams(window.location.search).get('debugPush') === '1';
+}
+
+function getNativeAndroidBridge() {
+  return window.WithinReachAndroid && typeof window.WithinReachAndroid.getFcmToken === 'function'
+    ? window.WithinReachAndroid
+    : null;
+}
+
+function isNativeAndroidWrapper() {
+  return Boolean(getNativeAndroidBridge());
 }
 
 function getSecretDebugProgress() {
@@ -479,6 +492,7 @@ function syncPushUiWithVisitorTruth() {
   const enabled = Boolean(state.visitor?.push_enabled);
   const hasStatus = Boolean(pushStatusEl?.textContent);
   const showPrompt =
+    !isNativeAndroidWrapper() &&
     supportsPushNotifications() &&
     Boolean(state.visitor?.user_slug) &&
     !enabled &&
@@ -821,6 +835,37 @@ async function enablePushNotifications() {
   await savePushSubscription(state.sessionToken, subscription);
 }
 
+async function saveNativeToken(token) {
+  const normalizedToken = String(token || '').trim();
+  if (!state.sessionToken || !normalizedToken) return;
+  if (state.nativePushSaved && state.nativePushToken === normalizedToken) return;
+
+  await saveNativePushToken(state.sessionToken, normalizedToken, {
+    platform: 'android',
+    device_label: 'android-wrapper',
+  });
+  state.nativePushToken = normalizedToken;
+  state.nativePushSaved = true;
+}
+
+async function registerNativeAndroidPush() {
+  const bridge = getNativeAndroidBridge();
+  if (!bridge || !state.sessionToken) return;
+
+  try {
+    const token = bridge.getFcmToken();
+    if (token) {
+      await saveNativeToken(token);
+    }
+
+    if (typeof bridge.requestNotifications === 'function') {
+      bridge.requestNotifications();
+    }
+  } catch (error) {
+    console.warn('Could not register native Android push token.', error);
+  }
+}
+
 function scheduleReveal() {
   if (state.revealed) return;
 
@@ -1041,6 +1086,7 @@ async function bootstrap() {
     await renderArrival(state.visitor);
     finishBoot();
     setPushStatus('');
+    await registerNativeAndroidPush();
     syncPushUiWithVisitorTruth();
     void logPushTruthMismatch();
 
@@ -1356,6 +1402,11 @@ if (loadOlderNotesButton) {
 if (collapseNotesButton) {
   collapseNotesButton.addEventListener('click', handleCollapseNotes);
 }
+
+window.addEventListener('withinreach:fcm-token', (event) => {
+  const token = event?.detail?.token || '';
+  void saveNativeToken(token);
+});
 
 urgentDialog.addEventListener('click', (event) => {
   if (event.target instanceof HTMLElement && event.target.dataset.closeUrgent === 'true') {

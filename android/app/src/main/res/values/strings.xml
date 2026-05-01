@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Within Reach</string>
+    <string name="gentle_channel_name">Gentle check-ins</string>
+    <string name="gentle_channel_description">Small check-in notes from Within Reach.</string>
+    <string name="urgent_channel_name">Can you talk?</string>
+    <string name="urgent_channel_description">Private signals that ask for a timely response.</string>
+</resources>

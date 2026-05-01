@@ -92,6 +92,19 @@ create table if not exists public.push_subscriptions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.native_push_tokens (
+  id bigint generated always as identity primary key,
+  user_slug text not null references public.tile_keys(user_slug) on update cascade,
+  token text not null unique,
+  platform text not null default 'android' check (platform in ('android')),
+  device_session_id bigint references public.device_sessions(id) on update cascade on delete set null,
+  device_label text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  last_seen_at timestamptz
+);
+
 alter table if exists public.push_subscriptions
   add column if not exists device_session_id bigint references public.device_sessions(id) on update cascade on delete set null;
 
@@ -141,6 +154,8 @@ create index if not exists idx_device_sessions_last_seen_at on public.device_ses
 create index if not exists idx_device_sessions_expires_at on public.device_sessions (expires_at);
 create index if not exists idx_push_subscriptions_user_slug on public.push_subscriptions (user_slug);
 create index if not exists idx_push_subscriptions_device_session_id on public.push_subscriptions (device_session_id);
+create index if not exists idx_native_push_tokens_user_slug on public.native_push_tokens (user_slug);
+create index if not exists idx_native_push_tokens_device_session_id on public.native_push_tokens (device_session_id);
 
 alter table public.tile_keys enable row level security;
 alter table public.check_ins enable row level security;
@@ -152,3 +167,4 @@ alter table public.secret_unlocks enable row level security;
 alter table public.private_pages enable row level security;
 alter table public.device_sessions enable row level security;
 alter table public.push_subscriptions enable row level security;
+alter table public.native_push_tokens enable row level security;

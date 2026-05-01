@@ -123,15 +123,22 @@ type PushSendResult = {
   attempted: number;
 };
 
+type NotificationSendResult = PushSendResult & {
+  channel: 'native' | 'web' | 'none';
+};
+
 type PushOptions = {
   data?: Record<string, unknown>;
   tag?: string;
   renotify?: boolean;
   requireInteraction?: boolean;
   urgency?: 'very-low' | 'low' | 'normal' | 'high';
+  androidChannelId?: 'gentle' | 'urgent';
+  webUrl?: string;
 };
 
 let vapidConfigured = false;
+let firebaseAccessToken: { token: string; expiresAt: number } | null = null;
 const APP_BASE_URL_ENV = 'WITHIN_REACH_APP_URL';
 const LEGACY_APP_BASE_URL_ENV = 'WITHIN_REACH_APP_PATH';
 
@@ -490,6 +497,270 @@ function ensureVapidConfigured() {
   vapidConfigured = true;
 }
 
+function getFirebaseConfig() {
+  const projectId = Deno.env.get('FIREBASE_PROJECT_ID')?.trim();
+  const clientEmail = Deno.env.get('FIREBASE_CLIENT_EMAIL')?.trim();
+  const privateKey = Deno.env.get('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n').trim();
+
+  if (!projectId || !clientEmail || !privateKey) return null;
+
+  return {
+    projectId,
+    clientEmail,
+    privateKey,
+  };
+}
+
+function base64UrlEncode(input: string | ArrayBuffer): string {
+  const bytes = typeof input === 'string'
+    ? new TextEncoder().encode(input)
+    : new Uint8Array(input);
+  let binary = '';
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const base64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes.buffer;
+}
+
+async function createFirebaseJwt(config: NonNullable<ReturnType<typeof getFirebaseConfig>>) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT',
+  };
+  const payload = {
+    iss: config.clientEmail,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  };
+  const signingInput = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`;
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(config.privateKey),
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(signingInput),
+  );
+
+  return `${signingInput}.${base64UrlEncode(signature)}`;
+}
+
+async function getFirebaseAccessToken() {
+  if (firebaseAccessToken && firebaseAccessToken.expiresAt > Date.now() + 60_000) {
+    return firebaseAccessToken.token;
+  }
+
+  const config = getFirebaseConfig();
+  if (!config) return null;
+
+  const assertion = await createFirebaseJwt(config);
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  const body = await response.json();
+
+  if (!response.ok || !body?.access_token) {
+    throw new Error(body?.error_description || body?.error || 'Could not authenticate with Firebase.');
+  }
+
+  firebaseAccessToken = {
+    token: body.access_token,
+    expiresAt: Date.now() + Number(body.expires_in || 3600) * 1000,
+  };
+
+  return firebaseAccessToken.token;
+}
+
+function stringifyFcmData(data: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(data)
+      .filter(([, value]) => value !== undefined && value !== null)
+      .map(([key, value]) => [key, String(value)]),
+  );
+}
+
+export async function sendNativePushToCounterpart(
+  client: SupabaseClient,
+  fromVisitor: VisitorRow,
+  kind: 'gentle' | 'urgent',
+  title: string,
+  body: string,
+  url = getAppBaseUrl(),
+  options: PushOptions = {},
+): Promise<PushSendResult> {
+  const counterpartSlug = getCounterpartSlug(fromVisitor.user_slug);
+
+  if (!counterpartSlug) {
+    return {
+      success: false,
+      result: `native:${kind}:no-counterpart:${fromVisitor.user_slug}`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  const accessToken = await getFirebaseAccessToken();
+  if (!accessToken) {
+    return {
+      success: false,
+      result: `native:${kind}:no-provider`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  const config = getFirebaseConfig();
+  if (!config) {
+    return {
+      success: false,
+      result: `native:${kind}:no-provider`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  const { data: tokens, error } = await client
+    .from('native_push_tokens')
+    .select('id, token')
+    .eq('user_slug', counterpartSlug)
+    .eq('platform', 'android')
+    .eq('is_active', true);
+
+  if (error) {
+    return {
+      success: false,
+      result: `native:${kind}:lookup-error:${error.message}`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  if (!tokens?.length) {
+    return {
+      success: false,
+      result: `native:${kind}:no-tokens:${counterpartSlug}`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  let delivered = 0;
+  let failed = 0;
+  const channelId = options.androidChannelId || kind;
+  const priority = kind === 'urgent' ? 'HIGH' : 'NORMAL';
+
+  for (const row of tokens) {
+    try {
+      const response = await fetch(`https://fcm.googleapis.com/v1/projects/${config.projectId}/messages:send`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            token: row.token,
+            data: stringifyFcmData({
+              title,
+              body,
+              url,
+              kind,
+              from_user_slug: fromVisitor.user_slug,
+              channel_id: channelId,
+              ...(options.data || {}),
+            }),
+            android: {
+              priority,
+              ttl: kind === 'urgent' ? '7200s' : '86400s',
+              collapse_key: kind === 'urgent' ? 'urgent-signal' : 'gentle-check-in',
+            },
+          },
+        }),
+      });
+      const responseBody = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        failed += 1;
+        console.error('Native push send failed', {
+          token_id: row.id,
+          message: responseBody?.error?.message || response.statusText,
+        });
+
+        if ([400, 404].includes(response.status)) {
+          await client
+            .from('native_push_tokens')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('id', row.id);
+        }
+
+        continue;
+      }
+
+      delivered += 1;
+      await client
+        .from('native_push_tokens')
+        .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+    } catch (pushError) {
+      failed += 1;
+      console.error('Native push send failed', {
+        token_id: row.id,
+        message: pushError instanceof Error ? pushError.message : String(pushError),
+      });
+    }
+  }
+
+  return {
+    success: delivered > 0,
+    result: `native:${kind}:attempted=${tokens.length}:delivered=${delivered}:failed=${failed}`,
+    delivered,
+    failed,
+    attempted: tokens.length,
+  };
+}
+
 export async function sendPushToCounterpart(
   client: SupabaseClient,
   fromVisitor: VisitorRow,
@@ -571,6 +842,56 @@ export async function sendPushToCounterpart(
     delivered,
     failed,
     attempted: subscriptions.length,
+  };
+}
+
+export async function sendNotificationToCounterpart(
+  client: SupabaseClient,
+  fromVisitor: VisitorRow,
+  kind: 'gentle' | 'urgent',
+  title: string,
+  body: string,
+  url = getAppBaseUrl(),
+  options: PushOptions = {},
+): Promise<NotificationSendResult> {
+  let native: PushSendResult;
+
+  try {
+    native = await sendNativePushToCounterpart(client, fromVisitor, kind, title, body, url, options);
+  } catch (error) {
+    native = {
+      success: false,
+      result: `native:${kind}:error:${error instanceof Error ? error.message : String(error)}`,
+      delivered: 0,
+      failed: 0,
+      attempted: 0,
+    };
+  }
+
+  if (native.success) {
+    return {
+      ...native,
+      channel: 'native',
+    };
+  }
+
+  const web = await sendPushToCounterpart(client, fromVisitor, kind, title, body, options.webUrl || url, options);
+
+  if (web.success) {
+    return {
+      ...web,
+      channel: 'web',
+      result: `${native.result}; ${web.result}`,
+    };
+  }
+
+  return {
+    success: false,
+    channel: 'none',
+    result: `${native.result}; ${web.result}`,
+    delivered: 0,
+    failed: native.failed + web.failed,
+    attempted: native.attempted + web.attempted,
   };
 }
 

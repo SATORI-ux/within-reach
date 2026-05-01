@@ -8,7 +8,7 @@ import {
   json,
   readJson,
   requirePost,
-  sendPushToCounterpart,
+  sendNotificationToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
 
@@ -29,6 +29,14 @@ function normalizePreferredResponse(value: string | undefined): PreferredRespons
 function buildUrgentUrl(recipientSessionToken: string, signalId: string): string {
   const url = new URL(getAppBaseUrl());
   url.searchParams.set('session', recipientSessionToken);
+  url.searchParams.set('urgent', '1');
+  url.searchParams.set('signal', signalId);
+
+  return url.href;
+}
+
+function buildNativeUrgentUrl(signalId: string): string {
+  const url = new URL(getAppBaseUrl());
   url.searchParams.set('urgent', '1');
   url.searchParams.set('signal', signalId);
 
@@ -84,19 +92,22 @@ Deno.serve(async (req) => {
     }
 
     const urgentUrl = buildUrgentUrl(recipientSessionToken, created.signal_id);
+    const nativeUrgentUrl = buildNativeUrgentUrl(created.signal_id);
 
-    const pushNotification = await sendPushToCounterpart(
+    const pushNotification = await sendNotificationToCounterpart(
       client,
       visitor,
       'urgent',
       'Within Reach',
       `${visitor.display_name} needs you. Open Within Reach when you can.`,
-      urgentUrl,
+      nativeUrgentUrl,
       {
         tag: 'urgent-signal',
         renotify: true,
         requireInteraction: true,
         urgency: 'high',
+        androidChannelId: 'urgent',
+        webUrl: urgentUrl,
         data: {
           type: 'urgent_signal',
           signalId: created.signal_id,

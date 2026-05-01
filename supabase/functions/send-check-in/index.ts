@@ -7,7 +7,7 @@ import {
   json,
   readJson,
   requirePost,
-  sendPushToCounterpart,
+  sendNotificationToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
 import { type SecretState, updateSecretUnlockAfterThought } from '../_shared/secret.ts';
@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     await assertWriteCooldown(client, 'check_ins', visitor.user_slug, 2, 'check_in');
 
-    const notification = await sendPushToCounterpart(
+    const notification = await sendNotificationToCounterpart(
       client,
       visitor,
       'gentle',

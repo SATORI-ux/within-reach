@@ -107,6 +107,15 @@ export function savePushSubscription(tileKey, subscription) {
   });
 }
 
+export function saveNativePushToken(tileKey, token, options = {}) {
+  return callFunction('save-native-push-token', {
+    tile_key: tileKey,
+    token,
+    platform: options.platform || 'android',
+    device_label: options.device_label || 'android',
+  });
+}
+
 export function getPrivatePage(tileKey) {
   return callFunction('get-private-page', {
     tile_key: tileKey,
