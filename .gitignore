@@ -19,9 +19,14 @@ Thumbs.db
 # build output
 dist/
 android/.gradle/
+android/.idea/
 android/build/
 android/app/build/
+android/app/.gradle/
+android/app/.idea/
 android/app/google-services.json
+android/local.properties
+android/app/local.properties
 
 #private build items
 js/private-copy.js

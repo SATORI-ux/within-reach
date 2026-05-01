@@ -1,5 +1,6 @@
 import {
   getAdminClient,
+  getCounterpartSlug,
   getThoughtCounts,
   assertWriteCooldown,
   getPrivateFeedStateEnabled,
@@ -19,6 +20,17 @@ type Payload = {
     first_thought_days_ago?: number;
   };
 };
+const DEFAULT_RECIPIENT_ACCENT = '#8661a9';
+
+async function getRecipientAccentColor(client: ReturnType<typeof getAdminClient>, userSlug: string) {
+  const { data } = await client
+    .from('tile_keys')
+    .select('accent_color')
+    .eq('user_slug', userSlug)
+    .maybeSingle<{ accent_color: string | null }>();
+
+  return data?.accent_color || DEFAULT_RECIPIENT_ACCENT;
+}
 
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
@@ -32,6 +44,10 @@ Deno.serve(async (req) => {
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
     const includePrivateFeedState = getPrivateFeedStateEnabled();
+    const counterpartSlug = getCounterpartSlug(visitor.user_slug);
+    const recipientAccentColor = counterpartSlug
+      ? await getRecipientAccentColor(client, counterpartSlug)
+      : DEFAULT_RECIPIENT_ACCENT;
 
     await assertWriteCooldown(client, 'check_ins', visitor.user_slug, 2, 'check_in');
 
@@ -41,6 +57,13 @@ Deno.serve(async (req) => {
       'gentle',
       'A small check-in arrived.',
       `${visitor.display_name} was thinking of you.`,
+      undefined,
+      {
+        androidChannelId: 'gentle',
+        data: {
+          accent_color: recipientAccentColor,
+        },
+      },
     );
 
     const { data: created, error: insertError } = await client

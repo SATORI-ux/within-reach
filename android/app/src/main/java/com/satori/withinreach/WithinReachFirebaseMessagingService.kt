@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -29,14 +30,28 @@ class WithinReachFirebaseMessagingService : FirebaseMessagingService() {
         val kind = data["kind"] ?: "gentle"
         val channelId = data["channel_id"] ?: if (kind == "urgent") "urgent" else "gentle"
         val url = data["url"] ?: BuildConfig.WITHIN_REACH_APP_URL
+        val accentColor = parseColor(data["accent_color"])
 
         showNotification(
             title = title,
             body = body,
             channelId = channelId,
             url = url,
+            accentColor = accentColor,
             highPriority = kind == "urgent",
         )
+    }
+
+    private fun parseColor(value: String?): Int {
+        return try {
+            if (value.isNullOrBlank()) {
+                ContextCompat.getColor(this, R.color.notification_accent)
+            } else {
+                Color.parseColor(value)
+            }
+        } catch (_: IllegalArgumentException) {
+            ContextCompat.getColor(this, R.color.notification_accent)
+        }
     }
 
     private fun showNotification(
@@ -44,6 +59,7 @@ class WithinReachFirebaseMessagingService : FirebaseMessagingService() {
         body: String,
         channelId: String,
         url: String,
+        accentColor: Int,
         highPriority: Boolean,
     ) {
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -58,7 +74,7 @@ class WithinReachFirebaseMessagingService : FirebaseMessagingService() {
         )
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_notification)
-            .setColor(ContextCompat.getColor(this, R.color.notification_accent))
+            .setColor(accentColor)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))

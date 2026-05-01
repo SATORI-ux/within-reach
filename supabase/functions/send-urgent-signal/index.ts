@@ -20,6 +20,7 @@ type Payload = {
 type PreferredResponse = 'call' | 'text' | 'either';
 const URGENT_LINK_SESSION_TTL_SECONDS = 60 * 60 * 2;
 const URGENT_SIGNAL_COOLDOWN_SECONDS = 60 * 2;
+const DEFAULT_RECIPIENT_ACCENT = '#8661a9';
 
 function normalizePreferredResponse(value: string | undefined): PreferredResponse {
   if (value === 'call' || value === 'text' || value === 'either') return value;
@@ -41,6 +42,16 @@ function buildNativeUrgentUrl(signalId: string): string {
   url.searchParams.set('signal', signalId);
 
   return url.href;
+}
+
+async function getRecipientAccentColor(client: ReturnType<typeof getAdminClient>, userSlug: string) {
+  const { data } = await client
+    .from('tile_keys')
+    .select('accent_color')
+    .eq('user_slug', userSlug)
+    .maybeSingle<{ accent_color: string | null }>();
+
+  return data?.accent_color || DEFAULT_RECIPIENT_ACCENT;
 }
 
 Deno.serve(async (req) => {
@@ -93,13 +104,14 @@ Deno.serve(async (req) => {
 
     const urgentUrl = buildUrgentUrl(recipientSessionToken, created.signal_id);
     const nativeUrgentUrl = buildNativeUrgentUrl(created.signal_id);
+    const recipientAccentColor = await getRecipientAccentColor(client, counterpartSlug);
 
     const pushNotification = await sendNotificationToCounterpart(
       client,
       visitor,
       'urgent',
-      'Within Reach',
-      `${visitor.display_name} needs you. Open Within Reach when you can.`,
+      'Can you talk?',
+      `${visitor.display_name} is asking if you can talk.`,
       nativeUrgentUrl,
       {
         tag: 'urgent-signal',
@@ -113,6 +125,7 @@ Deno.serve(async (req) => {
           signalId: created.signal_id,
           preferredResponse,
           requiresAck: true,
+          accent_color: recipientAccentColor,
         },
       },
     );
