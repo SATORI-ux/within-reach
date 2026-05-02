@@ -825,6 +825,11 @@ async function enablePushNotifications() {
 
   let subscription = await registration.pushManager.getSubscription();
 
+  if (subscription && state.visitor?.push_enabled === false) {
+    await subscription.unsubscribe();
+    subscription = null;
+  }
+
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,

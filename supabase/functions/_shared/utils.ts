@@ -135,6 +135,7 @@ type PushOptions = {
   urgency?: 'very-low' | 'low' | 'normal' | 'high';
   androidChannelId?: 'gentle' | 'urgent';
   webUrl?: string;
+  excludeDeviceSessionIds?: number[];
 };
 
 let vapidConfigured = false;
@@ -616,6 +617,81 @@ function stringifyFcmData(data: Record<string, unknown>) {
   );
 }
 
+function getPushErrorStatus(error: unknown): number | null {
+  const statusCode = (error as { statusCode?: unknown })?.statusCode;
+  const status = (error as { status?: unknown })?.status;
+  const value = typeof statusCode === 'number' ? statusCode : status;
+
+  return typeof value === 'number' ? value : null;
+}
+
+function isPermanentWebPushError(error: unknown): boolean {
+  const status = getPushErrorStatus(error);
+
+  return status === 404 || status === 410;
+}
+
+function getFcmErrorCode(responseBody: unknown): string {
+  const error = (responseBody as { error?: { status?: string; details?: Array<{ errorCode?: string }> } })?.error;
+  const detailCode = error?.details?.find((detail) => typeof detail?.errorCode === 'string')?.errorCode;
+
+  return detailCode || '';
+}
+
+function isPermanentNativePushError(status: number, responseBody: unknown): boolean {
+  const errorCode = getFcmErrorCode(responseBody);
+
+  return status === 404 || errorCode === 'UNREGISTERED' || errorCode === 'INVALID_ARGUMENT';
+}
+
+async function deactivateWebPushSubscription(
+  client: SupabaseClient,
+  id: number,
+  endpoint: string,
+  reason: string,
+): Promise<void> {
+  const { error } = await client
+    .from('push_subscriptions')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Could not deactivate dead web push subscription', {
+      endpoint,
+      reason,
+      message: error.message,
+    });
+  }
+}
+
+async function getActiveNativeDeviceSessionIds(
+  client: SupabaseClient,
+  userSlug: string,
+): Promise<number[]> {
+  const { data, error } = await client
+    .from('native_push_tokens')
+    .select('device_session_id')
+    .eq('user_slug', userSlug)
+    .eq('platform', 'android')
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('Native push token lookup failed', {
+      user_slug: userSlug,
+      message: error.message,
+    });
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      (data ?? [])
+        .map((row) => Number(row.device_session_id))
+        .filter((id) => Number.isFinite(id) && id > 0),
+    ),
+  );
+}
+
 export async function sendNativePushToCounterpart(
   client: SupabaseClient,
   fromVisitor: VisitorRow,
@@ -728,7 +804,7 @@ export async function sendNativePushToCounterpart(
           message: responseBody?.error?.message || response.statusText,
         });
 
-        if ([400, 404].includes(response.status)) {
+        if (isPermanentNativePushError(response.status, responseBody)) {
           await client
             .from('native_push_tokens')
             .update({ is_active: false, updated_at: new Date().toISOString() })
@@ -784,7 +860,7 @@ export async function sendPushToCounterpart(
 
   const { data: subscriptions, error } = await client
     .from('push_subscriptions')
-    .select('id, endpoint, subscription_json')
+    .select('id, endpoint, subscription_json, device_session_id')
     .eq('user_slug', counterpartSlug)
     .eq('is_active', true);
 
@@ -792,10 +868,22 @@ export async function sendPushToCounterpart(
     throw new Error(error.message);
   }
 
-  if (!subscriptions?.length) {
+  const excludedSessionIds = new Set(
+    (options.excludeDeviceSessionIds ?? [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && id > 0),
+  );
+  const eligibleSubscriptions = (subscriptions ?? []).filter((subscription) => {
+    const sessionId = Number(subscription.device_session_id);
+    return !Number.isFinite(sessionId) || !excludedSessionIds.has(sessionId);
+  });
+
+  if (!eligibleSubscriptions.length) {
     return {
       success: false,
-      result: `push:${kind}:no-subscriptions:${counterpartSlug}`,
+      result: subscriptions?.length
+        ? `push:${kind}:no-web-subscriptions-after-native-dedupe:${counterpartSlug}`
+        : `push:${kind}:no-subscriptions:${counterpartSlug}`,
       delivered: 0,
       failed: 0,
       attempted: 0,
@@ -807,7 +895,7 @@ export async function sendPushToCounterpart(
   let delivered = 0;
   let failed = 0;
 
-  for (const row of subscriptions) {
+  for (const row of eligibleSubscriptions) {
     try {
       await webpush.sendNotification(
         row.subscription_json,
@@ -829,19 +917,30 @@ export async function sendPushToCounterpart(
       delivered += 1;
     } catch (pushError) {
       failed += 1;
+      const status = getPushErrorStatus(pushError);
       console.error('Push send failed', {
         endpoint: row.endpoint,
+        status,
         message: pushError instanceof Error ? pushError.message : String(pushError),
       });
+
+      if (isPermanentWebPushError(pushError)) {
+        await deactivateWebPushSubscription(
+          client,
+          row.id,
+          row.endpoint,
+          `web-push-${status}`,
+        );
+      }
     }
   }
 
   return {
     success: delivered > 0,
-    result: `push:${kind}:attempted=${subscriptions.length}:delivered=${delivered}:failed=${failed}`,
+    result: `push:${kind}:attempted=${eligibleSubscriptions.length}:delivered=${delivered}:failed=${failed}`,
     delivered,
     failed,
-    attempted: subscriptions.length,
+    attempted: eligibleSubscriptions.length,
   };
 }
 
@@ -868,20 +967,31 @@ export async function sendNotificationToCounterpart(
     };
   }
 
-  if (native.success) {
+  const counterpartSlug = getCounterpartSlug(fromVisitor.user_slug);
+  const nativeDeviceSessionIds = native.attempted > 0 && counterpartSlug
+    ? await getActiveNativeDeviceSessionIds(client, counterpartSlug)
+    : [];
+  const web = await sendPushToCounterpart(client, fromVisitor, kind, title, body, options.webUrl || url, {
+    ...options,
+    excludeDeviceSessionIds: nativeDeviceSessionIds,
+  });
+
+  if (native.success && !web.success) {
     return {
       ...native,
       channel: 'native',
+      result: `${native.result}; ${web.result}`,
     };
   }
 
-  const web = await sendPushToCounterpart(client, fromVisitor, kind, title, body, options.webUrl || url, options);
-
   if (web.success) {
     return {
-      ...web,
-      channel: 'web',
+      success: true,
+      channel: native.success ? 'native' : 'web',
       result: `${native.result}; ${web.result}`,
+      delivered: native.delivered + web.delivered,
+      failed: native.failed + web.failed,
+      attempted: native.attempted + web.attempted,
     };
   }
 

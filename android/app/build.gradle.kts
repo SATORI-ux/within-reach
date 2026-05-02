@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
+}
+
+val localProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) {
+        localFile.inputStream().use { input -> load(input) }
+    }
+}
+
+fun localOrGradleProperty(name: String, fallback: String): String {
+    return providers.gradleProperty(name)
+        .orElse(localProperties.getProperty(name) ?: fallback)
+        .get()
 }
 
 android {
@@ -15,9 +30,10 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        val appUrl = providers.gradleProperty("withinReachAppUrl")
-            .getOrElse("https://kept.satori-ux.com/")
+        val appUrl = localOrGradleProperty("withinReachAppUrl", "https://kept.satori-ux.com/")
+        val startUrl = localOrGradleProperty("withinReachStartUrl", appUrl)
         buildConfigField("String", "WITHIN_REACH_APP_URL", "\"$appUrl\"")
+        buildConfigField("String", "WITHIN_REACH_START_URL", "\"$startUrl\"")
     }
 
     buildFeatures {

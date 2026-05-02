@@ -103,7 +103,9 @@ class MainActivity : ComponentActivity() {
     private fun resolveLaunchUrl(intent: Intent?): String {
         val extraUrl = intent?.getStringExtra(EXTRA_URL)
         val dataUrl = intent?.data?.toString()
-        return safeWithinReachUrl(extraUrl ?: dataUrl) ?: BuildConfig.WITHIN_REACH_APP_URL
+        return safeWithinReachUrl(extraUrl ?: dataUrl)
+            ?: safeWithinReachUrl(BuildConfig.WITHIN_REACH_START_URL)
+            ?: BuildConfig.WITHIN_REACH_APP_URL
     }
 
     private fun safeWithinReachUrl(candidate: String?): String? {
