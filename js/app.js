@@ -255,6 +255,7 @@ const PUSH_PROMPT_DISMISS_PREFIX = 'within-reach.push-prompt-dismissed.';
 const THEME_HINT_TRAIL_KEY = 'within-reach.theme-hint-trail';
 let themeWhisperEl = null;
 let themeWhisperTimer = null;
+let webPushRegistrationPromise = null;
 
 function getPushDebugMode() {
   return new URLSearchParams(window.location.search).get('debugPush') === '1';
@@ -388,7 +389,8 @@ function updateSecretDebugProgress(result, debugSecretProgress) {
 }
 
 function getPushPromptDismissKey(userSlug) {
-  return `${PUSH_PROMPT_DISMISS_PREFIX}${userSlug}`;
+  const sessionPart = state.sessionToken ? `.session.${state.sessionToken.slice(0, 16)}` : '';
+  return `${PUSH_PROMPT_DISMISS_PREFIX}${userSlug}${sessionPart}`;
 }
 
 function isPushPromptDismissed(userSlug) {
@@ -722,8 +724,18 @@ function getNotificationPermission() {
 async function getCurrentPushSubscription() {
   if (!supportsPushNotifications()) return null;
 
-  const registration = await navigator.serviceWorker.getRegistration();
+  const registration = await ensureWebPushServiceWorkerRegistration();
   return registration ? await registration.pushManager.getSubscription() : null;
+}
+
+async function ensureWebPushServiceWorkerRegistration() {
+  if (isNativeAndroidWrapper() || !supportsPushNotifications()) return null;
+
+  if (!webPushRegistrationPromise) {
+    webPushRegistrationPromise = navigator.serviceWorker.register('./service-worker.js');
+  }
+
+  return await webPushRegistrationPromise;
 }
 
 async function inspectCurrentDevicePushSubscription() {
@@ -812,7 +824,10 @@ async function enablePushNotifications() {
     throw new Error('Add your VAPID public key in js/config.js first.');
   }
 
-  const registration = await navigator.serviceWorker.register('./service-worker.js');
+  const registration = await ensureWebPushServiceWorkerRegistration();
+  if (!registration) {
+    throw new Error('Push notifications are not supported on this browser/device.');
+  }
 
   let permission = Notification.permission;
   if (permission !== 'granted') {
@@ -824,11 +839,6 @@ async function enablePushNotifications() {
   }
 
   let subscription = await registration.pushManager.getSubscription();
-
-  if (subscription && state.visitor?.push_enabled === false) {
-    await subscription.unsubscribe();
-    subscription = null;
-  }
 
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
