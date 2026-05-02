@@ -57,6 +57,49 @@ const SECRET_NOTICE_ACK_PREFIX = 'within-reach.secret-notice-ack.';
 const FOOTER_HOLD_DURATION_MS = 1200;
 const RECENT_FACT_MEMORY_LIMIT = 8;
 const THEMED_USER_ACCENTS = new Set(['joey', 'jeszi']);
+const CHERRY_BLOSSOM_REACTION_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="wrBlossomPetal" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#ffd8ee"/>
+      <stop offset="48%" stop-color="#f7a9d7"/>
+      <stop offset="100%" stop-color="#df6ba9"/>
+    </radialGradient>
+    <radialGradient id="wrBlossomCenter" cx="38%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#fff7a8"/>
+      <stop offset="62%" stop-color="#f7d85f"/>
+      <stop offset="100%" stop-color="#e2a24a"/>
+    </radialGradient>
+    <path id="wrBlossomPetalShape" d="M16 16.4 C12.7 13.7 10.7 10.3 11.4 7.1 C11.9 4.5 13.8 2.7 15.5 4.4 C15.7 4.6 15.9 4.9 16 5.2 C16.1 4.9 16.3 4.6 16.5 4.4 C18.2 2.7 20.1 4.5 20.6 7.1 C21.3 10.3 19.3 13.7 16 16.4 Z"/>
+  </defs>
+  <g transform="translate(16 16)">
+    <use href="#wrBlossomPetalShape" transform="translate(-16 -16)" fill="url(#wrBlossomPetal)" stroke="#ffd6eb" stroke-width="0.35"/>
+    <use href="#wrBlossomPetalShape" transform="rotate(72) translate(-16 -16)" fill="url(#wrBlossomPetal)" stroke="#ffd6eb" stroke-width="0.35"/>
+    <use href="#wrBlossomPetalShape" transform="rotate(144) translate(-16 -16)" fill="url(#wrBlossomPetal)" stroke="#ffd6eb" stroke-width="0.35"/>
+    <use href="#wrBlossomPetalShape" transform="rotate(216) translate(-16 -16)" fill="url(#wrBlossomPetal)" stroke="#ffd6eb" stroke-width="0.35"/>
+    <use href="#wrBlossomPetalShape" transform="rotate(288) translate(-16 -16)" fill="url(#wrBlossomPetal)" stroke="#ffd6eb" stroke-width="0.35"/>
+  </g>
+  <g opacity="0.34" stroke="#fff1f8" stroke-width="0.55" stroke-linecap="round">
+    <path d="M16 16.1 C15.5 12.8 15.6 9.1 16 5.9"/>
+    <path d="M16 16.1 C18.5 14.0 21.0 11.5 23.0 8.9"/>
+    <path d="M16 16.1 C19.1 17.4 22.2 19.2 25.2 21.1"/>
+    <path d="M16 16.1 C13.1 18.0 10.3 20.2 7.9 22.5"/>
+    <path d="M16 16.1 C13.9 13.4 11.4 11.0 8.9 8.9"/>
+  </g>
+  <g id="wrBlossomTinyStamens" stroke="#d88d47" stroke-width="0.65" stroke-linecap="round" fill="#a74162">
+    <path d="M16 15.7 L16 10.5"/>
+    <circle cx="16" cy="10.1" r="0.85"/>
+    <path d="M17.0 16.0 L21.0 13.0"/>
+    <circle cx="21.4" cy="12.7" r="0.72"/>
+    <path d="M16.8 16.8 L20.3 20.9"/>
+    <circle cx="20.6" cy="21.3" r="0.72"/>
+    <path d="M15.2 16.8 L11.7 20.9"/>
+    <circle cx="11.4" cy="21.3" r="0.72"/>
+    <path d="M15.0 16.0 L11.0 13.0"/>
+    <circle cx="10.6" cy="12.7" r="0.72"/>
+  </g>
+  <circle cx="16" cy="16.25" r="2.55" fill="url(#wrBlossomCenter)" stroke="#ffe989" stroke-width="0.45"/>
+  <circle cx="15.1" cy="15.4" r="0.82" fill="#fff9bf" opacity="0.78"/>
+</svg>`;
 const REACTION_DISPLAY = {
   '❤️': {
     label: 'heart',
@@ -86,7 +129,7 @@ const REACTION_DISPLAY = {
   '🌸': {
     label: 'flower',
     kind: 'flower',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="reaction-raised"><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(72 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(144 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(216 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(288 12 12)"></path></g><path class="reaction-stamen" d="M12 11.95 8.95 9.85M12 11.95l3.25-1.85M12 11.95l.32 3.65"></path><circle class="reaction-anther" cx="8.95" cy="9.85" r=".34"></circle><circle class="reaction-anther" cx="15.25" cy="10.1" r=".34"></circle><circle class="reaction-anther" cx="12.32" cy="15.6" r=".34"></circle><circle class="reaction-center" cx="12" cy="11.95" r="1.08"></circle></svg>',
+    svg: CHERRY_BLOSSOM_REACTION_SVG,
   },
 };
 const REACTION_DISPLAY_BY_INDEX = [
@@ -118,7 +161,7 @@ const REACTION_DISPLAY_BY_INDEX = [
   {
     label: 'flower',
     kind: 'flower',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="reaction-raised"><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(72 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(144 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(216 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(288 12 12)"></path></g><path class="reaction-stamen" d="M12 11.95 8.95 9.85M12 11.95l3.25-1.85M12 11.95l.32 3.65"></path><circle class="reaction-anther" cx="8.95" cy="9.85" r=".34"></circle><circle class="reaction-anther" cx="15.25" cy="10.1" r=".34"></circle><circle class="reaction-anther" cx="12.32" cy="15.6" r=".34"></circle><circle class="reaction-center" cx="12" cy="11.95" r="1.08"></circle></svg>',
+    svg: CHERRY_BLOSSOM_REACTION_SVG,
   },
 ];
 let hiddenDoorUnlocked = false;

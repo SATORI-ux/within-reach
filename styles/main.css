@@ -1789,6 +1789,14 @@ a.ghost-button {
   overflow: visible;
 }
 
+.reaction-glyph[data-reaction='flower'] svg {
+  width: 1.18rem;
+  height: 1.18rem;
+  fill: none;
+  stroke: none;
+  stroke-width: 0;
+}
+
 .reaction-chip--picker .reaction-glyph {
   width: 1.92rem;
   height: 1.92rem;
@@ -1798,6 +1806,11 @@ a.ghost-button {
 .reaction-chip--picker .reaction-glyph svg {
   width: 1.28rem;
   height: 1.28rem;
+}
+
+.reaction-chip--picker .reaction-glyph[data-reaction='flower'] svg {
+  width: 1.22rem;
+  height: 1.22rem;
 }
 
 .reaction-fill {
