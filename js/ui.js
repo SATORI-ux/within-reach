@@ -86,7 +86,7 @@ const REACTION_DISPLAY = {
   '🌸': {
     label: 'flower',
     kind: 'flower',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.45c-.85-2.15.2-3.82 1.72-3.82 1.44 0 2.12 1.7.72 3.52 2.22-.54 3.7.72 3.28 2.1-.45 1.46-2.4 1.56-3.72-.28.85 2.15-.2 3.82-1.72 3.82-1.44 0-2.12-1.7-.72-3.52-2.22.54-3.7-.72-3.28-2.1.45-1.46 2.4-1.56 3.72.28Z"></path><circle cx="12" cy="11.2" r=".86"></circle></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="reaction-raised"><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(72 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(144 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(216 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(288 12 12)"></path></g><path class="reaction-stamen" d="M12 11.95 8.95 9.85M12 11.95l3.25-1.85M12 11.95l.32 3.65"></path><circle class="reaction-anther" cx="8.95" cy="9.85" r=".34"></circle><circle class="reaction-anther" cx="15.25" cy="10.1" r=".34"></circle><circle class="reaction-anther" cx="12.32" cy="15.6" r=".34"></circle><circle class="reaction-center" cx="12" cy="11.95" r="1.08"></circle></svg>',
   },
 };
 const REACTION_DISPLAY_BY_INDEX = [
@@ -118,7 +118,7 @@ const REACTION_DISPLAY_BY_INDEX = [
   {
     label: 'flower',
     kind: 'flower',
-    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="reaction-petal" d="M12 10.4c-1.55-2.05-.95-4.05.62-4.42 1.62-.38 2.82 1.18 1.95 3.65 2.48-.74 4.05.5 3.68 2.08-.36 1.56-2.33 2.05-4.05.1 1.02 2.38-.04 4.05-1.66 4.05-1.62 0-2.48-1.78-1.28-4.04-1.92 1.74-3.82 1.08-4.05-.5-.22-1.6 1.5-2.68 3.88-1.68Z"></path><circle class="reaction-center" cx="12.25" cy="11.1" r="1.08"></circle></svg>',
+    svg: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="reaction-raised"><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(72 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(144 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(216 12 12)"></path><path class="reaction-petal" d="M12 11.25c-1.45-1.1-1.48-3.78 0-5.72 1.48 1.94 1.45 4.62 0 5.72Z" transform="rotate(288 12 12)"></path></g><path class="reaction-stamen" d="M12 11.95 8.95 9.85M12 11.95l3.25-1.85M12 11.95l.32 3.65"></path><circle class="reaction-anther" cx="8.95" cy="9.85" r=".34"></circle><circle class="reaction-anther" cx="15.25" cy="10.1" r=".34"></circle><circle class="reaction-anther" cx="12.32" cy="15.6" r=".34"></circle><circle class="reaction-center" cx="12" cy="11.95" r="1.08"></circle></svg>',
   },
 ];
 let hiddenDoorUnlocked = false;

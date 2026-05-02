@@ -1848,6 +1848,19 @@ a.ghost-button {
   stroke-width: 0.55;
 }
 
+.reaction-stamen {
+  fill: none;
+  stroke: color-mix(in srgb, var(--reaction-detail) 82%, var(--reaction-color) 18%);
+  stroke-width: 0.58;
+  stroke-linecap: round;
+}
+
+.reaction-anther {
+  fill: var(--reaction-detail);
+  stroke: color-mix(in srgb, white 28%, transparent);
+  stroke-width: 0.12;
+}
+
 .reaction-chip[data-reaction-kind='heart'] {
   --reaction-color: var(--reaction-heart);
   --reaction-detail: color-mix(in srgb, var(--reaction-heart) 78%, #5b2a22 22%);
