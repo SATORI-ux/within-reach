@@ -414,6 +414,9 @@ verify_jwt = false
 [functions.save-push-subscription]
 verify_jwt = false
 
+[functions.deactivate-push-subscription]
+verify_jwt = false
+
 [functions.save-native-push-token]
 verify_jwt = false
 

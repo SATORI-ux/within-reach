@@ -107,6 +107,13 @@ export function savePushSubscription(tileKey, subscription) {
   });
 }
 
+export function deactivatePushSubscription(tileKey, options = {}) {
+  return callFunction('deactivate-push-subscription', {
+    tile_key: tileKey,
+    endpoint: options.endpoint || null,
+  });
+}
+
 export function saveNativePushToken(tileKey, token, options = {}) {
   return callFunction('save-native-push-token', {
     tile_key: tileKey,

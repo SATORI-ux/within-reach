@@ -1,6 +1,7 @@
 import {
   acknowledgeUrgentSignal,
   addNote,
+  deactivatePushSubscription,
   getFeed,
   getUrgentSignal,
   issueDeviceSession,
@@ -432,13 +433,37 @@ function setPushStatus(message, isError = false) {
   pushStatusEl.hidden = !message;
 }
 
-function setPushEnabledState(enabled) {
+function getPushRepairReason() {
+  if (isNativeAndroidWrapper() || !supportsPushNotifications() || !state.visitor?.user_slug) {
+    return '';
+  }
+
+  const enabled = Boolean(state.visitor.push_enabled);
+  const enabledElsewhere = Boolean(state.visitor.push_enabled_elsewhere);
+  const deviceState = state.pushDeviceState;
+  const hasDeviceSubscription = Boolean(deviceState?.hasDeviceSubscription);
+  const permission = deviceState?.permission || getNotificationPermission();
+
+  if (deviceState?.timedOut) return 'inspection-timeout';
+  if (enabled && permission !== 'granted') return 'permission-missing';
+  if (enabled && !hasDeviceSubscription) return 'missing-local-subscription';
+  if (!enabled && hasDeviceSubscription) return 'unsaved-local-subscription';
+  if (!enabled && enabledElsewhere && permission !== 'denied') return 'stale-server-state';
+
+  return '';
+}
+
+function setPushEnabledState(enabled, needsRepair = false) {
   if (!enablePushButton) return;
 
-  enablePushButton.disabled = enabled;
-  enablePushButton.textContent = enabled
-    ? 'Gentle notifications on'
-    : 'Enable gentle notifications';
+  enablePushButton.disabled = enabled && !needsRepair;
+  if (needsRepair) {
+    enablePushButton.textContent = 'Reconnect gentle notifications';
+  } else if (enabled) {
+    enablePushButton.textContent = 'Gentle notifications on';
+  } else {
+    enablePushButton.textContent = 'Enable gentle notifications';
+  }
 
 }
 
@@ -495,17 +520,13 @@ function renderPushDebugPanel() {
 function syncPushUiWithVisitorTruth() {
   const enabled = Boolean(state.visitor?.push_enabled);
   const hasStatus = Boolean(pushStatusEl?.textContent);
-  const deviceState = state.pushDeviceState;
-  const needsPushRepair = Boolean(
-    state.visitor?.user_slug &&
-      !enabled &&
-      (deviceState?.hasDeviceSubscription || deviceState?.permission === 'granted')
-  );
+  const pushRepairReason = getPushRepairReason();
+  const needsPushRepair = Boolean(pushRepairReason);
   const showPrompt =
     !isNativeAndroidWrapper() &&
     supportsPushNotifications() &&
     Boolean(state.visitor?.user_slug) &&
-    !enabled &&
+    (!enabled || needsPushRepair) &&
     (needsPushRepair || !isPushPromptDismissed(state.visitor.user_slug));
   const showDebug = getPushDebugMode();
   let pushCopy = 'If you would like, this place can tap you gently when something arrives.';
@@ -518,7 +539,7 @@ function syncPushUiWithVisitorTruth() {
     pushCopy = 'This device may need one quiet reconnect before gentle taps can arrive here.';
   }
 
-  setPushEnabledState(enabled);
+  setPushEnabledState(enabled, needsPushRepair);
 
   if (enabled && state.visitor?.user_slug) {
     clearPushPromptDismissal(state.visitor.user_slug);
@@ -833,7 +854,30 @@ async function refreshVisitorPushTruth() {
   }
 }
 
-async function enablePushNotifications() {
+async function deactivateCurrentWebPushState(subscription) {
+  const endpoint = subscription?.endpoint || null;
+
+  try {
+    await deactivatePushSubscription(state.sessionToken, { endpoint });
+  } catch (error) {
+    console.warn('Could not deactivate stale push subscription.', error);
+  }
+}
+
+async function reconnectCurrentWebPushState(registration, subscription) {
+  if (subscription) {
+    try {
+      await subscription.unsubscribe();
+    } catch (error) {
+      console.warn('Could not unsubscribe local push subscription.', error);
+    }
+  }
+
+  await deactivateCurrentWebPushState(subscription);
+  return await registration.pushManager.getSubscription();
+}
+
+async function enablePushNotifications(options = {}) {
   if (!state.sessionToken) {
     throw new Error('No session is active for this visit.');
   }
@@ -851,16 +895,28 @@ async function enablePushNotifications() {
     throw new Error('Push notifications are not supported on this browser/device.');
   }
 
+  const forceReconnect = Boolean(options.forceReconnect);
+  let subscription = await registration.pushManager.getSubscription();
   let permission = Notification.permission;
   if (permission !== 'granted') {
     permission = await Notification.requestPermission();
   }
 
   if (permission !== 'granted') {
-    throw new Error('Notification permission was not granted.');
+    if (forceReconnect) {
+      await deactivateCurrentWebPushState(subscription);
+    }
+
+    throw new Error(
+      permission === 'denied'
+        ? 'Notifications are off for this Home Screen app. Turn them on in iOS Settings, or remove and add the Home Screen app again if it is missing there.'
+        : 'Notification permission was not granted.'
+    );
   }
 
-  let subscription = await registration.pushManager.getSubscription();
+  if (forceReconnect) {
+    subscription = await reconnectCurrentWebPushState(registration, subscription);
+  }
 
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
@@ -1360,12 +1416,13 @@ async function handleEnablePush() {
   setPushStatus('');
 
   try {
-    await enablePushNotifications();
+    const forceReconnect = Boolean(getPushRepairReason());
+    await enablePushNotifications({ forceReconnect });
     await refreshPushDebugState();
     const refreshedVisitor = await refreshVisitorPushTruth();
     syncPushUiWithVisitorTruth();
     if (refreshedVisitor?.push_enabled) {
-      setPushStatus('Quietly enabled.');
+      setPushStatus(forceReconnect ? 'Quietly reconnected.' : 'Quietly enabled.');
     } else {
       setPushStatus('Subscription saved. Waiting to confirm here.');
     }
@@ -1374,6 +1431,8 @@ async function handleEnablePush() {
     }, 2400);
   } catch (error) {
     console.error(error);
+    await refreshPushDebugState();
+    await refreshVisitorPushTruth();
     syncPushUiWithVisitorTruth();
     setPushStatus(error.message || 'Could not enable notifications.', true);
   } finally {
