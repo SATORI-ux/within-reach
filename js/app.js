@@ -46,6 +46,7 @@ const SESSION_KEY = 'within-reach.session-token';
 const SESSION_COOKIE_NAME = 'within_reach_session_token';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
+const PUSH_INSPECTION_TIMEOUT_MS = 2500;
 
 function getCookie(name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -455,10 +456,11 @@ function renderPushDebugPanel() {
   const otherDeviceEnabled = state.visitor?.push_enabled_elsewhere ? 'yes' : 'no';
   const deviceSubscribed = deviceState?.hasDeviceSubscription ? 'yes' : 'no';
   const permission = deviceState?.permission || 'unknown';
+  const inspection = deviceState?.timedOut ? 'timed out' : 'ok';
   const currentLabel = debug?.current_device?.label || 'unknown';
 
   pushDebugSummaryEl.textContent =
-    `This-device push: ${currentDeviceEnabled}. Other saved device: ${otherDeviceEnabled}. Browser permission: ${permission}. Local subscription: ${deviceSubscribed}. Session label: ${currentLabel}.`;
+    `This-device push: ${currentDeviceEnabled}. Other saved device: ${otherDeviceEnabled}. Browser permission: ${permission}. Local subscription: ${deviceSubscribed}. Inspection: ${inspection}. Session label: ${currentLabel}.`;
 
   pushDebugDevicesEl.innerHTML = '';
 
@@ -493,13 +495,28 @@ function renderPushDebugPanel() {
 function syncPushUiWithVisitorTruth() {
   const enabled = Boolean(state.visitor?.push_enabled);
   const hasStatus = Boolean(pushStatusEl?.textContent);
+  const deviceState = state.pushDeviceState;
+  const needsPushRepair = Boolean(
+    state.visitor?.user_slug &&
+      !enabled &&
+      (deviceState?.hasDeviceSubscription || deviceState?.permission === 'granted')
+  );
   const showPrompt =
     !isNativeAndroidWrapper() &&
     supportsPushNotifications() &&
     Boolean(state.visitor?.user_slug) &&
     !enabled &&
-    !isPushPromptDismissed(state.visitor.user_slug);
+    (needsPushRepair || !isPushPromptDismissed(state.visitor.user_slug));
   const showDebug = getPushDebugMode();
+  let pushCopy = 'If you would like, this place can tap you gently when something arrives.';
+
+  if (state.visitor?.push_enabled_elsewhere) {
+    pushCopy = 'This device can receive its own gentle taps too, if you would like.';
+  }
+
+  if (needsPushRepair) {
+    pushCopy = 'This device may need one quiet reconnect before gentle taps can arrive here.';
+  }
 
   setPushEnabledState(enabled);
 
@@ -508,9 +525,7 @@ function syncPushUiWithVisitorTruth() {
   }
 
   if (pushCopyEl) {
-    pushCopyEl.textContent = state.visitor?.push_enabled_elsewhere
-      ? 'This device can receive its own gentle taps too, if you would like.'
-      : 'If you would like, this place can tap you gently when something arrives.';
+    pushCopyEl.textContent = pushCopy;
     pushCopyEl.hidden = !showPrompt;
   }
 
@@ -724,7 +739,9 @@ function getNotificationPermission() {
 async function getCurrentPushSubscription() {
   if (!supportsPushNotifications()) return null;
 
-  const registration = await ensureWebPushServiceWorkerRegistration();
+  const registration = typeof navigator.serviceWorker.getRegistration === 'function'
+    ? await navigator.serviceWorker.getRegistration()
+    : null;
   return registration ? await registration.pushManager.getSubscription() : null;
 }
 
@@ -740,7 +757,11 @@ async function ensureWebPushServiceWorkerRegistration() {
 
 async function inspectCurrentDevicePushSubscription() {
   try {
-    const subscription = await getCurrentPushSubscription();
+    const subscription = await withTimeout(
+      getCurrentPushSubscription(),
+      PUSH_INSPECTION_TIMEOUT_MS,
+      'Push inspection timed out.'
+    );
     return {
       hasDeviceSubscription: Boolean(subscription),
       endpoint: subscription?.endpoint || null,
@@ -752,6 +773,7 @@ async function inspectCurrentDevicePushSubscription() {
       hasDeviceSubscription: false,
       endpoint: null,
       permission: getNotificationPermission(),
+      timedOut: error?.message === 'Push inspection timed out.',
       error,
     };
   }
