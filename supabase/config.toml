@@ -420,6 +420,12 @@ verify_jwt = false
 [functions.save-native-push-token]
 verify_jwt = false
 
+[functions.add-drawing-note]
+verify_jwt = false
+
+[functions.get-drawing-notes]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

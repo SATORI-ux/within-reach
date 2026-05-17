@@ -1,0 +1,152 @@
+.note-mode-toggle {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+  padding: 0.2rem;
+  border: 1px solid var(--button-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.note-mode-toggle__button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.52rem 0.82rem;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.86rem;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.note-mode-toggle__button.is-selected {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-strong));
+  color: var(--text-stronger);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 20%, transparent);
+}
+
+.drawing-note-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.drawing-note-panel__prompt {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.drawing-note-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: min(58dvh, 32rem);
+  border-radius: 10px;
+  border: 1px solid var(--field-border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 14%, transparent), transparent),
+    var(--field-bg);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 24%, transparent),
+    0 10px 24px color-mix(in srgb, var(--accent) 8%, transparent);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.drawing-note-canvas:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    0 10px 24px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.drawing-ink-fieldset {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.drawing-ink-fieldset legend {
+  padding: 0;
+  color: var(--text-soft);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.84rem;
+}
+
+.drawing-ink-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.drawing-ink {
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid color-mix(in srgb, var(--drawing-ink) 42%, var(--button-border));
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 28%, color-mix(in srgb, white 28%, transparent), transparent 42%),
+    var(--drawing-ink);
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent),
+    0 4px 10px color-mix(in srgb, var(--drawing-ink) 16%, transparent);
+}
+
+.drawing-ink.is-selected {
+  box-shadow:
+    0 0 0 3px var(--focus-ring),
+    0 0 0 5px color-mix(in srgb, var(--drawing-ink) 24%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+.drawing-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.drawing-tool-button {
+  padding: 0.62rem 0.86rem;
+}
+
+.note-card--drawing .note-card__content--drawing {
+  color: var(--text-soft);
+  font-style: italic;
+}
+
+.note-card__drawing {
+  margin: 0.72rem 0 0;
+  padding: 0.4rem;
+  border: 1px solid var(--button-border);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 10%, transparent), transparent),
+    color-mix(in srgb, var(--surface-strong) 72%, transparent);
+}
+
+.note-card__drawing img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--field-bg) 92%, transparent);
+}
+
+@media (min-width: 760px) {
+  .drawing-note-panel {
+    display: none;
+  }
+
+  .note-mode-toggle {
+    display: none;
+  }
+}
