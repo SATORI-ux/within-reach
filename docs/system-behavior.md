@@ -215,6 +215,8 @@ The system should prefer backend-derived push-enabled truth for the current reso
 
 This is an important boundary because the app is two-person and may be used on shared or reused devices.
 
+Note notifications are created by the server-side note write handlers after the note is saved. They should go only to the counterpart, and their payload should not include the note content.
+
 ---
 
 ## Failure behavior

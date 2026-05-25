@@ -127,6 +127,16 @@ type NotificationSendResult = PushSendResult & {
   channel: 'native' | 'web' | 'none';
 };
 
+export type NoteNotificationType = 'text' | 'drawing';
+
+export type NoteNotificationResult = {
+  success: boolean;
+  result: string;
+  delivered: number;
+  failed: number;
+  attempted: number;
+};
+
 type PushOptions = {
   data?: Record<string, unknown>;
   tag?: string;
@@ -428,6 +438,35 @@ export function getCounterpartSlug(userSlug: string): string | null {
   if (userSlug === 'joey') return 'jeszi';
   if (userSlug === 'jeszi') return 'joey';
   return null;
+}
+
+export async function getAccentColorForUser(
+  client: SupabaseClient,
+  userSlug: string,
+  fallback = '#8661a9',
+): Promise<string> {
+  const { data, error } = await client
+    .from('tile_keys')
+    .select('accent_color')
+    .eq('user_slug', userSlug)
+    .maybeSingle<{ accent_color: string | null }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.accent_color || fallback;
+}
+
+export async function getCounterpartAccentColor(
+  client: SupabaseClient,
+  fromUserSlug: string,
+  fallback = '#8661a9',
+): Promise<string> {
+  const counterpartSlug = getCounterpartSlug(fromUserSlug);
+  if (!counterpartSlug) return fallback;
+
+  return await getAccentColorForUser(client, counterpartSlug, fallback);
 }
 
 export async function getTileKeyForUser(
@@ -1003,6 +1042,88 @@ export async function sendNotificationToCounterpart(
     failed: native.failed + web.failed,
     attempted: native.attempted + web.attempted,
   };
+}
+
+const NOTE_NOTIFICATION_TITLE = 'A small whisper arrived.';
+const NOTE_NOTIFICATION_BODY: Record<NoteNotificationType, (displayName: string) => string> = {
+  text: (displayName) => `${displayName} echoed a small whisper.`,
+  drawing: (displayName) => `${displayName} traced a whisper.`,
+};
+
+function buildNoteNotificationErrorResult(
+  noteType: NoteNotificationType,
+  error: unknown,
+): NoteNotificationResult {
+  return {
+    success: false,
+    result: `note:${noteType}:error:${error instanceof Error ? error.message : String(error)}`,
+    delivered: 0,
+    failed: 0,
+    attempted: 0,
+  };
+}
+
+async function recordNoteNotificationResult(
+  client: SupabaseClient,
+  noteId: number,
+  notification: NoteNotificationResult,
+): Promise<void> {
+  const { error } = await client
+    .from('notes')
+    .update({
+      notification_sent: notification.success,
+      notification_result: notification.result,
+    })
+    .eq('id', noteId);
+
+  if (error) {
+    console.error('Could not record note notification result', {
+      note_id: noteId,
+      message: error.message,
+    });
+  }
+}
+
+export async function sendNoteNotificationToCounterpart(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+  noteId: number,
+  noteType: NoteNotificationType,
+): Promise<NoteNotificationResult> {
+  let notification: NoteNotificationResult;
+
+  try {
+    const recipientAccentColor = await getCounterpartAccentColor(client, visitor.user_slug);
+
+    notification = await sendNotificationToCounterpart(
+      client,
+      visitor,
+      'gentle',
+      NOTE_NOTIFICATION_TITLE,
+      NOTE_NOTIFICATION_BODY[noteType](visitor.display_name),
+      undefined,
+      {
+        tag: `note-${noteId}`,
+        androidChannelId: 'gentle',
+        data: {
+          type: 'note',
+          noteId,
+          note_type: noteType,
+          accent_color: recipientAccentColor,
+        },
+      },
+    );
+  } catch (error) {
+    notification = buildNoteNotificationErrorResult(noteType, error);
+    console.error('Note notification failed', {
+      note_id: noteId,
+      note_type: noteType,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  await recordNoteNotificationResult(client, noteId, notification);
+  return notification;
 }
 
 export async function getReactionsSummary(

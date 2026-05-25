@@ -6,6 +6,7 @@ import {
   readJson,
   requirePost,
   sanitizeNoteContent,
+  sendNoteNotificationToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
 
@@ -50,12 +51,21 @@ Deno.serve(async (req) => {
       throw new Error(error?.message || 'Could not save note.');
     }
 
+    const notification = await sendNoteNotificationToCounterpart(client, visitor, Number(note.id), 'text');
+
     return json({
       note: {
         ...note,
         display_name: visitor.display_name,
         accent_color: visitor.accent_color,
         reactions: [],
+      },
+      notification: {
+        success: notification.success,
+        result: notification.result,
+        delivered: notification.delivered,
+        failed: notification.failed,
+        attempted: notification.attempted,
       },
     }, 200, { req });
   } catch (error) {

@@ -22,7 +22,9 @@ create table if not exists public.notes (
   id bigint generated always as identity primary key,
   from_user_slug text not null references public.tile_keys(user_slug) on update cascade,
   content text not null check (char_length(content) <= 300),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  notification_sent boolean not null default false,
+  notification_result text
 );
 
 create table if not exists public.note_reactions (

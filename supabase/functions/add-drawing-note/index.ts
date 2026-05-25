@@ -5,6 +5,7 @@ import {
   json,
   readJson,
   requirePost,
+  sendNoteNotificationToCounterpart,
   validateTileKey,
 } from '../_shared/utils.ts';
 
@@ -120,6 +121,7 @@ Deno.serve(async (req) => {
     }
 
     const signed = await client.storage.from(BUCKET_NAME).createSignedUrl(storagePath, 60 * 60);
+    const notification = await sendNoteNotificationToCounterpart(client, visitor, Number(note.id), 'drawing');
 
     return json({
       note: {
@@ -134,6 +136,13 @@ Deno.serve(async (req) => {
           height,
           ink_color: inkColor,
         },
+      },
+      notification: {
+        success: notification.success,
+        result: notification.result,
+        delivered: notification.delivered,
+        failed: notification.failed,
+        attempted: notification.attempted,
       },
     }, 200, { req });
   } catch (error) {
