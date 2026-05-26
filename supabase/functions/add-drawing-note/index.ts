@@ -21,7 +21,22 @@ const BUCKET_NAME = 'note-drawings';
 const MAX_IMAGE_BYTES = 450_000;
 const DEFAULT_WIDTH = 768;
 const DEFAULT_HEIGHT = 576;
-const DRAWING_NOTE_CONTENT = 'A little drawing.';
+const DRAWING_NOTE_LINES = [
+  'from my fingertip to yours',
+  'a captured daydream',
+  'a little trace, left by hand',
+  'a thought that needed a shape',
+  'something wordless, left softly',
+  'a soft mark across the distance',
+  'drawn while thinking of you',
+  'digital snugz',
+  'a little almost-letter',
+  'held here in ink',
+];
+
+function pickDrawingNoteLine(): string {
+  return DRAWING_NOTE_LINES[Math.floor(Math.random() * DRAWING_NOTE_LINES.length)];
+}
 
 function normalizeHexColor(value: string | undefined): string | null {
   const color = String(value || '').trim();
@@ -79,7 +94,7 @@ Deno.serve(async (req) => {
       .from('notes')
       .insert({
         from_user_slug: visitor.user_slug,
-        content: DRAWING_NOTE_CONTENT,
+        content: pickDrawingNoteLine(),
         note_type: 'drawing',
       })
       .select('id, from_user_slug, content, note_type, created_at')
