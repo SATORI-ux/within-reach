@@ -424,10 +424,9 @@ function renderDrawingOnCard(card, drawing) {
   card.classList.add('note-card--drawing');
 
   const content = card.querySelector('.note-card__content');
-  if (content) {
-    content.textContent = 'A little drawing.';
-    content.classList.add('note-card__content--drawing');
-  }
+    if (content) {
+      content.classList.add('note-card__content--drawing');
+    }
 
   const figure = document.createElement('figure');
   figure.className = 'note-card__drawing';
