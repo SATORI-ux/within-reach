@@ -12,7 +12,7 @@ type Payload = {
   tile_key?: string;
 };
 
-const ACTIVE_WINDOW_SECONDS = 90;
+const ACTIVE_WINDOW_SECONDS = 35;
 
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);

@@ -49,7 +49,7 @@ const SESSION_COOKIE_NAME = 'within_reach_session_token';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
 const PUSH_INSPECTION_TIMEOUT_MS = 2500;
-const PRESENCE_HEARTBEAT_INTERVAL_MS = 38_000;
+const PRESENCE_HEARTBEAT_INTERVAL_MS = 10_000;
 const PRESENCE_LINES = [
   'Both lights are on.',
   'You’re both here.',
