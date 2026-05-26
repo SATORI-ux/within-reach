@@ -614,6 +614,38 @@ body.content-revealed .main-content {
   color: var(--text-soft);
 }
 
+.presence-line {
+  margin: 0.45rem 0 0;
+  min-height: 1.2em;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: color-mix(in srgb, var(--accent) 72%, var(--text-soft));
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease,
+    color 240ms ease,
+    text-shadow 240ms ease;
+  text-shadow:
+    0 0 0.65rem color-mix(in srgb, var(--accent) 26%, transparent),
+    0 0 1.35rem color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.presence-line.is-visible {
+  opacity: 0.9;
+  transform: translateY(0);
+}
+
+:root[data-theme='dark'] .presence-line,
+:root[data-theme='secret'] .presence-line {
+  text-shadow:
+    0 0 0.75rem color-mix(in srgb, var(--accent) 34%, transparent),
+    0 0 1.65rem color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 .hero-copy__mark {
   margin: 0.34rem 0 0;
   color: var(--text-soft);
@@ -1122,6 +1154,54 @@ a.ghost-button {
   cursor: default;
   opacity: 0.72;
   transform: none;
+}
+
+.notes-history-dock {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.18rem 0.52rem 0.42rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 42%, transparent);
+}
+
+.notes-history-button.section-more,
+.notes-history-button.section-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.85rem;
+  min-width: 1.85rem;
+  height: 1.85rem;
+  min-height: 1.85rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--button-border) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 38%, transparent);
+  color: color-mix(in srgb, var(--text-soft) 88%, var(--accent));
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.18rem;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.notes-history-button.section-more:hover,
+.notes-history-button.section-collapse:hover {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--button-border-strong));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-strong));
+  color: var(--text-stronger);
+  transform: translateY(-1px);
+}
+
+.notes-history-button.section-more:disabled,
+.notes-history-button.section-collapse:disabled {
+  cursor: default;
+  opacity: 0.62;
+  transform: none;
+}
+
+.notes-history-button--loading.section-more {
+  font-size: 0.98rem;
 }
 
 .section-collapse {

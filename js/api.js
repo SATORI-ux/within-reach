@@ -67,6 +67,12 @@ export function sendCheckIn(tileKey, options = {}) {
   });
 }
 
+export function sendPresenceHeartbeat(tileKey) {
+  return callFunction('presence-heartbeat', {
+    tile_key: tileKey,
+  });
+}
+
 export function addNote(tileKey, content) {
   return callFunction('add-note', { tile_key: tileKey, content });
 }

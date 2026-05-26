@@ -10,6 +10,7 @@ import {
   saveNativePushToken,
   savePushSubscription,
   sendCheckIn,
+  sendPresenceHeartbeat,
   sendUrgentSignal,
 } from './api.js';
 import {
@@ -48,6 +49,19 @@ const SESSION_COOKIE_NAME = 'within_reach_session_token';
 const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 const VISITOR_RESOLVE_TIMEOUT_MS = 8000;
 const PUSH_INSPECTION_TIMEOUT_MS = 2500;
+const PRESENCE_HEARTBEAT_INTERVAL_MS = 38_000;
+const PRESENCE_LINES = [
+  'Both lights are on.',
+  'You’re both here.',
+  'Both of you are here.',
+  'The room is shared for a moment.',
+  'You found the same quiet minute.',
+  'Both here, quietly.',
+  'A small overlap.',
+  'The thread is warm on both ends.',
+  'For a moment, the distance is smaller.',
+  'You both reached the same little place.',
+];
 
 function getCookie(name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -199,6 +213,7 @@ const urgentTextLink = document.querySelector('#urgentTextLink');
 const ackUrgentButton = document.querySelector('#ackUrgentButton');
 const urgentStateMessage = document.querySelector('#urgentStateMessage');
 const notesFeed = document.querySelector('#notesFeed');
+const presenceLine = document.querySelector('#presenceLine');
 const enablePushButton = document.querySelector('#enablePushButton');
 const dismissPushPromptButton = document.querySelector('#dismissPushPromptButton');
 const pushCopyEl = document.querySelector('#pushCopy');
@@ -227,6 +242,13 @@ const state = {
   thoughtCounts: [],
   revealTimer: null,
   revealed: false,
+  presence: {
+    timer: null,
+    hideTimer: null,
+    counterpartPresent: false,
+    activeLine: '',
+    inFlight: false,
+  },
   feed: {
     checkIns: {
       limit: 8,
@@ -580,6 +602,74 @@ function hasCollapsedNotesHistory() {
   return state.notes.length > state.feed.notes.limit;
 }
 
+function getNotesHistoryDock() {
+  if (!notesFeed) return null;
+
+  let dock = notesFeed.querySelector('.notes-history-dock');
+  if (!dock) {
+    dock = document.createElement('div');
+    dock.className = 'notes-history-dock';
+  }
+
+  return dock;
+}
+
+function resetNotesHistoryButtons(dock) {
+  [loadOlderNotesButton, collapseNotesButton].forEach((button) => {
+    if (!button) return;
+
+    button.hidden = true;
+    button.disabled = false;
+    button.classList.add('notes-history-button');
+    button.classList.remove('notes-history-button--loading');
+
+    if (dock && button.parentElement === dock) {
+      button.remove();
+    }
+  });
+}
+
+function syncNotesHistoryDock() {
+  if (!notesFeed || !loadOlderNotesButton || !collapseNotesButton) return;
+
+  const dock = getNotesHistoryDock();
+  const hasVisibleNotes = state.notes.length > 0 && getVisibleNotes().length > 0;
+  const canLoadOlder =
+    state.feed.notes.hasMore || (!state.feed.notes.expanded && hasCollapsedNotesHistory());
+  const canCollapse = state.feed.notes.expanded && !state.feed.notes.hasMore;
+  const activeButton = state.feed.notes.loadingOlder
+    ? loadOlderNotesButton
+    : canLoadOlder
+      ? loadOlderNotesButton
+      : canCollapse
+        ? collapseNotesButton
+        : null;
+
+  resetNotesHistoryButtons(dock);
+
+  if (!dock || !hasVisibleNotes || !activeButton) {
+    dock?.remove();
+    return;
+  }
+
+  if (activeButton === loadOlderNotesButton) {
+    activeButton.textContent = state.feed.notes.loadingOlder ? '…' : '›';
+    activeButton.setAttribute(
+      'aria-label',
+      state.feed.notes.loadingOlder ? 'Loading older notes' : 'Show older notes'
+    );
+    activeButton.disabled = state.feed.notes.loadingOlder;
+    activeButton.classList.toggle('notes-history-button--loading', state.feed.notes.loadingOlder);
+  } else {
+    activeButton.textContent = '×';
+    activeButton.setAttribute('aria-label', 'Return to recent notes');
+  }
+
+  activeButton.hidden = false;
+  dock.appendChild(activeButton);
+  notesFeed.appendChild(dock);
+}
+
 function syncFeedHistoryControls() {
   updateFeedHistoryControls({
     checkIns: {
@@ -593,6 +683,7 @@ function syncFeedHistoryControls() {
       expanded: state.feed.notes.expanded,
     },
   });
+  syncNotesHistoryDock();
 }
 
 function renderCurrentCheckIns() {
@@ -639,6 +730,107 @@ function updateLocalNotesPageState() {
   state.feed.notes.nextBeforeId = state.notes.length
     ? state.notes[state.notes.length - 1].id
     : null;
+}
+
+function pickPresenceLine() {
+  return PRESENCE_LINES[Math.floor(Math.random() * PRESENCE_LINES.length)] || PRESENCE_LINES[0];
+}
+
+function preparePresenceLine() {
+  if (!presenceLine) return;
+
+  presenceLine.hidden = false;
+  presenceLine.setAttribute('aria-hidden', 'true');
+}
+
+function renderPresenceLine() {
+  if (!presenceLine) return;
+
+  const shouldShow = state.presence.counterpartPresent && Boolean(state.presence.activeLine);
+  window.clearTimeout(state.presence.hideTimer);
+
+  if (shouldShow) {
+    presenceLine.hidden = false;
+    presenceLine.textContent = state.presence.activeLine;
+    presenceLine.removeAttribute('aria-hidden');
+
+    window.requestAnimationFrame(() => {
+      presenceLine.classList.add('is-visible');
+    });
+    return;
+  }
+
+  presenceLine.classList.remove('is-visible');
+  presenceLine.setAttribute('aria-hidden', 'true');
+
+  state.presence.hideTimer = window.setTimeout(() => {
+    if (state.presence.counterpartPresent) return;
+
+    presenceLine.textContent = '';
+    presenceLine.hidden = !state.sessionToken || !state.visitor;
+  }, 260);
+}
+
+function applyPresenceResult(result) {
+  const nextPresent = Boolean(result?.counterpart_present);
+
+  if (nextPresent && !state.presence.counterpartPresent) {
+    state.presence.activeLine = pickPresenceLine();
+  }
+
+  if (!nextPresent) {
+    state.presence.activeLine = '';
+  }
+
+  state.presence.counterpartPresent = nextPresent;
+  renderPresenceLine();
+}
+
+async function runPresenceHeartbeat() {
+  if (!state.sessionToken || !state.visitor || state.presence.inFlight) return;
+  if (document.visibilityState !== 'visible') return;
+
+  const heartbeatToken = state.sessionToken;
+  state.presence.inFlight = true;
+
+  try {
+    const result = await sendPresenceHeartbeat(heartbeatToken);
+    if (heartbeatToken !== state.sessionToken || !state.visitor) return;
+    applyPresenceResult(result);
+  } catch (error) {
+    console.warn('Presence heartbeat failed.', error);
+  } finally {
+    state.presence.inFlight = false;
+  }
+}
+
+function stopPresenceHeartbeat() {
+  window.clearInterval(state.presence.timer);
+  window.clearTimeout(state.presence.hideTimer);
+  state.presence.timer = null;
+  state.presence.hideTimer = null;
+  state.presence.counterpartPresent = false;
+  state.presence.activeLine = '';
+  state.presence.inFlight = false;
+
+  if (presenceLine) {
+    presenceLine.classList.remove('is-visible');
+    presenceLine.setAttribute('aria-hidden', 'true');
+    presenceLine.textContent = '';
+    presenceLine.hidden = true;
+  }
+}
+
+function startPresenceHeartbeat() {
+  if (!state.sessionToken || !state.visitor) return;
+
+  preparePresenceLine();
+  window.clearInterval(state.presence.timer);
+  void runPresenceHeartbeat();
+
+  state.presence.timer = window.setInterval(() => {
+    void runPresenceHeartbeat();
+  }, PRESENCE_HEARTBEAT_INTERVAL_MS);
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -1159,6 +1351,7 @@ async function bootstrap() {
     renderNotes([], '');
     renderThoughtCounts([]);
     state.visitor = null;
+    stopPresenceHeartbeat();
     syncPushUiWithVisitorTruth();
     finishBoot();
     syncFeedHistoryControls();
@@ -1182,6 +1375,7 @@ async function bootstrap() {
     await registerNativeAndroidPush();
     syncPushUiWithVisitorTruth();
     void logPushTruthMismatch();
+    startPresenceHeartbeat();
 
     if (urgentRoute) {
       reveal();
@@ -1214,6 +1408,7 @@ async function bootstrap() {
     state.visitor = null;
     state.pushDebug = null;
     state.pushDeviceState = null;
+    stopPresenceHeartbeat();
     finishBoot();
     setActionMessage(message, true);
     setPushStatus('');
@@ -1514,6 +1709,12 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     closeAllReactionPickers();
     closeUrgentDialog();
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    void runPresenceHeartbeat();
   }
 });
 

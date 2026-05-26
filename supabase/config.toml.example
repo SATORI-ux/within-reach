@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.get-drawing-notes]
 verify_jwt = false
+
+[functions.presence-heartbeat]
+verify_jwt = false
