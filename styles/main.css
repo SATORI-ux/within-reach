@@ -632,41 +632,51 @@ body.content-revealed .main-content {
     transform 260ms ease,
     color 260ms ease,
     text-shadow 260ms ease;
+   text-shadow:
+    0 0 0.42rem color-mix(in srgb, var(--accent) 34%, transparent),
+    0 0 1rem color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+:root[data-theme='dark'] .presence-line,
+:root[data-theme='secret'] .presence-line {
   text-shadow:
-    0 0 0.5rem color-mix(in srgb, var(--accent) 46%, transparent),
-    0 0 1.15rem color-mix(in srgb, var(--accent) 26%, transparent),
-    0 0 2rem color-mix(in srgb, var(--accent) 13%, transparent);
+    0 0 0.5rem color-mix(in srgb, var(--accent) 44%, transparent),
+    0 0 1.2rem color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .presence-line::before {
   content: "";
   position: absolute;
-  inset: -0.5rem -1.2rem;
+  left: 50%;
+  top: 52%;
   z-index: -1;
+  width: min(11rem, 130%);
+  height: 2.4rem;
   border-radius: 999px;
   background:
     radial-gradient(
-      ellipse at center,
-      color-mix(in srgb, var(--accent) 24%, transparent) 0%,
-      color-mix(in srgb, var(--accent) 12%, transparent) 42%,
-      transparent 74%
+      circle at 42% 54%,
+      color-mix(in srgb, var(--accent) 16%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 8%, transparent) 34%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle at 62% 44%,
+      color-mix(in srgb, var(--accent) 10%, transparent) 0%,
+      transparent 68%
     );
   opacity: 0;
-  transform: scale(0.92);
+  filter: blur(12px);
+  transform: translate(-50%, -50%) scale(0.96);
   transition:
-    opacity 320ms ease,
-    transform 320ms ease;
+    opacity 340ms ease,
+    transform 340ms ease;
   pointer-events: none;
 }
 
-.presence-line.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .presence-line.is-visible::before {
-  opacity: 1;
-  transform: scale(1);
+  opacity: 0.72;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 :root[data-theme='dark'] .presence-line,
@@ -682,11 +692,21 @@ body.content-revealed .main-content {
 :root[data-theme='secret'] .presence-line::before {
   background:
     radial-gradient(
-      ellipse at center,
-      color-mix(in srgb, var(--accent) 34%, transparent) 0%,
-      color-mix(in srgb, var(--accent) 17%, transparent) 44%,
-      transparent 76%
+      circle at 42% 54%,
+      color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 11%, transparent) 36%,
+      transparent 74%
+    ),
+    radial-gradient(
+      circle at 63% 43%,
+      color-mix(in srgb, var(--accent) 14%, transparent) 0%,
+      transparent 70%
     );
+}
+
+:root[data-theme='dark'] .presence-line.is-visible::before,
+:root[data-theme='secret'] .presence-line.is-visible::before {
+  opacity: 0.62;
 }
 
 .hero-copy__mark {
