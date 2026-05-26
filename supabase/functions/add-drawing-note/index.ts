@@ -24,13 +24,12 @@ const DEFAULT_HEIGHT = 576;
 const DRAWING_NOTE_LINES = [
   'from my fingertip to yours',
   'a captured daydream',
-  'a little trace, left by hand',
+  'a small trace, left by hand',
   'a thought that needed a shape',
   'something wordless, left softly',
   'a soft mark across the distance',
   'drawn while thinking of you',
   'digital snugz',
-  'a little almost-letter',
   'held here in ink',
 ];
 
