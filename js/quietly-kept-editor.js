@@ -1,6 +1,8 @@
 import {
   archiveSecretEntry,
   getSecretPage,
+  resetFinalAsk,
+  revealFinalAsk,
   uploadSecretMedia,
   upsertSecretEntry,
   upsertSecretPageContent,
@@ -26,10 +28,17 @@ const newEntryButton = document.querySelector('#newEntryButton');
 const archiveEntryButton = document.querySelector('#archiveEntryButton');
 const pageContentSection = pageContentForm?.closest('.editor-section');
 const entryEditorSection = entryForm?.closest('.editor-section');
+const finalAskEditorSection = document.querySelector('#finalAskEditorSection');
+const finalAskStatus = document.querySelector('#finalAskStatus');
+const finalAskMeta = document.querySelector('#finalAskMeta');
+const revealFinalAskButton = document.querySelector('#revealFinalAskButton');
+const resetFinalAskButton = document.querySelector('#resetFinalAskButton');
+const finalAskMessage = document.querySelector('#finalAskMessage');
 const sectionSelect = entryForm?.elements.namedItem('section_type');
 
 let sessionToken = '';
 let currentEntries = [];
+let currentFinalAsk = null;
 let canEditFixedContent = false;
 let allowedEntrySections = [];
 
@@ -82,6 +91,19 @@ const EMPTY_CONTENT = {
     button: '',
     footnote: '',
   },
+  final_ask: {
+    hidden_title: '',
+    revealed_title: '',
+    intro: '',
+    body: '',
+    question: '',
+    open_label: '',
+    yes_label: '',
+    talk_first_label: '',
+    yes_screen_copy: '',
+    talk_first_screen_copy: '',
+    accepted_memory_copy: '',
+  },
 };
 
 function setStatus(title, body) {
@@ -125,6 +147,10 @@ function mergeContent(content) {
       ...EMPTY_CONTENT.ask,
       ...(content?.ask || {}),
     },
+    final_ask: {
+      ...EMPTY_CONTENT.final_ask,
+      ...(content?.final_ask || {}),
+    },
   };
 }
 
@@ -159,6 +185,17 @@ function populateContentForm(contentValue) {
   setField(pageContentForm, 'ask_question', content.ask.question);
   setField(pageContentForm, 'ask_button', content.ask.button);
   setField(pageContentForm, 'ask_footnote', content.ask.footnote);
+  setField(pageContentForm, 'final_ask_hidden_title', content.final_ask.hidden_title);
+  setField(pageContentForm, 'final_ask_revealed_title', content.final_ask.revealed_title);
+  setField(pageContentForm, 'final_ask_intro', content.final_ask.intro);
+  setField(pageContentForm, 'final_ask_body', content.final_ask.body);
+  setField(pageContentForm, 'final_ask_question', content.final_ask.question);
+  setField(pageContentForm, 'final_ask_open_label', content.final_ask.open_label);
+  setField(pageContentForm, 'final_ask_yes_label', content.final_ask.yes_label);
+  setField(pageContentForm, 'final_ask_talk_first_label', content.final_ask.talk_first_label);
+  setField(pageContentForm, 'final_ask_yes_screen_copy', content.final_ask.yes_screen_copy);
+  setField(pageContentForm, 'final_ask_talk_first_screen_copy', content.final_ask.talk_first_screen_copy);
+  setField(pageContentForm, 'final_ask_accepted_memory_copy', content.final_ask.accepted_memory_copy);
 }
 
 function parseNameCards() {
@@ -214,6 +251,19 @@ function collectPageContent() {
       button: getFormValue(pageContentForm, 'ask_button'),
       footnote: getFormValue(pageContentForm, 'ask_footnote'),
     },
+    final_ask: {
+      hidden_title: getFormValue(pageContentForm, 'final_ask_hidden_title'),
+      revealed_title: getFormValue(pageContentForm, 'final_ask_revealed_title'),
+      intro: getFormValue(pageContentForm, 'final_ask_intro'),
+      body: getFormValue(pageContentForm, 'final_ask_body'),
+      question: getFormValue(pageContentForm, 'final_ask_question'),
+      open_label: getFormValue(pageContentForm, 'final_ask_open_label'),
+      yes_label: getFormValue(pageContentForm, 'final_ask_yes_label'),
+      talk_first_label: getFormValue(pageContentForm, 'final_ask_talk_first_label'),
+      yes_screen_copy: getFormValue(pageContentForm, 'final_ask_yes_screen_copy'),
+      talk_first_screen_copy: getFormValue(pageContentForm, 'final_ask_talk_first_screen_copy'),
+      accepted_memory_copy: getFormValue(pageContentForm, 'final_ask_accepted_memory_copy'),
+    },
   };
 }
 
@@ -260,7 +310,57 @@ function configureEditorPermissions(viewer = {}) {
     entryEditorSection.hidden = allowedEntrySections.length === 0;
   }
 
+  if (finalAskEditorSection) {
+    finalAskEditorSection.hidden = !canEditFixedContent;
+  }
+
   setSectionOptions(allowedEntrySections);
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function renderFinalAskControls(finalAsk = {}) {
+  currentFinalAsk = finalAsk;
+  if (!finalAskStatus || !finalAskMeta) return;
+
+  const status = finalAsk.status || 'hidden';
+  finalAskStatus.textContent = `Status: ${status}`;
+
+  if (status === 'answered') {
+    const response = finalAsk.response === 'yes' ? 'Yes' : 'Talk to me first';
+    finalAskMeta.textContent = [
+      `Response: ${response}.`,
+      finalAsk.accepted_at ? `Accepted ${formatDateTime(finalAsk.accepted_at)}.` : '',
+      finalAsk.responded_at && !finalAsk.accepted_at ? `Answered ${formatDateTime(finalAsk.responded_at)}.` : '',
+    ].filter(Boolean).join(' ');
+  } else if (status === 'revealed') {
+    finalAskMeta.textContent = finalAsk.revealed_at
+      ? `Revealed ${formatDateTime(finalAsk.revealed_at)}.`
+      : 'Revealed and waiting for a response.';
+  } else {
+    finalAskMeta.textContent = finalAsk.reset_at
+      ? `Hidden. Last reset ${formatDateTime(finalAsk.reset_at)}.`
+      : 'Hidden. Not revealed yet.';
+  }
+
+  if (revealFinalAskButton) {
+    revealFinalAskButton.hidden = !finalAsk.can_reveal;
+    revealFinalAskButton.disabled = !finalAsk.can_reveal;
+  }
+
+  if (resetFinalAskButton) {
+    resetFinalAskButton.hidden = !finalAsk.can_reset;
+    resetFinalAskButton.disabled = !finalAsk.can_reset;
+  }
 }
 
 function renderEntryList(entries) {
@@ -377,6 +477,7 @@ async function refreshPage() {
   const data = await getSecretPage(sessionToken);
   configureEditorPermissions(data.viewer || {});
   currentEntries = flattenEntries(data.entries);
+  renderFinalAskControls(data.final_ask || {});
   if (canEditFixedContent) {
     populateContentForm(data.content);
   }
@@ -452,6 +553,45 @@ async function handleArchiveEntry() {
   }
 }
 
+async function handleRevealFinalAsk() {
+  if (!canEditFixedContent) {
+    setMessage(finalAskMessage, 'Only the page owner can reveal this.');
+    return;
+  }
+
+  setMessage(finalAskMessage, 'Revealing...');
+
+  try {
+    const result = await revealFinalAsk(sessionToken);
+    renderFinalAskControls(result.final_ask || currentFinalAsk || {});
+    setMessage(finalAskMessage, 'Revealed.');
+  } catch (error) {
+    console.error(error);
+    setMessage(finalAskMessage, error?.message || 'Could not reveal the Final Ask.');
+  }
+}
+
+async function handleResetFinalAsk() {
+  if (!canEditFixedContent) {
+    setMessage(finalAskMessage, 'Only the page owner can reset this.');
+    return;
+  }
+
+  const confirmed = window.confirm('Reset and hide the Final Ask? This is only for mistakes or testing.');
+  if (!confirmed) return;
+
+  setMessage(finalAskMessage, 'Resetting...');
+
+  try {
+    const result = await resetFinalAsk(sessionToken);
+    renderFinalAskControls(result.final_ask || currentFinalAsk || {});
+    setMessage(finalAskMessage, 'Hidden.');
+  } catch (error) {
+    console.error(error);
+    setMessage(finalAskMessage, error?.message || 'Could not reset the Final Ask.');
+  }
+}
+
 async function bootstrap() {
   setDocumentTheme(document.documentElement.dataset.theme);
   initializeThemeToggle(themeToggle, { enableSecretTheme: IS_PRIVATE_BUILD });
@@ -476,6 +616,7 @@ async function bootstrap() {
 
     configureEditorPermissions(data.viewer || {});
     currentEntries = flattenEntries(data.entries);
+    renderFinalAskControls(data.final_ask || {});
     if (canEditFixedContent) {
       populateContentForm(data.content);
     }
@@ -496,5 +637,7 @@ entryForm?.elements.namedItem('body')?.addEventListener('input', updateBodyCount
 sectionSelect?.addEventListener('change', updateBodyCount);
 newEntryButton?.addEventListener('click', resetEntryForm);
 archiveEntryButton?.addEventListener('click', handleArchiveEntry);
+revealFinalAskButton?.addEventListener('click', handleRevealFinalAsk);
+resetFinalAskButton?.addEventListener('click', handleResetFinalAsk);
 
 bootstrap();

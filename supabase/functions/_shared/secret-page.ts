@@ -60,6 +60,37 @@ export type SecretPageContentRow = {
   updated_at: string;
 };
 
+export type SecretFinalAskResponse = 'yes' | 'talk_first';
+
+export type SecretFinalAskRow = {
+  id: string;
+  status: 'hidden' | 'revealed' | 'answered';
+  response: SecretFinalAskResponse | null;
+  revealed_at: string | null;
+  revealed_by: string | null;
+  responded_at: string | null;
+  responded_by: string | null;
+  accepted_at: string | null;
+  reset_at: string | null;
+  reset_by: string | null;
+  joey_celebration_seen_at: string | null;
+  jeszi_celebration_seen_at: string | null;
+  yes_notification_sent_at: string | null;
+  talk_first_notification_sent_at: string | null;
+  anniversary_enabled: boolean;
+  anniversary_timezone: string | null;
+  last_anniversary_sent_for_year: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SecretFinalAskForViewer = Omit<SecretFinalAskRow, 'id'> & {
+  visible: boolean;
+  can_reveal: boolean;
+  can_respond: boolean;
+  can_reset: boolean;
+};
+
 type TallyCounts = {
   user_slug: string;
   display_name: string;
@@ -101,6 +132,18 @@ export const EMPTY_SECRET_PAGE_CONTENT = {
     question: '',
     button: '',
     footnote: '',
+  },
+  final_ask: {
+    hidden_title: '',
+    revealed_title: '',
+    intro: '',
+    body: '',
+    question: '',
+    yes_label: '',
+    talk_first_label: '',
+    yes_screen_copy: '',
+    talk_first_screen_copy: '',
+    accepted_memory_copy: '',
   },
 };
 
@@ -155,6 +198,14 @@ export function getSecretCounterpartUserSlug(userSlug: string): string | null {
   if (userSlug === ownerSlug) return targetSlug;
   if (userSlug === targetSlug) return ownerSlug;
   return null;
+}
+
+export function isSecretOwnerUser(userSlug: string): boolean {
+  return userSlug === getSecretAlwaysUnlockUserSlug();
+}
+
+export function isSecretTargetUser(userSlug: string): boolean {
+  return userSlug === getSecretTargetUserSlug();
 }
 
 export function inferSecretEntrySubjectUserSlug(
@@ -279,6 +330,230 @@ export async function getSecretPageContent(
     content: normalizeSecretPageContent(data?.content),
     updated_at: data?.updated_at ?? null,
   };
+}
+
+function getEmptySecretFinalAskRow(): SecretFinalAskRow {
+  const now = new Date(0).toISOString();
+  return {
+    id: '',
+    status: 'hidden',
+    response: null,
+    revealed_at: null,
+    revealed_by: null,
+    responded_at: null,
+    responded_by: null,
+    accepted_at: null,
+    reset_at: null,
+    reset_by: null,
+    joey_celebration_seen_at: null,
+    jeszi_celebration_seen_at: null,
+    yes_notification_sent_at: null,
+    talk_first_notification_sent_at: null,
+    anniversary_enabled: false,
+    anniversary_timezone: null,
+    last_anniversary_sent_for_year: null,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+export function normalizeFinalAskResponse(value: unknown): SecretFinalAskResponse {
+  if (value === 'yes' || value === 'talk_first') return value;
+  throw new Error('Choose a valid Final Ask response.');
+}
+
+export async function getSecretFinalAskState(client: SupabaseClient): Promise<SecretFinalAskRow> {
+  const { data, error } = await client
+    .from('secret_final_ask')
+    .select([
+      'id',
+      'status',
+      'response',
+      'revealed_at',
+      'revealed_by',
+      'responded_at',
+      'responded_by',
+      'accepted_at',
+      'reset_at',
+      'reset_by',
+      'joey_celebration_seen_at',
+      'jeszi_celebration_seen_at',
+      'yes_notification_sent_at',
+      'talk_first_notification_sent_at',
+      'anniversary_enabled',
+      'anniversary_timezone',
+      'last_anniversary_sent_for_year',
+      'created_at',
+      'updated_at',
+    ].join(', '))
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle<SecretFinalAskRow>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? getEmptySecretFinalAskRow();
+}
+
+export function getSecretFinalAskForViewer(
+  row: SecretFinalAskRow,
+  visitor: VisitorRow,
+): SecretFinalAskForViewer {
+  const isOwner = isSecretOwnerUser(visitor.user_slug);
+  const isTarget = isSecretTargetUser(visitor.user_slug);
+  const visible = row.status !== 'hidden' || isOwner;
+
+  return {
+    status: row.status,
+    response: row.response,
+    revealed_at: row.revealed_at,
+    revealed_by: row.revealed_by,
+    responded_at: row.responded_at,
+    responded_by: row.responded_by,
+    accepted_at: row.accepted_at,
+    reset_at: row.reset_at,
+    reset_by: row.reset_by,
+    joey_celebration_seen_at: row.joey_celebration_seen_at,
+    jeszi_celebration_seen_at: row.jeszi_celebration_seen_at,
+    yes_notification_sent_at: row.yes_notification_sent_at,
+    talk_first_notification_sent_at: row.talk_first_notification_sent_at,
+    anniversary_enabled: row.anniversary_enabled,
+    anniversary_timezone: row.anniversary_timezone,
+    last_anniversary_sent_for_year: row.last_anniversary_sent_for_year,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    visible,
+    can_reveal: isOwner && row.status === 'hidden',
+    can_respond: isTarget && row.status === 'revealed',
+    can_reset: isOwner,
+  };
+}
+
+async function ensureSecretFinalAskRow(client: SupabaseClient): Promise<SecretFinalAskRow> {
+  const existing = await getSecretFinalAskState(client);
+  if (existing.id) return existing;
+
+  const { data, error } = await client
+    .from('secret_final_ask')
+    .insert({})
+    .select('*')
+    .single<SecretFinalAskRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Could not create Final Ask state.');
+  }
+
+  return data;
+}
+
+export async function revealSecretFinalAsk(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+): Promise<SecretFinalAskRow> {
+  await requireSecretFixedContentEdit(client, visitor);
+  const state = await ensureSecretFinalAskRow(client);
+
+  if (state.status !== 'hidden') {
+    throw new Error('The Final Ask is already active.');
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('secret_final_ask')
+    .update({
+      status: 'revealed',
+      response: null,
+      revealed_at: now,
+      revealed_by: visitor.user_slug,
+      responded_at: null,
+      responded_by: null,
+      accepted_at: null,
+      updated_at: now,
+    })
+    .eq('id', state.id)
+    .eq('status', 'hidden')
+    .select('*')
+    .single<SecretFinalAskRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Could not reveal the Final Ask.');
+  }
+
+  return data;
+}
+
+export async function respondSecretFinalAsk(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+  response: SecretFinalAskResponse,
+): Promise<SecretFinalAskRow> {
+  await requireSecretPageView(client, visitor);
+
+  if (!isSecretTargetUser(visitor.user_slug)) {
+    throw new Error('Only the intended recipient can answer the Final Ask.');
+  }
+
+  const state = await getSecretFinalAskState(client);
+  if (!state.id || state.status !== 'revealed') {
+    throw new Error('The Final Ask is not open for a response.');
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('secret_final_ask')
+    .update({
+      status: 'answered',
+      response,
+      responded_at: now,
+      responded_by: visitor.user_slug,
+      accepted_at: response === 'yes' ? now : null,
+      updated_at: now,
+    })
+    .eq('id', state.id)
+    .eq('status', 'revealed')
+    .select('*')
+    .single<SecretFinalAskRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Could not save the Final Ask response.');
+  }
+
+  return data;
+}
+
+export async function resetSecretFinalAsk(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+): Promise<SecretFinalAskRow> {
+  await requireSecretFixedContentEdit(client, visitor);
+  const state = await ensureSecretFinalAskRow(client);
+  const now = new Date().toISOString();
+
+  const { data, error } = await client
+    .from('secret_final_ask')
+    .update({
+      status: 'hidden',
+      response: null,
+      revealed_at: null,
+      revealed_by: null,
+      responded_at: null,
+      responded_by: null,
+      accepted_at: null,
+      reset_at: now,
+      reset_by: visitor.user_slug,
+      updated_at: now,
+    })
+    .eq('id', state.id)
+    .select('*')
+    .single<SecretFinalAskRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Could not reset the Final Ask.');
+  }
+
+  return data;
 }
 
 export async function getSecretTallyCounts(client: SupabaseClient): Promise<TallyCounts[]> {

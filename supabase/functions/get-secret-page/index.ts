@@ -9,6 +9,8 @@ import {
 import {
   assertPrivatePagesEnabled,
   getSecretEntriesForViewer,
+  getSecretFinalAskForViewer,
+  getSecretFinalAskState,
   getSecretPageContent,
   getSecretTallyCounts,
   requireSecretPageView,
@@ -33,6 +35,7 @@ Deno.serve(async (req) => {
     const visitor = await validateTileKey(client, body.tile_key ?? '');
     const access = await requireSecretPageView(client, visitor);
     const pageContent = await getSecretPageContent(client);
+    const finalAskState = await getSecretFinalAskState(client);
 
     return json({
       ok: true,
@@ -57,6 +60,7 @@ Deno.serve(async (req) => {
       content: pageContent.content,
       entries: await getSecretEntriesForViewer(client, visitor),
       tally: await getSecretTallyCounts(client),
+      final_ask: getSecretFinalAskForViewer(finalAskState, visitor),
     }, 200, { req });
   } catch (error) {
     return json({

@@ -169,3 +169,22 @@ export function uploadSecretMedia(tileKey, entryId, filePayload) {
     ...filePayload,
   });
 }
+
+export function revealFinalAsk(tileKey) {
+  return callFunction('reveal-final-ask', {
+    tile_key: tileKey,
+  });
+}
+
+export function respondFinalAsk(tileKey, response) {
+  return callFunction('respond-final-ask', {
+    tile_key: tileKey,
+    response,
+  });
+}
+
+export function resetFinalAsk(tileKey) {
+  return callFunction('reset-final-ask', {
+    tile_key: tileKey,
+  });
+}

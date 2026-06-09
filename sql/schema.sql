@@ -109,6 +109,30 @@ create table if not exists public.secret_entries (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.secret_final_ask (
+  id uuid primary key default gen_random_uuid(),
+  status text not null default 'hidden'
+    check (status in ('hidden', 'revealed', 'answered')),
+  response text
+    check (response in ('yes', 'talk_first')),
+  revealed_at timestamptz,
+  revealed_by text references public.tile_keys(user_slug) on update cascade,
+  responded_at timestamptz,
+  responded_by text references public.tile_keys(user_slug) on update cascade,
+  accepted_at timestamptz,
+  reset_at timestamptz,
+  reset_by text references public.tile_keys(user_slug) on update cascade,
+  joey_celebration_seen_at timestamptz,
+  jeszi_celebration_seen_at timestamptz,
+  yes_notification_sent_at timestamptz,
+  talk_first_notification_sent_at timestamptz,
+  anniversary_enabled boolean not null default false,
+  anniversary_timezone text,
+  last_anniversary_sent_for_year integer,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.device_sessions (
   id bigint generated always as identity primary key,
   user_slug text not null references public.tile_keys(user_slug) on update cascade,
@@ -194,6 +218,9 @@ create index if not exists idx_secret_entries_section on public.secret_entries (
 create index if not exists idx_secret_entries_love_subject on public.secret_entries (section_type, created_by, subject_user_slug, is_archived);
 create index if not exists idx_secret_entries_created_at on public.secret_entries (created_at desc);
 create index if not exists idx_secret_entries_updated_at on public.secret_entries (updated_at desc);
+create unique index if not exists idx_secret_final_ask_singleton on public.secret_final_ask ((true));
+create index if not exists idx_secret_final_ask_status on public.secret_final_ask (status);
+create index if not exists idx_secret_final_ask_accepted_at on public.secret_final_ask (accepted_at desc);
 create index if not exists idx_device_sessions_user_slug on public.device_sessions (user_slug);
 create index if not exists idx_device_sessions_last_seen_at on public.device_sessions (last_seen_at desc);
 create index if not exists idx_device_sessions_expires_at on public.device_sessions (expires_at);
@@ -226,6 +253,7 @@ alter table public.secret_unlocks enable row level security;
 alter table public.private_pages enable row level security;
 alter table public.secret_page_content enable row level security;
 alter table public.secret_entries enable row level security;
+alter table public.secret_final_ask enable row level security;
 alter table public.device_sessions enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.native_push_tokens enable row level security;

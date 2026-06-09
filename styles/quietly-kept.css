@@ -646,6 +646,14 @@ summary:focus-visible {
   line-height: 1.1;
 }
 
+.final-ask-question {
+  max-width: 36rem;
+  margin: 1.2rem 0 0;
+  color: color-mix(in srgb, var(--accent-warm) 70%, var(--text));
+  font-size: clamp(1.35rem, 4vw, 2.1rem);
+  line-height: 1.15;
+}
+
 .detail-section {
   border-color: color-mix(in srgb, var(--accent-warm) 22%, var(--line));
 }
@@ -787,6 +795,11 @@ textarea {
   gap: 1rem;
   padding: 0.8rem 0;
   border-top: 1px solid var(--line-soft);
+}
+
+.editor-list__item--stacked {
+  align-items: flex-start;
+  padding-top: 1rem;
 }
 
 .editor-list__item p {

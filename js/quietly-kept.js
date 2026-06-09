@@ -1,4 +1,4 @@
-import { getSecretPage } from './api.js';
+import { getSecretPage, respondFinalAsk } from './api.js';
 import { IS_PRIVATE_BUILD } from './config.js';
 import { resolveQuietSession } from './quiet-session.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
@@ -37,19 +37,24 @@ const tallyTitle = document.querySelector('#tallyTitle');
 const tallyIntro = document.querySelector('#tallyIntro');
 const tallyGrid = document.querySelector('#tallyGrid');
 const askTitle = document.querySelector('#askTitle');
-const askBody = document.querySelector('#askBody');
-const askQuestion = document.querySelector('#askQuestion');
-const askButton = document.querySelector('#askButton');
-const askFootnote = document.querySelector('#askFootnote');
+const askIntro = document.querySelector('#askIntro');
+const askSummary = document.querySelector('#askSummary');
+const askOpenLink = document.querySelector('#askOpenLink');
+const askStatus = document.querySelector('#askStatus');
 const readingDetail = document.querySelector('#readingDetail');
 const sectionRail = document.querySelector('.section-rail');
 const overviewSections = Array.from(document.querySelectorAll('[data-overview-section]'));
+const askSection = document.querySelector('#ask');
+const askRailLink = document.querySelector('#askRailLink');
 
 const OVERVIEW_ENTRY_LIMIT = 3;
 const KNOWN_USER_LABELS = {
   joey: 'Joey',
   jeszi: 'Jeszi',
 };
+
+let sessionToken = '';
+let currentPageData = null;
 
 const EMPTY_CONTENT = {
   hero: {
@@ -88,6 +93,18 @@ const EMPTY_CONTENT = {
     question: '',
     button: '',
     footnote: '',
+  },
+  final_ask: {
+    hidden_title: '',
+    revealed_title: '',
+    intro: '',
+    body: '',
+    question: '',
+    yes_label: '',
+    talk_first_label: '',
+    yes_screen_copy: '',
+    talk_first_screen_copy: '',
+    accepted_memory_copy: '',
   },
 };
 
@@ -135,6 +152,10 @@ function mergeContent(content) {
     ask: {
       ...EMPTY_CONTENT.ask,
       ...(content?.ask || {}),
+    },
+    final_ask: {
+      ...EMPTY_CONTENT.final_ask,
+      ...(content?.final_ask || {}),
     },
   };
 }
@@ -556,15 +577,67 @@ function renderTally(content, tally = []) {
   });
 }
 
-function renderAsk(content) {
-  askTitle.textContent = text(content.ask.title, 'Protected note');
-  askBody.textContent = text(content.ask.body);
-  askQuestion.textContent = text(content.ask.question);
-  askFootnote.textContent = text(content.ask.footnote);
+function getFinalAskContent(content) {
+  const finalAsk = asObject(content.final_ask);
+  const legacyAsk = asObject(content.ask);
 
-  const buttonText = text(content.ask.button);
-  askButton.hidden = !buttonText;
-  askButton.textContent = buttonText;
+  return {
+    hiddenTitle: text(finalAsk.hidden_title, text(legacyAsk.title, 'Protected note')),
+    revealedTitle: text(finalAsk.revealed_title, text(legacyAsk.title, 'Protected note')),
+    intro: text(finalAsk.intro, text(legacyAsk.footnote)),
+    body: text(finalAsk.body, text(legacyAsk.body)),
+    question: text(finalAsk.question, text(legacyAsk.question)),
+    openLabel: text(finalAsk.open_label, text(legacyAsk.button, 'Open this part')),
+    yesLabel: text(finalAsk.yes_label, 'Yes'),
+    talkFirstLabel: text(finalAsk.talk_first_label, 'Talk to me first'),
+    yesScreenCopy: text(finalAsk.yes_screen_copy),
+    talkFirstScreenCopy: text(finalAsk.talk_first_screen_copy),
+    acceptedMemoryCopy: text(finalAsk.accepted_memory_copy),
+  };
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function renderAsk(content, finalAsk = {}) {
+  const copy = getFinalAskContent(content);
+  const isVisible = Boolean(finalAsk.visible);
+
+  if (!askSection) return;
+  askSection.hidden = !isVisible;
+  if (askRailLink) askRailLink.hidden = !isVisible;
+  if (!isVisible) return;
+
+  askTitle.textContent = finalAsk.status === 'answered'
+    ? copy.hiddenTitle
+    : copy.revealedTitle;
+  askIntro.textContent = copy.intro;
+  askOpenLink.href = getPageHref({ finalAsk: '1' });
+  askOpenLink.textContent = copy.openLabel;
+  askOpenLink.hidden = finalAsk.status === 'answered';
+
+  if (finalAsk.status === 'answered' && finalAsk.response === 'yes') {
+    askSummary.textContent = copy.acceptedMemoryCopy || 'This part is kept.';
+    askStatus.textContent = finalAsk.accepted_at ? formatDateTime(finalAsk.accepted_at) : '';
+    return;
+  }
+
+  if (finalAsk.status === 'answered' && finalAsk.response === 'talk_first') {
+    askSummary.textContent = copy.talkFirstScreenCopy || 'This answer is safely kept.';
+    askStatus.textContent = finalAsk.responded_at ? formatDateTime(finalAsk.responded_at) : '';
+    return;
+  }
+
+  askSummary.textContent = copy.question || copy.body;
+  askStatus.textContent = '';
 }
 
 function renderBackLink(label = 'Back to Quietly Kept') {
@@ -696,9 +769,101 @@ function renderEntryDetail(entries, people = {}) {
   return true;
 }
 
-function renderDetail(content, entries, people) {
+async function handleFinalAskResponse(response) {
+  if (!sessionToken || !currentPageData?.final_ask?.can_respond) return;
+
+  const message = readingDetail?.querySelector('[data-final-ask-message]');
+  if (message) message.textContent = 'Saving...';
+
+  try {
+    await respondFinalAsk(sessionToken, response);
+    currentPageData = await getSecretPage(sessionToken);
+    renderPage(currentPageData);
+  } catch (error) {
+    console.error(error);
+    if (message) message.textContent = error?.message || 'Could not save this response.';
+  }
+}
+
+function renderFinalAskDetail(content, finalAsk = {}) {
+  if (!finalAsk.visible || finalAsk.status === 'hidden') return false;
+
+  const copy = getFinalAskContent(content);
+  setDetailMode(true);
+  readingDetail.innerHTML = '';
+  readingDetail.classList.remove('detail-section--reader');
+
+  const label = document.createElement('p');
+  label.className = 'section-label';
+  label.textContent = 'A protected part';
+
+  const heading = document.createElement('h1');
+  heading.textContent = finalAsk.status === 'answered' ? copy.hiddenTitle : copy.revealedTitle;
+
+  const body = document.createElement('div');
+  body.className = 'prose preserve-lines detail-copy';
+
+  const actions = document.createElement('div');
+  actions.className = 'entry-card__actions detail-actions';
+
+  if (finalAsk.status === 'answered') {
+    body.textContent = finalAsk.response === 'yes'
+      ? (copy.acceptedMemoryCopy || copy.yesScreenCopy || 'This part is kept.')
+      : (copy.talkFirstScreenCopy || 'This answer is safely kept.');
+
+    const date = document.createElement('p');
+    date.className = 'quiet-note';
+    date.textContent = finalAsk.accepted_at || finalAsk.responded_at
+      ? formatDateTime(finalAsk.accepted_at || finalAsk.responded_at)
+      : '';
+    date.hidden = !date.textContent;
+
+    actions.appendChild(renderBackLink());
+    readingDetail.append(label, heading, body, date, actions);
+    return true;
+  }
+
+  body.textContent = copy.body || 'This protected part is waiting.';
+
+  const question = document.createElement('p');
+  question.className = 'final-ask-question';
+  question.textContent = copy.question;
+  question.hidden = !copy.question;
+
+  const message = document.createElement('p');
+  message.className = 'inline-message';
+  message.dataset.finalAskMessage = 'true';
+  message.setAttribute('aria-live', 'polite');
+
+  if (finalAsk.can_respond) {
+    const yesButton = document.createElement('button');
+    yesButton.className = 'quiet-button quiet-button--soft';
+    yesButton.type = 'button';
+    yesButton.textContent = copy.yesLabel;
+    yesButton.addEventListener('click', () => handleFinalAskResponse('yes'));
+
+    const talkFirstButton = document.createElement('button');
+    talkFirstButton.className = 'quiet-button quiet-button--ghost';
+    talkFirstButton.type = 'button';
+    talkFirstButton.textContent = copy.talkFirstLabel;
+    talkFirstButton.addEventListener('click', () => handleFinalAskResponse('talk_first'));
+
+    actions.append(yesButton, talkFirstButton, renderBackLink());
+  } else {
+    actions.appendChild(renderBackLink());
+  }
+
+  readingDetail.append(label, heading, body, question, actions, message);
+  return true;
+}
+
+function renderDetail(content, entries, people, finalAsk) {
   const params = new URLSearchParams(window.location.search);
   readingDetail?.classList.remove('detail-section--reader');
+
+  if (params.get('finalAsk') === '1') {
+    if (renderFinalAskDetail(content, finalAsk)) return;
+  }
 
   if (params.get('read') === 'constantia') {
     renderPoemDetail(content);
@@ -716,6 +881,7 @@ function renderDetail(content, entries, people) {
 }
 
 function renderPage(data) {
+  currentPageData = data;
   const content = mergeContent(data.content);
   const entries = data.entries || {};
   const allEntries = flattenEntries(entries);
@@ -762,8 +928,8 @@ function renderPage(data) {
   renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people });
   renderEntries(whisperEntries, entries.whisper || [], { limit: 2 });
   renderTally(content, data.tally || []);
-  renderAsk(content);
-  renderDetail(content, allEntries, people);
+  renderAsk(content, data.final_ask || {});
+  renderDetail(content, allEntries, people, data.final_ask || {});
 
   statusCard.hidden = true;
   secretPage.hidden = false;
@@ -779,7 +945,7 @@ async function bootstrap() {
   }
 
   try {
-    const sessionToken = await resolveQuietSession('quietly-kept');
+    sessionToken = await resolveQuietSession('quietly-kept');
     if (!sessionToken) {
       setStatus('This page needs your session.', 'Open the shared space first, then return here.');
       return;

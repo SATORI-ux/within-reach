@@ -154,11 +154,74 @@
               <span>Ask footnote</span>
               <textarea name="ask_footnote" rows="2"></textarea>
             </label>
+            <div class="field-grid">
+              <label>
+                <span>Final Ask hidden title</span>
+                <input name="final_ask_hidden_title" type="text" />
+              </label>
+              <label>
+                <span>Final Ask revealed title</span>
+                <input name="final_ask_revealed_title" type="text" />
+              </label>
+              <label>
+                <span>Final Ask open label</span>
+                <input name="final_ask_open_label" type="text" />
+              </label>
+            </div>
+            <label>
+              <span>Final Ask intro</span>
+              <textarea name="final_ask_intro" rows="3"></textarea>
+            </label>
+            <label>
+              <span>Final Ask body</span>
+              <textarea name="final_ask_body" rows="6"></textarea>
+            </label>
+            <label>
+              <span>Final Ask question</span>
+              <textarea name="final_ask_question" rows="3"></textarea>
+            </label>
+            <div class="field-grid">
+              <label>
+                <span>Yes label</span>
+                <input name="final_ask_yes_label" type="text" />
+              </label>
+              <label>
+                <span>Talk first label</span>
+                <input name="final_ask_talk_first_label" type="text" />
+              </label>
+            </div>
+            <label>
+              <span>Yes screen copy</span>
+              <textarea name="final_ask_yes_screen_copy" rows="4"></textarea>
+            </label>
+            <label>
+              <span>Talk first screen copy</span>
+              <textarea name="final_ask_talk_first_screen_copy" rows="4"></textarea>
+            </label>
+            <label>
+              <span>Accepted memory copy</span>
+              <textarea name="final_ask_accepted_memory_copy" rows="4"></textarea>
+            </label>
             <div class="editor-actions">
               <button class="quiet-button" type="submit">Save page content</button>
               <p class="inline-message" id="pageContentMessage" aria-live="polite"></p>
             </div>
           </form>
+        </section>
+
+        <section class="quiet-section editor-section" id="finalAskEditorSection" aria-labelledby="finalAskEditorTitle">
+          <h2 id="finalAskEditorTitle">Final Ask state</h2>
+          <div class="editor-list__item editor-list__item--stacked">
+            <div>
+              <strong id="finalAskStatus">Hidden</strong>
+              <p id="finalAskMeta">Not revealed yet.</p>
+            </div>
+            <div class="editor-actions">
+              <button class="quiet-button quiet-button--soft" id="revealFinalAskButton" type="button">Reveal Final Ask</button>
+              <button class="quiet-button quiet-button--danger" id="resetFinalAskButton" type="button">Reset / hide</button>
+              <p class="inline-message" id="finalAskMessage" aria-live="polite"></p>
+            </div>
+          </div>
         </section>
 
         <section class="quiet-section editor-section" aria-labelledby="entryEditorTitle">

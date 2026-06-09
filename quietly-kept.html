@@ -55,7 +55,7 @@
           <a href="#still-being-written">Memories</a>
           <a href="#whispers">Whispers</a>
           <a href="#tally">Tally</a>
-          <a href="#ask">Ask</a>
+          <a href="#ask" id="askRailLink">Ask</a>
         </aside>
 
         <div class="secret-page__content">
@@ -145,12 +145,12 @@
             <div>
               <p class="section-label">A protected part</p>
               <h2 id="askTitle"></h2>
-              <div class="prose preserve-lines" id="askBody"></div>
+              <div class="prose preserve-lines" id="askIntro"></div>
             </div>
             <div class="ask-section__question">
-              <p id="askQuestion"></p>
-              <button class="quiet-button quiet-button--soft" id="askButton" type="button" hidden></button>
-              <p class="quiet-note" id="askFootnote"></p>
+              <p id="askSummary"></p>
+              <a class="quiet-button quiet-button--soft" id="askOpenLink" href="?finalAsk=1" hidden></a>
+              <p class="quiet-note preserve-lines" id="askStatus"></p>
             </div>
           </section>
 
