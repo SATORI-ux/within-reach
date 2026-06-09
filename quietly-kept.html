@@ -197,6 +197,17 @@
       </article>
     </main>
 
+    <dialog class="reader-dialog" id="readerDialog" aria-label="Reading view">
+      <div class="reader-dialog__panel">
+        <div class="reader-dialog__header">
+          <button class="reader-dialog__close" id="readerClose" type="button" aria-label="Close">
+            <span aria-hidden="true">&#x2715;</span>
+          </button>
+        </div>
+        <div class="reader-dialog__inner" id="readerDialogInner"></div>
+      </div>
+    </dialog>
+
     <script type="module" src="./js/quietly-kept.js"></script>
   </body>
 </html>

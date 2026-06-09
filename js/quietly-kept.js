@@ -43,6 +43,8 @@ const askSummary = document.querySelector('#askSummary');
 const askOpenLink = document.querySelector('#askOpenLink');
 const askStatus = document.querySelector('#askStatus');
 const readingDetail = document.querySelector('#readingDetail');
+const readerDialog = document.querySelector('#readerDialog');
+const readerDialogInner = document.querySelector('#readerDialogInner');
 const sectionRail = document.querySelector('.section-rail');
 const overviewSections = Array.from(document.querySelectorAll('[data-overview-section]'));
 const askSection = document.querySelector('#ask');
@@ -65,6 +67,7 @@ const KNOWN_USER_LABELS = {
 
 let sessionToken = '';
 let currentPageData = null;
+let readerTrigger = null;
 
 const EMPTY_CONTENT = {
   hero: {
@@ -491,6 +494,15 @@ function renderEntryCard(entry, options = {}) {
   detailLink.className = 'quiet-link section-action';
   detailLink.href = getPageHref({ entry: entry.id });
   detailLink.textContent = entry.section_type === 'whisper' ? 'Read whisper' : 'Read the rest';
+  if (options.onRead) {
+    detailLink.addEventListener('click', (e) => {
+      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        e.preventDefault();
+        history.pushState({}, '', detailLink.href);
+        options.onRead(entry, detailLink);
+      }
+    });
+  }
 
   const actions = document.createElement('div');
   actions.className = 'entry-card__actions';
@@ -540,7 +552,7 @@ function renderEntries(container, entries = [], options = {}) {
   renderCards(false);
 }
 
-function renderDetailRow(entry) {
+function renderDetailRow(entry, options = {}) {
   const row = document.createElement('a');
   row.className = 'detail-row';
   row.href = getPageHref({ entry: entry.id });
@@ -560,6 +572,17 @@ function renderDetailRow(entry) {
   chevron.textContent = '›';
 
   row.append(icon, textEl, chevron);
+
+  if (options.onRead) {
+    row.addEventListener('click', (e) => {
+      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        e.preventDefault();
+        history.pushState({}, '', row.href);
+        options.onRead(entry, row);
+      }
+    });
+  }
+
   return row;
 }
 
@@ -589,7 +612,7 @@ function renderThingLoveGroup(container, group, options = {}) {
   function renderRows(isExpanded = false) {
     list.innerHTML = '';
     const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, limit);
-    visibleEntries.forEach((entry) => list.appendChild(renderDetailRow(entry)));
+    visibleEntries.forEach((entry) => list.appendChild(renderDetailRow(entry, options)));
 
     if (!isExpanded && group.entries.length > limit) {
       const reveal = document.createElement('button');
@@ -604,7 +627,7 @@ function renderThingLoveGroup(container, group, options = {}) {
   renderRows(false);
 }
 
-function renderThingLoveGroups(container, entries = [], people = {}) {
+function renderThingLoveGroups(container, entries = [], people = {}, onRead) {
   container.innerHTML = '';
 
   const groups = [
@@ -623,7 +646,7 @@ function renderThingLoveGroups(container, entries = [], people = {}) {
     renderThingLoveGroup(container, {
       ...group,
       title: `From ${getUserLabel(group.creator, people)}, for ${getUserLabel(group.subject, people)}`,
-    }, { people, limit: Infinity });
+    }, { people, limit: Infinity, onRead });
   });
 }
 
@@ -733,43 +756,51 @@ function renderBackLink(label = 'Back to Quietly Kept') {
   return back;
 }
 
-function renderOpeningDetail(content) {
+function openReader(trigger) {
+  readerTrigger = trigger || null;
+  if (!readerDialog.open) readerDialog.showModal();
+  document.body.style.overflow = 'hidden';
+  const firstFocusable = readerDialogInner.querySelector('[href], button, [tabindex]:not([tabindex="-1"])');
+  (firstFocusable || document.querySelector('#readerClose'))?.focus();
+}
+
+function openOpeningReader(content, trigger) {
   const opening = getOpeningContent(content);
-  setDetailMode(true);
-  readingDetail.innerHTML = '';
+  readerDialogInner.innerHTML = '';
 
   const label = document.createElement('p');
   label.className = 'section-label';
   label.textContent = 'Opening';
 
-  const heading = document.createElement('h1');
+  const heading = document.createElement('h2');
+  heading.className = 'reader-heading';
   heading.textContent = opening.title || 'A protected note.';
 
   const body = document.createElement('div');
-  body.className = 'prose preserve-lines detail-copy';
+  body.className = 'prose preserve-lines';
   body.textContent = opening.body || 'Nothing has been placed here yet.';
 
-  readingDetail.append(label, heading, body, renderBackLink());
+  readerDialogInner.append(label, heading, body);
+  openReader(trigger);
 }
 
-function renderPoemDetail(content) {
+function openPoemReader(content, trigger) {
   const poem = getPoemContent(content);
-  setDetailMode(true);
-  readingDetail.innerHTML = '';
-  readingDetail.classList.add('detail-section--reader');
+  readerDialogInner.innerHTML = '';
 
   const label = document.createElement('p');
   label.className = 'section-label';
   label.textContent = 'Constantia';
 
-  const heading = document.createElement('h1');
+  const heading = document.createElement('h2');
+  heading.className = 'reader-heading';
   heading.textContent = poem.title || 'Constantia';
 
   const subtitle = document.createElement('p');
   subtitle.className = 'poem-subtitle';
   subtitle.textContent = poem.subtitle || 'A poem for you.';
 
-  readingDetail.append(label, heading, subtitle);
+  readerDialogInner.append(label, heading, subtitle);
 
   if (poem.body) {
     createPoemSegments(poem).forEach((segment) => {
@@ -777,37 +808,29 @@ function renderPoemDetail(content) {
       section.className = 'poem-reader__segment';
 
       if (segment.title) {
-        const segmentTitle = document.createElement('h2');
-        segmentTitle.textContent = segment.title;
-        section.appendChild(segmentTitle);
+        const segTitle = document.createElement('h2');
+        segTitle.textContent = segment.title;
+        section.appendChild(segTitle);
       }
 
-      const body = document.createElement('div');
-      body.className = 'poem-reader__body preserve-lines';
-      body.textContent = segment.body;
-      section.appendChild(body);
-      readingDetail.appendChild(section);
+      const segBody = document.createElement('div');
+      segBody.className = 'poem-reader__body preserve-lines';
+      segBody.textContent = segment.body;
+      section.appendChild(segBody);
+      readerDialogInner.appendChild(section);
     });
   } else {
     const empty = document.createElement('p');
     empty.className = 'quiet-note';
     empty.textContent = 'Nothing has been placed here yet.';
-    readingDetail.appendChild(empty);
+    readerDialogInner.appendChild(empty);
   }
 
-  readingDetail.appendChild(renderBackLink());
+  openReader(trigger);
 }
 
-function renderEntryDetail(entries, people = {}) {
-  const entryId = new URLSearchParams(window.location.search).get('entry');
-  if (!entryId) return false;
-
-  const entry = entries.find((item) => item.id === entryId);
-  if (!entry) return false;
-
-  setDetailMode(true);
-  readingDetail.innerHTML = '';
-  readingDetail.classList.remove('detail-section--reader');
+function openEntryReader(entry, people = {}, trigger) {
+  readerDialogInner.innerHTML = '';
 
   const isThingLove = entry.section_type === 'thing_i_love';
   const isWhisper = entry.section_type === 'whisper';
@@ -824,23 +847,26 @@ function renderEntryDetail(entries, people = {}) {
     const showHeading = !isWhisper || (entry.title && entry.title !== 'Whisper');
     if (showHeading) {
       const heading = document.createElement('h2');
+      heading.className = 'reader-heading';
       heading.textContent = entry.title || 'Untitled';
       nodes.push(heading);
     }
   }
 
   const metaParts = [!isWhisper && entry.display_date, entry.subtitle].filter(Boolean);
-  const meta = document.createElement('p');
-  meta.className = 'entry-meta';
-  meta.textContent = metaParts.join(' · ');
-  meta.hidden = !meta.textContent;
-  nodes.push(meta);
+  if (metaParts.length) {
+    const meta = document.createElement('p');
+    meta.className = 'entry-meta';
+    meta.textContent = metaParts.join(' · ');
+    nodes.push(meta);
+  }
 
-  const author = document.createElement('p');
-  author.className = 'entry-author';
-  author.textContent = entry.created_by ? `By ${getUserLabel(entry.created_by, people)}` : '';
-  author.hidden = !entry.created_by;
-  nodes.push(author);
+  if (entry.created_by) {
+    const author = document.createElement('p');
+    author.className = 'entry-author';
+    author.textContent = `By ${getUserLabel(entry.created_by, people)}`;
+    nodes.push(author);
+  }
 
   if (entry.image_url && !isThingLove && !isWhisper) {
     const img = document.createElement('img');
@@ -852,21 +878,10 @@ function renderEntryDetail(entries, people = {}) {
   const body = document.createElement('div');
   body.className = 'prose preserve-lines';
   body.textContent = entry.body || '';
+  nodes.push(body);
 
-  const actions = document.createElement('div');
-  actions.className = 'entry-card__actions detail-actions';
-  actions.appendChild(renderBackLink());
-
-  if (entry.can_edit) {
-    const editLink = document.createElement('a');
-    editLink.className = 'quiet-link quiet-link--secondary section-action';
-    editLink.href = getEntryEditHref(entry.id);
-    editLink.textContent = 'Edit';
-    actions.appendChild(editLink);
-  }
-
-  readingDetail.append(...nodes, body, actions);
-  return true;
+  readerDialogInner.append(...nodes);
+  openReader(trigger);
 }
 
 async function handleFinalAskResponse(response) {
@@ -959,23 +974,29 @@ function renderFinalAskDetail(content, finalAsk = {}) {
 
 function renderDetail(content, entries, people, finalAsk) {
   const params = new URLSearchParams(window.location.search);
-  readingDetail?.classList.remove('detail-section--reader');
 
   if (params.get('finalAsk') === '1') {
     if (renderFinalAskDetail(content, finalAsk)) return;
   }
 
   if (params.get('read') === 'constantia') {
-    renderPoemDetail(content);
+    openPoemReader(content);
     return;
   }
 
   if (params.get('section') === 'opening') {
-    renderOpeningDetail(content);
+    openOpeningReader(content);
     return;
   }
 
-  if (renderEntryDetail(entries, people)) return;
+  const entryId = params.get('entry');
+  if (entryId) {
+    const entry = entries.find((item) => item.id === entryId);
+    if (entry) {
+      openEntryReader(entry, people);
+      return;
+    }
+  }
 
   setDetailMode(false);
 }
@@ -1024,10 +1045,11 @@ function renderPage(data) {
   renderSectionAction(thingsActions, allowedEntrySections, 'thing_i_love', 'Add what stayed');
   renderSectionAction(whisperActions, allowedEntrySections, 'whisper', 'Add a whisper');
 
-  renderEntries(littleProofEntries, entries.little_proof || []);
-  renderThingLoveGroups(thingsEntries, entries.thing_i_love || [], people);
-  renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people });
-  renderEntries(whisperEntries, entries.whisper || [], { limit: 2 });
+  const onRead = (entry, trigger) => openEntryReader(entry, people, trigger);
+  renderEntries(littleProofEntries, entries.little_proof || [], { onRead });
+  renderThingLoveGroups(thingsEntries, entries.thing_i_love || [], people, onRead);
+  renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people, onRead });
+  renderEntries(whisperEntries, entries.whisper || [], { limit: 2, onRead });
   renderTally(content, data.tally || []);
   renderAsk(content, data.final_ask || {});
   renderDetail(content, allEntries, people, data.final_ask || {});
@@ -1059,5 +1081,44 @@ async function bootstrap() {
     setStatus('This page could not open.', error?.message || 'Try again in a moment.');
   }
 }
+
+openingReadLink?.addEventListener('click', (e) => {
+  if (!e.ctrlKey && !e.metaKey && !e.shiftKey && currentPageData) {
+    e.preventDefault();
+    history.pushState({}, '', openingReadLink.href);
+    openOpeningReader(mergeContent(currentPageData.content), openingReadLink);
+  }
+});
+
+poemReadLink?.addEventListener('click', (e) => {
+  if (!e.ctrlKey && !e.metaKey && !e.shiftKey && currentPageData) {
+    e.preventDefault();
+    history.pushState({}, '', poemReadLink.href);
+    openPoemReader(mergeContent(currentPageData.content), poemReadLink);
+  }
+});
+
+document.querySelector('#readerClose')?.addEventListener('click', () => {
+  readerDialog?.close();
+});
+
+readerDialog?.addEventListener('click', (e) => {
+  if (e.target === readerDialog) readerDialog.close();
+});
+
+readerDialog?.addEventListener('close', () => {
+  document.body.style.overflow = '';
+  if (window.location.search) {
+    history.pushState({}, '', window.location.pathname);
+  }
+  if (readerTrigger) {
+    try { readerTrigger.focus(); } catch (_) {}
+    readerTrigger = null;
+  }
+});
+
+window.addEventListener('popstate', () => {
+  if (readerDialog?.open) readerDialog.close();
+});
 
 bootstrap();
