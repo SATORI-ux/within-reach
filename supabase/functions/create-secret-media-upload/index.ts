@@ -63,6 +63,11 @@ Deno.serve(async (req) => {
 
     await requireSecretEntryManage(client, visitor, existing);
 
+    const NO_IMAGE_SECTIONS = new Set(['thing_i_love', 'whisper']);
+    if (NO_IMAGE_SECTIONS.has(existing.section_type)) {
+      throw new Error('This section does not support image uploads.');
+    }
+
     const objectPath = `${entryId}/${crypto.randomUUID()}.${extension}`;
     const upload = await client.storage
       .from(SECRET_PAGE_MEDIA_BUCKET)

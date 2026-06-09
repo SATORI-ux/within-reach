@@ -56,22 +56,31 @@ Deno.serve(async (req) => {
 
     const entry = body.entry ?? {};
     const sectionType = normalizeText(entry.section_type, 80);
-    const title = normalizeText(entry.title, 160);
     const now = new Date().toISOString();
 
     if (!isValidSectionType(sectionType)) {
       throw new Error('Choose a valid section.');
     }
 
+    const normalizedBody = normalizeBody(entry.body, sectionType);
+
+    const clientTitle = normalizeText(entry.title, 160);
+    let title = clientTitle;
     if (!title) {
-      throw new Error('Entry title is required.');
+      if (sectionType === 'thing_i_love') {
+        title = normalizedBody.slice(0, 80).trim() || 'A kept detail';
+      } else if (sectionType === 'whisper') {
+        title = 'Whisper';
+      } else {
+        throw new Error('Entry title is required.');
+      }
     }
 
     const baseValues = {
       section_type: sectionType,
       title,
       subtitle: normalizeOptionalText(entry.subtitle, 220),
-      body: normalizeBody(entry.body, sectionType),
+      body: normalizedBody,
       preview: normalizeOptionalText(entry.preview, 520),
       image_alt: normalizeOptionalText(entry.image_alt, 240),
       memory_date: normalizeDate(entry.memory_date),

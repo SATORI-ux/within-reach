@@ -451,7 +451,9 @@ function renderEntryCard(entry, options = {}) {
   if (options.compact) article.classList.add('entry-card--compact');
   if (entry.section_type === 'whisper') article.classList.add('whisper-card');
 
-  if (entry.image_url) {
+  const isWhisperCard = entry.section_type === 'whisper';
+
+  if (entry.image_url && !isWhisperCard) {
     const img = document.createElement('img');
     img.src = entry.image_url;
     img.alt = entry.image_alt || '';
@@ -459,9 +461,12 @@ function renderEntryCard(entry, options = {}) {
     article.appendChild(img);
   }
 
-  const title = document.createElement('h3');
-  title.textContent = entry.title || 'Untitled';
-  article.appendChild(title);
+  const titleText = isWhisperCard && (!entry.title || entry.title === 'Whisper') ? '' : entry.title || 'Untitled';
+  if (titleText) {
+    const title = document.createElement('h3');
+    title.textContent = titleText;
+    article.appendChild(title);
+  }
 
   if (entry.display_date || entry.subtitle) {
     const meta = document.createElement('p');
@@ -547,7 +552,7 @@ function renderDetailRow(entry) {
 
   const textEl = document.createElement('span');
   textEl.className = 'detail-row__text';
-  textEl.textContent = text(entry.title) || makePreview(text(entry.body, text(entry.preview)), 80) || 'A kept detail.';
+  textEl.textContent = text(entry.body, text(entry.preview, text(entry.title))) || 'A kept detail.';
 
   const chevron = document.createElement('span');
   chevron.className = 'detail-row__chevron';
@@ -618,7 +623,7 @@ function renderThingLoveGroups(container, entries = [], people = {}) {
     renderThingLoveGroup(container, {
       ...group,
       title: `From ${getUserLabel(group.creator, people)}, for ${getUserLabel(group.subject, people)}`,
-    }, { people, limit: 3 });
+    }, { people, limit: Infinity });
   });
 }
 
@@ -804,25 +809,40 @@ function renderEntryDetail(entries, people = {}) {
   readingDetail.innerHTML = '';
   readingDetail.classList.remove('detail-section--reader');
 
+  const isThingLove = entry.section_type === 'thing_i_love';
+  const isWhisper = entry.section_type === 'whisper';
+
   const label = document.createElement('p');
   label.className = 'section-label';
-  label.textContent = entry.section_type === 'whisper' ? 'Whisper' : 'Entry';
+  if (isThingLove) label.textContent = 'A detail that stayed';
+  else if (isWhisper) label.textContent = 'Whisper';
+  else label.textContent = 'Entry';
 
-  const heading = document.createElement('h2');
-  heading.textContent = entry.title || 'Untitled';
+  const nodes = [label];
 
+  if (!isThingLove) {
+    const showHeading = !isWhisper || (entry.title && entry.title !== 'Whisper');
+    if (showHeading) {
+      const heading = document.createElement('h2');
+      heading.textContent = entry.title || 'Untitled';
+      nodes.push(heading);
+    }
+  }
+
+  const metaParts = [!isWhisper && entry.display_date, entry.subtitle].filter(Boolean);
   const meta = document.createElement('p');
   meta.className = 'entry-meta';
-  meta.textContent = [entry.display_date, entry.subtitle].filter(Boolean).join(' · ');
+  meta.textContent = metaParts.join(' · ');
+  meta.hidden = !meta.textContent;
+  nodes.push(meta);
 
   const author = document.createElement('p');
   author.className = 'entry-author';
   author.textContent = entry.created_by ? `By ${getUserLabel(entry.created_by, people)}` : '';
   author.hidden = !entry.created_by;
+  nodes.push(author);
 
-  const nodes = [label, heading, meta, author];
-
-  if (entry.image_url) {
+  if (entry.image_url && !isThingLove && !isWhisper) {
     const img = document.createElement('img');
     img.src = entry.image_url;
     img.alt = entry.image_alt || '';
@@ -991,7 +1011,10 @@ function renderPage(data) {
   renderNames(content);
 
   littleProofIntro.textContent = text(content.section_intros.little_proof);
-  thingsIntro.textContent = text(content.section_intros.thing_i_love);
+  thingsIntro.textContent = text(
+    content.section_intros.thing_i_love,
+    'For the little things we noticed once and somehow never put down.',
+  );
   stillIntro.textContent = text(content.section_intros.still_being_written);
   whispersIntro.textContent = text(
     content.section_intros.whisper,

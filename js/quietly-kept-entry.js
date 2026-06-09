@@ -20,6 +20,9 @@ const entryDescription = document.querySelector('#entryDescription');
 const entryForm = document.querySelector('#entryForm');
 const entryMessage = document.querySelector('#entryMessage');
 const memoryDateField = document.querySelector('#memoryDateField');
+const titleSubtitleFields = document.querySelector('#titleSubtitleFields');
+const previewField = document.querySelector('#previewField');
+const imageFields = document.querySelector('#imageFields');
 const bodyLabel = document.querySelector('#bodyLabel');
 const bodyCount = document.querySelector('#bodyCount');
 const bodyMax = document.querySelector('#bodyMax');
@@ -34,27 +37,45 @@ const SECTION_CONFIG = {
     description: 'A future piece of the story, kept in one focused place.',
     bodyLabel: 'Story',
     bodyMax: 20000,
+    bodyRows: 12,
     showMemoryDate: true,
+    showTitle: true,
+    showSubtitle: true,
+    showPreview: true,
+    showImage: true,
+    titleRequired: true,
     returnHash: 'still-being-written',
   },
   thing_i_love: {
-    label: 'Thing I Love',
-    createTitle: 'Add something I love.',
-    editTitle: 'Edit this love.',
-    description: 'A small specific thing noticed and kept.',
-    bodyLabel: 'What you want to keep',
-    bodyMax: 20000,
+    label: 'The Details That Stayed',
+    createTitle: 'Add what stayed.',
+    editTitle: 'Edit this detail.',
+    description: 'For the little things we noticed once and somehow never put down.',
+    bodyLabel: 'What stayed',
+    bodyMax: 220,
+    bodyRows: 3,
     showMemoryDate: false,
+    showTitle: false,
+    showSubtitle: false,
+    showPreview: false,
+    showImage: false,
+    titleRequired: false,
     returnHash: 'thing-i-love',
   },
   whisper: {
     label: 'Whisper',
     createTitle: 'Add a whisper.',
     editTitle: 'Edit this whisper.',
-    description: 'Longer things, kept softer.',
+    description: 'Traces translated from skin to ink.\n\nSmall thoughts left in the moment, then returned to later with the words they were waiting for.',
     bodyLabel: 'Whisper',
     bodyMax: 15000,
+    bodyRows: 12,
     showMemoryDate: false,
+    showTitle: false,
+    showSubtitle: false,
+    showPreview: false,
+    showImage: false,
+    titleRequired: false,
     returnHash: 'whispers',
   },
   little_proof: {
@@ -64,7 +85,13 @@ const SECTION_CONFIG = {
     description: 'A protected proof, kept by the owner.',
     bodyLabel: 'Proof',
     bodyMax: 20000,
+    bodyRows: 12,
     showMemoryDate: true,
+    showTitle: true,
+    showSubtitle: true,
+    showPreview: true,
+    showImage: true,
+    titleRequired: true,
     returnHash: 'little-proof',
   },
 };
@@ -156,16 +183,24 @@ function renderShell() {
   }
 
   entryKicker.textContent = config.label;
-  entryTitle.textContent = mode === 'edit'
-    ? config.editTitle
-    : sectionType === 'thing_i_love'
-      ? `Add something I love about ${getCounterpartName()}.`
-      : config.createTitle;
-  entryDescription.textContent = sectionType === 'thing_i_love'
-    ? `A small specific thing noticed and kept for ${getCounterpartName()}.`
-    : config.description;
+  entryTitle.textContent = mode === 'edit' ? config.editTitle : config.createTitle;
+  entryDescription.textContent = config.description;
   bodyLabel.textContent = config.bodyLabel;
+
   memoryDateField.hidden = !config.showMemoryDate;
+  if (titleSubtitleFields) titleSubtitleFields.hidden = !config.showTitle;
+  if (previewField) previewField.hidden = !config.showPreview;
+  if (imageFields) imageFields.hidden = !config.showImage;
+
+  const titleInput = entryForm?.elements.namedItem('title');
+  if (titleInput) titleInput.required = Boolean(config.titleRequired);
+
+  const bodyTextarea = entryForm?.elements.namedItem('body');
+  if (bodyTextarea) {
+    bodyTextarea.rows = config.bodyRows || 12;
+    bodyTextarea.maxLength = config.bodyMax;
+  }
+
   archiveEntryButton.hidden = mode !== 'edit';
   cancelLink.href = getReturnHref(currentEntry?.id);
   updateBodyCount();
@@ -220,7 +255,8 @@ async function handleSubmit(event) {
   setMessage('Saving...');
 
   try {
-    const imageInput = entryForm.elements.namedItem('image');
+    const config = getConfig();
+    const imageInput = config?.showImage ? entryForm.elements.namedItem('image') : null;
     const imageFile = imageInput?.files?.[0] || null;
     const saved = await upsertSecretEntry(sessionToken, collectEntry());
 

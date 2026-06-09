@@ -55,10 +55,10 @@
 
         <section class="quiet-section entry-contribution" aria-labelledby="entryTitle">
           <form class="editor-form entry-contribution__form" id="entryForm">
-            <div class="field-grid">
+            <div class="field-grid" id="titleSubtitleFields">
               <label>
                 <span>Title</span>
-                <input name="title" type="text" maxlength="160" required />
+                <input name="title" type="text" maxlength="160" />
               </label>
               <label>
                 <span>Subtitle</span>
@@ -71,7 +71,7 @@
               <input name="memory_date" type="date" />
             </label>
 
-            <label>
+            <label id="previewField">
               <span>Preview</span>
               <textarea name="preview" rows="3" maxlength="520"></textarea>
             </label>
@@ -82,7 +82,7 @@
             </label>
             <p class="quiet-note"><span id="bodyCount">0</span> / <span id="bodyMax">20000</span> characters</p>
 
-            <div class="field-grid">
+            <div class="field-grid" id="imageFields">
               <label>
                 <span>Image</span>
                 <input name="image" type="file" accept="image/jpeg,image/png,image/webp" />
