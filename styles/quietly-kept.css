@@ -315,26 +315,42 @@ summary:focus-visible {
 .section-rail {
   position: sticky;
   top: 1rem;
-  display: grid;
-  gap: 0.25rem;
-  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.5rem 0.6rem;
   border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 66%, transparent);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
 }
 
 .section-rail a {
+  display: flex;
+  align-items: center;
+  gap: 0.46rem;
   border-radius: 6px;
-  color: var(--text-soft);
-  padding: 0.55rem 0.6rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0.55rem;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   text-decoration: none;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.section-rail a .quiet-icon {
+  flex: 0 0 auto;
+  opacity: 0.65;
+  transition: opacity 140ms ease, color 140ms ease;
 }
 
 .section-rail a:hover {
-  background: color-mix(in srgb, var(--surface-strong) 56%, transparent);
+  background: color-mix(in srgb, var(--surface-strong) 52%, transparent);
   color: var(--text);
+}
+
+.section-rail a:hover .quiet-icon {
+  opacity: 1;
+  color: var(--accent-warm);
 }
 
 .secret-hero {
@@ -446,7 +462,6 @@ summary:focus-visible {
 
 .poem-preview {
   color: var(--text-soft);
-  text-align: center;
 }
 
 .poem-section .section-action {
@@ -609,23 +624,39 @@ summary:focus-visible {
 }
 
 .tally-card {
-  padding: 1rem;
+  padding: 1.4rem 1rem 1rem;
   text-align: center;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.tally-card h3 {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .tally-card strong {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: 0.25rem;
   color: var(--text);
-  font-size: 1.8rem;
-  font-weight: 500;
+  font-size: 3.2rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .tally-card span {
   display: block;
-  color: var(--text-soft);
+  margin-top: 0.2rem;
+  color: var(--text-faint);
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.86rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .ask-section {
@@ -832,12 +863,12 @@ textarea {
     position: sticky;
     top: 0.35rem;
     z-index: 4;
-    display: flex;
-    gap: 0.35rem;
+    flex-direction: row;
+    gap: 0.3rem;
     width: 100%;
     margin-bottom: 0.85rem;
     overflow-x: auto;
-    padding: 0.45rem;
+    padding: 0.42rem;
     scrollbar-width: none;
   }
 
@@ -847,8 +878,13 @@ textarea {
 
   .section-rail a {
     flex: 0 0 auto;
-    padding: 0.48rem 0.62rem;
+    padding: 0.46rem 0.6rem;
     white-space: nowrap;
+    font-size: 0.78rem;
+  }
+
+  .rail-quote {
+    display: none;
   }
 
   .entry-grid,
@@ -861,11 +897,18 @@ textarea {
   }
 
   .section-heading {
-    display: grid;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .section-heading > div:first-child {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .section-actions {
     justify-content: flex-start;
+    margin-top: 0.1rem;
   }
 
   .field-grid > label:nth-child(3):last-child {
@@ -951,4 +994,311 @@ textarea {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+
+/* ─── Icon system ─────────────────────────────────────────── */
+
+.quiet-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: var(--accent-warm);
+}
+
+.quiet-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.section-ornament {
+  position: absolute;
+  pointer-events: none;
+  color: var(--accent-warm);
+}
+
+.section-ornament svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ─── Rail quote ─────────────────────────────────────────── */
+
+.rail-quote {
+  margin-top: auto;
+  padding: 0.8rem 0.5rem 0.1rem;
+  color: var(--text-faint);
+  font-family: Georgia, serif;
+  font-size: 0.74rem;
+  font-style: italic;
+  line-height: 1.7;
+  text-align: center;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* ─── Poem section ───────────────────────────────────────── */
+
+.poem-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.poem-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.poem-section__title-block {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.poem-section__read-btn {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.poem-excerpt-columns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.poem-excerpt-col {
+  color: var(--text-soft);
+  font-size: clamp(0.86rem, 1.4vw, 0.97rem);
+  line-height: 1.78;
+  white-space: pre-line;
+}
+
+.poem-closing-line {
+  margin: 0 auto;
+  max-width: 28rem;
+  text-align: center;
+  color: color-mix(in srgb, var(--accent-warm) 62%, var(--text-soft));
+  font-size: clamp(0.95rem, 1.8vw, 1.04rem);
+  font-style: italic;
+  line-height: 1.72;
+  white-space: pre-line;
+}
+
+.poem-section__ornament {
+  bottom: -1.5rem;
+  right: 0.5rem;
+  width: 72px;
+  height: 108px;
+  opacity: 0.1;
+}
+
+@media (max-width: 860px) {
+  .poem-excerpt-columns {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.15rem;
+  }
+
+  .poem-section__header {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .poem-section__title-block {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .poem-excerpt-columns {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* ─── Name cards ─────────────────────────────────────────── */
+
+.name-card {
+  background: color-mix(in srgb, var(--surface-strong) 32%, transparent);
+  border-color: color-mix(in srgb, var(--line) 48%, transparent);
+}
+
+/* ─── Tally section ──────────────────────────────────────── */
+
+.tally-section {
+  background: color-mix(in srgb, var(--surface) 28%, transparent);
+  border-color: color-mix(in srgb, var(--line) 50%, transparent);
+}
+
+.tally-heart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.6rem;
+  color: color-mix(in srgb, var(--accent) 45%, var(--text-faint));
+}
+
+.tally-heart svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ─── Whisper cards ──────────────────────────────────────── */
+
+.whisper-card {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--line-soft));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  padding: 1.2rem 1.4rem;
+}
+
+.whisper-card h3 {
+  font-size: 0.96rem;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-soft);
+}
+
+.whisper-card .entry-preview {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--text-soft);
+}
+
+/* ─── Still Being Written memory row ────────────────────── */
+
+.entry-grid--memory-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.entry-grid--memory-row::-webkit-scrollbar {
+  display: none;
+}
+
+.entry-grid--memory-row .entry-card {
+  flex: 0 0 min(300px, 80vw);
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .entry-grid--memory-row {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ─── Detail rows (Things I Love → Details That Stayed) ─── */
+
+.detail-list {
+  display: grid;
+  gap: 0;
+  margin-top: 0.7rem;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.62rem 0;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-soft);
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row:hover {
+  color: var(--text);
+}
+
+.detail-row:hover .detail-row__icon {
+  color: color-mix(in srgb, var(--accent) 70%, var(--text-muted));
+}
+
+.detail-row__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: color-mix(in srgb, var(--accent) 42%, var(--text-faint));
+  transition: color 140ms ease;
+}
+
+.detail-row__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.detail-row__text {
+  flex: 1 1 auto;
+  font-size: 0.93rem;
+  line-height: 1.45;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-row__chevron {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ─── Thing love group headings ─────────────────────────── */
+
+.thing-love-group > h3 {
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+  color: var(--text-faint);
+  font-family: Arial, Helvetica, sans-serif;
+  text-transform: uppercase;
+  margin-bottom: 0.1rem;
+}
+
+/* ─── Ask / The Part I Meant ─────────────────────────────── */
+
+.ask-section {
+  border-top: 2px solid color-mix(in srgb, var(--accent-warm) 22%, transparent);
 }

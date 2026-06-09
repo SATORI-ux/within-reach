@@ -18,6 +18,7 @@ const openingReadLink = document.querySelector('#openingReadLink');
 const poemTitle = document.querySelector('#poemTitle');
 const poemSubtitle = document.querySelector('#poemSubtitle');
 const poemPreview = document.querySelector('#poemPreview');
+const poemClosingLine = document.querySelector('#poemClosingLine');
 const poemReadLink = document.querySelector('#poemReadLink');
 const namesTitle = document.querySelector('#namesTitle');
 const namesGrid = document.querySelector('#namesGrid');
@@ -48,6 +49,15 @@ const askSection = document.querySelector('#ask');
 const askRailLink = document.querySelector('#askRailLink');
 
 const OVERVIEW_ENTRY_LIMIT = 3;
+
+const POEM_FALLBACK_COLUMNS = [
+  'How early\ncan someone become\nunforgettable?\n\nBefore there are names\nfor what they are?',
+  'We laughed\nabout mutant ladybugs\n\nas if the world\nhad handed us\nsomething small\nand strange...',
+  'You made ordinary things\nfeel marked.\n\nLike some part of you\nhad touched them\nand left them warmer.',
+  'After all of it,\nafter the years,\nthe distance,\nthe silence,\nthe almosts,\nthe returning...',
+];
+const POEM_FALLBACK_CLOSING = '...there was still one thing I recognized.\n\nYou.';
+
 const KNOWN_USER_LABELS = {
   joey: 'Joey',
   jeszi: 'Jeszi',
@@ -278,6 +288,50 @@ function getPoemPreviewText(poem) {
     .join('\n');
 }
 
+function getPoemColumns(poem) {
+  if (poem.preview && !Array.isArray(poem.preview) && typeof poem.preview === 'object') {
+    const cols = asArray(poem.preview.columns);
+    if (cols.length >= 2) {
+      return {
+        columns: cols.map((c) => text(c)).filter(Boolean),
+        closing: text(poem.preview.closing),
+      };
+    }
+  }
+
+  if (Array.isArray(poem.preview) && poem.preview.length >= 2) {
+    return {
+      columns: poem.preview.map((c) => text(c)).filter(Boolean),
+      closing: '',
+    };
+  }
+
+  return { columns: POEM_FALLBACK_COLUMNS, closing: POEM_FALLBACK_CLOSING };
+}
+
+function renderPoemColumns(poem) {
+  poemPreview.innerHTML = '';
+
+  const { columns, closing } = getPoemColumns(poem);
+
+  const grid = document.createElement('div');
+  grid.className = 'poem-excerpt-columns';
+
+  columns.forEach((col) => {
+    const div = document.createElement('div');
+    div.className = 'poem-excerpt-col preserve-lines';
+    div.textContent = col;
+    grid.appendChild(div);
+  });
+
+  poemPreview.appendChild(grid);
+
+  if (poemClosingLine) {
+    poemClosingLine.textContent = closing;
+    poemClosingLine.hidden = !closing;
+  }
+}
+
 function createPoemSegments(poem) {
   const lines = poem.body.split(/\r?\n/);
   const configuredSegments = asArray(poem.segments);
@@ -395,6 +449,7 @@ function renderEntryCard(entry, options = {}) {
   const article = document.createElement('article');
   article.className = 'entry-card';
   if (options.compact) article.classList.add('entry-card--compact');
+  if (entry.section_type === 'whisper') article.classList.add('whisper-card');
 
   if (entry.image_url) {
     const img = document.createElement('img');
@@ -480,6 +535,29 @@ function renderEntries(container, entries = [], options = {}) {
   renderCards(false);
 }
 
+function renderDetailRow(entry) {
+  const row = document.createElement('a');
+  row.className = 'detail-row';
+  row.href = getPageHref({ entry: entry.id });
+
+  const icon = document.createElement('span');
+  icon.className = 'detail-row__icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
+  const textEl = document.createElement('span');
+  textEl.className = 'detail-row__text';
+  textEl.textContent = text(entry.title) || makePreview(text(entry.body, text(entry.preview)), 80) || 'A kept detail.';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'detail-row__chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.textContent = '›';
+
+  row.append(icon, textEl, chevron);
+  return row;
+}
+
 function renderThingLoveGroup(container, group, options = {}) {
   const section = document.createElement('section');
   section.className = 'thing-love-group';
@@ -489,7 +567,7 @@ function renderThingLoveGroup(container, group, options = {}) {
   section.appendChild(heading);
 
   const list = document.createElement('div');
-  list.className = 'entry-list entry-list--compact';
+  list.className = 'detail-list';
   section.appendChild(list);
   container.appendChild(section);
 
@@ -503,25 +581,22 @@ function renderThingLoveGroup(container, group, options = {}) {
 
   const limit = Number(options.limit) || OVERVIEW_ENTRY_LIMIT;
 
-  function renderCards(isExpanded = false) {
+  function renderRows(isExpanded = false) {
     list.innerHTML = '';
     const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, limit);
-    visibleEntries.forEach((entry) => list.appendChild(renderEntryCard(entry, {
-      ...options,
-      compact: true,
-    })));
+    visibleEntries.forEach((entry) => list.appendChild(renderDetailRow(entry)));
 
     if (!isExpanded && group.entries.length > limit) {
       const reveal = document.createElement('button');
       reveal.className = 'quiet-button quiet-button--ghost section-action';
       reveal.type = 'button';
       reveal.textContent = 'Show more';
-      reveal.addEventListener('click', () => renderCards(true));
+      reveal.addEventListener('click', () => renderRows(true));
       list.appendChild(reveal);
     }
   }
 
-  renderCards(false);
+  renderRows(false);
 }
 
 function renderThingLoveGroups(container, entries = [], people = {}) {
@@ -542,14 +617,14 @@ function renderThingLoveGroups(container, entries = [], people = {}) {
   groups.forEach((group) => {
     renderThingLoveGroup(container, {
       ...group,
-      title: `Things ${getUserLabel(group.creator, people)} loves about ${getUserLabel(group.subject, people)}`,
+      title: `From ${getUserLabel(group.creator, people)}, for ${getUserLabel(group.subject, people)}`,
     }, { people, limit: 3 });
   });
 }
 
 function renderTally(content, tally = []) {
   tallyTitle.textContent = text(content.tally.title, 'Private tally');
-  tallyIntro.textContent = text(content.tally.intro);
+  tallyIntro.textContent = text(content.tally.intro, 'Not a score. Just a small record of returning.');
   tallyGrid.innerHTML = '';
 
   const thoughtsLabel = text(content.tally.thoughts_label, 'check-ins');
@@ -572,7 +647,12 @@ function renderTally(content, tally = []) {
     const notesText = document.createElement('span');
     notesText.textContent = notesLabel;
 
-    card.append(name, thoughts, thoughtsText, notes, notesText);
+    const heart = document.createElement('span');
+    heart.className = 'tally-heart';
+    heart.setAttribute('aria-hidden', 'true');
+    heart.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
+    card.append(name, thoughts, thoughtsText, notes, notesText, heart);
     tallyGrid.appendChild(card);
   });
 }
@@ -904,7 +984,7 @@ function renderPage(data) {
   const poem = getPoemContent(content);
   poemTitle.textContent = poem.title || 'Constantia';
   poemSubtitle.textContent = poem.subtitle || 'A poem for you.';
-  poemPreview.textContent = getPoemPreviewText(poem);
+  renderPoemColumns(poem);
   poemReadLink.href = getPageHref({ read: 'constantia' });
   poemReadLink.hidden = !poem.body;
 
@@ -913,14 +993,12 @@ function renderPage(data) {
   littleProofIntro.textContent = text(content.section_intros.little_proof);
   thingsIntro.textContent = text(content.section_intros.thing_i_love);
   stillIntro.textContent = text(content.section_intros.still_being_written);
-  whispersIntro.textContent = text(content.section_intros.whisper);
-  renderSectionAction(stillActions, allowedEntrySections, 'still_being_written', 'Add a memory');
-  renderSectionAction(
-    thingsActions,
-    allowedEntrySections,
-    'thing_i_love',
-    `Add something I love about ${counterpartName}`,
+  whispersIntro.textContent = text(
+    content.section_intros.whisper,
+    'Traces translated from skin to ink.\n\nSmall thoughts left in the moment, then returned to later with the words they were waiting for.',
   );
+  renderSectionAction(stillActions, allowedEntrySections, 'still_being_written', 'Add a memory');
+  renderSectionAction(thingsActions, allowedEntrySections, 'thing_i_love', 'Add what stayed');
   renderSectionAction(whisperActions, allowedEntrySections, 'whisper', 'Add a whisper');
 
   renderEntries(littleProofEntries, entries.little_proof || []);
