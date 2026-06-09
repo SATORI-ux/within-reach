@@ -16,6 +16,7 @@ import {
   normalizeInteger,
   normalizeOptionalText,
   normalizeText,
+  inferSecretEntrySubjectUserSlug,
   requireSecretEntryCreate,
   requireSecretEntryManage,
   withSignedSecretImage,
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
       throw new Error('Entry title is required.');
     }
 
-    const values = {
+    const baseValues = {
       section_type: sectionType,
       title,
       subtitle: normalizeOptionalText(entry.subtitle, 220),
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
       updated_at: now,
     };
     const entryId = normalizeEntryId(entry.id);
+    let existingEntry: SecretEntryRow | null = null;
 
     if (entryId) {
       const { data: existing, error: existingError } = await client
@@ -96,9 +98,15 @@ Deno.serve(async (req) => {
 
       await requireSecretEntryManage(client, visitor, existing);
       await requireSecretEntryCreate(client, visitor, sectionType);
+      existingEntry = existing;
     } else {
       await requireSecretEntryCreate(client, visitor, sectionType);
     }
+
+    const values = {
+      ...baseValues,
+      subject_user_slug: inferSecretEntrySubjectUserSlug(visitor, sectionType, existingEntry),
+    };
 
     const query = entryId
       ? client

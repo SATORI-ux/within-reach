@@ -69,10 +69,16 @@ const SECTION_CONFIG = {
   },
 };
 
+const KNOWN_USER_LABELS = {
+  joey: 'Joey',
+  jeszi: 'Jeszi',
+};
+
 let sessionToken = '';
 let mode = 'create';
 let sectionType = '';
 let currentEntry = null;
+let currentViewer = null;
 let archiveArmed = false;
 
 function setStatus(title, body) {
@@ -107,6 +113,20 @@ function getConfig() {
   return SECTION_CONFIG[sectionType] || null;
 }
 
+function getCounterpartSlug(userSlug = '') {
+  if (userSlug === 'joey') return 'jeszi';
+  if (userSlug === 'jeszi') return 'joey';
+  return '';
+}
+
+function getUserLabel(userSlug = '') {
+  return KNOWN_USER_LABELS[userSlug] || userSlug || 'the other side';
+}
+
+function getCounterpartName() {
+  return getUserLabel(getCounterpartSlug(currentViewer?.user_slug));
+}
+
 function getBodyMaxLength() {
   return getConfig()?.bodyMax || 20000;
 }
@@ -136,8 +156,14 @@ function renderShell() {
   }
 
   entryKicker.textContent = config.label;
-  entryTitle.textContent = mode === 'edit' ? config.editTitle : config.createTitle;
-  entryDescription.textContent = config.description;
+  entryTitle.textContent = mode === 'edit'
+    ? config.editTitle
+    : sectionType === 'thing_i_love'
+      ? `Add something I love about ${getCounterpartName()}.`
+      : config.createTitle;
+  entryDescription.textContent = sectionType === 'thing_i_love'
+    ? `A small specific thing noticed and kept for ${getCounterpartName()}.`
+    : config.description;
   bodyLabel.textContent = config.bodyLabel;
   memoryDateField.hidden = !config.showMemoryDate;
   archiveEntryButton.hidden = mode !== 'edit';
@@ -310,6 +336,7 @@ async function bootstrap() {
     }
 
     const data = await getSecretPage(sessionToken);
+    currentViewer = data.viewer || null;
     if (!getRequestedMode(data)) return;
     renderShell();
   } catch (error) {

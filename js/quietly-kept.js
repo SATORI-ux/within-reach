@@ -46,6 +46,10 @@ const sectionRail = document.querySelector('.section-rail');
 const overviewSections = Array.from(document.querySelectorAll('[data-overview-section]'));
 
 const OVERVIEW_ENTRY_LIMIT = 3;
+const KNOWN_USER_LABELS = {
+  joey: 'Joey',
+  jeszi: 'Jeszi',
+};
 
 const EMPTY_CONTENT = {
   hero: {
@@ -167,6 +171,37 @@ function getCounterpartName(viewer = {}) {
   if (viewer.user_slug === 'joey') return 'Jeszi';
   if (viewer.user_slug === 'jeszi') return 'Joey';
   return 'the other side';
+}
+
+function getCounterpartSlug(userSlug = '') {
+  if (userSlug === 'joey') return 'jeszi';
+  if (userSlug === 'jeszi') return 'joey';
+  return '';
+}
+
+function getPeopleBySlug(data = {}) {
+  const people = {};
+  (data.tally || []).forEach((row) => {
+    if (row.user_slug) {
+      people[row.user_slug] = row.display_name || KNOWN_USER_LABELS[row.user_slug] || row.user_slug;
+    }
+  });
+
+  if (data.viewer?.user_slug) {
+    people[data.viewer.user_slug] =
+      data.viewer.display_name || KNOWN_USER_LABELS[data.viewer.user_slug] || data.viewer.user_slug;
+  }
+
+  Object.entries(KNOWN_USER_LABELS).forEach(([slug, label]) => {
+    if (!people[slug]) people[slug] = label;
+  });
+
+  return people;
+}
+
+function getUserLabel(userSlug, people = {}) {
+  if (!userSlug) return '';
+  return people[userSlug] || KNOWN_USER_LABELS[userSlug] || userSlug;
 }
 
 function makePreview(value, maxLength = 260) {
@@ -335,9 +370,10 @@ function renderNames(content) {
   });
 }
 
-function renderEntryCard(entry) {
+function renderEntryCard(entry, options = {}) {
   const article = document.createElement('article');
   article.className = 'entry-card';
+  if (options.compact) article.classList.add('entry-card--compact');
 
   if (entry.image_url) {
     const img = document.createElement('img');
@@ -356,6 +392,13 @@ function renderEntryCard(entry) {
     meta.className = 'entry-meta';
     meta.textContent = [entry.display_date, entry.subtitle].filter(Boolean).join(' · ');
     article.appendChild(meta);
+  }
+
+  if (options.showAuthor && entry.created_by) {
+    const author = document.createElement('p');
+    author.className = 'entry-author';
+    author.textContent = `By ${getUserLabel(entry.created_by, options.people)}`;
+    article.appendChild(author);
   }
 
   const preview = document.createElement('p');
@@ -401,7 +444,7 @@ function renderEntries(container, entries = [], options = {}) {
   function renderCards(isExpanded = false) {
     container.innerHTML = '';
     const visibleEntries = isExpanded ? entries : entries.slice(0, limit);
-    visibleEntries.forEach((entry) => container.appendChild(renderEntryCard(entry)));
+    visibleEntries.forEach((entry) => container.appendChild(renderEntryCard(entry, options)));
 
     if (!isExpanded && entries.length > limit) {
       const reveal = document.createElement('button');
@@ -414,6 +457,73 @@ function renderEntries(container, entries = [], options = {}) {
   }
 
   renderCards(false);
+}
+
+function renderThingLoveGroup(container, group, options = {}) {
+  const section = document.createElement('section');
+  section.className = 'thing-love-group';
+
+  const heading = document.createElement('h3');
+  heading.textContent = group.title;
+  section.appendChild(heading);
+
+  const list = document.createElement('div');
+  list.className = 'entry-list entry-list--compact';
+  section.appendChild(list);
+  container.appendChild(section);
+
+  if (!group.entries.length) {
+    const empty = document.createElement('p');
+    empty.className = 'quiet-note';
+    empty.textContent = 'Nothing written here yet.';
+    list.appendChild(empty);
+    return;
+  }
+
+  const limit = Number(options.limit) || OVERVIEW_ENTRY_LIMIT;
+
+  function renderCards(isExpanded = false) {
+    list.innerHTML = '';
+    const visibleEntries = isExpanded ? group.entries : group.entries.slice(0, limit);
+    visibleEntries.forEach((entry) => list.appendChild(renderEntryCard(entry, {
+      ...options,
+      compact: true,
+    })));
+
+    if (!isExpanded && group.entries.length > limit) {
+      const reveal = document.createElement('button');
+      reveal.className = 'quiet-button quiet-button--ghost section-action';
+      reveal.type = 'button';
+      reveal.textContent = 'Show more';
+      reveal.addEventListener('click', () => renderCards(true));
+      list.appendChild(reveal);
+    }
+  }
+
+  renderCards(false);
+}
+
+function renderThingLoveGroups(container, entries = [], people = {}) {
+  container.innerHTML = '';
+
+  const groups = [
+    { creator: 'joey', subject: 'jeszi', entries: [] },
+    { creator: 'jeszi', subject: 'joey', entries: [] },
+  ];
+
+  entries.forEach((entry) => {
+    const createdBy = entry.created_by || '';
+    const subjectSlug = entry.subject_user_slug || getCounterpartSlug(createdBy);
+    const group = groups.find((item) => item.creator === createdBy && item.subject === subjectSlug);
+    if (group) group.entries.push(entry);
+  });
+
+  groups.forEach((group) => {
+    renderThingLoveGroup(container, {
+      ...group,
+      title: `Things ${getUserLabel(group.creator, people)} loves about ${getUserLabel(group.subject, people)}`,
+    }, { people, limit: 3 });
+  });
 }
 
 function renderTally(content, tally = []) {
@@ -530,7 +640,7 @@ function renderPoemDetail(content) {
   readingDetail.appendChild(renderBackLink());
 }
 
-function renderEntryDetail(entries) {
+function renderEntryDetail(entries, people = {}) {
   const entryId = new URLSearchParams(window.location.search).get('entry');
   if (!entryId) return false;
 
@@ -552,7 +662,12 @@ function renderEntryDetail(entries) {
   meta.className = 'entry-meta';
   meta.textContent = [entry.display_date, entry.subtitle].filter(Boolean).join(' · ');
 
-  const nodes = [label, heading, meta];
+  const author = document.createElement('p');
+  author.className = 'entry-author';
+  author.textContent = entry.created_by ? `By ${getUserLabel(entry.created_by, people)}` : '';
+  author.hidden = !entry.created_by;
+
+  const nodes = [label, heading, meta, author];
 
   if (entry.image_url) {
     const img = document.createElement('img');
@@ -581,7 +696,7 @@ function renderEntryDetail(entries) {
   return true;
 }
 
-function renderDetail(content, entries) {
+function renderDetail(content, entries, people) {
   const params = new URLSearchParams(window.location.search);
   readingDetail?.classList.remove('detail-section--reader');
 
@@ -595,7 +710,7 @@ function renderDetail(content, entries) {
     return;
   }
 
-  if (renderEntryDetail(entries)) return;
+  if (renderEntryDetail(entries, people)) return;
 
   setDetailMode(false);
 }
@@ -604,6 +719,7 @@ function renderPage(data) {
   const content = mergeContent(data.content);
   const entries = data.entries || {};
   const allEntries = flattenEntries(entries);
+  const people = getPeopleBySlug(data);
   const allowedEntrySections = Array.isArray(data.viewer?.allowed_entry_sections)
     ? data.viewer.allowed_entry_sections
     : [];
@@ -642,12 +758,12 @@ function renderPage(data) {
   renderSectionAction(whisperActions, allowedEntrySections, 'whisper', 'Add a whisper');
 
   renderEntries(littleProofEntries, entries.little_proof || []);
-  renderEntries(thingsEntries, entries.thing_i_love || []);
-  renderEntries(stillEntries, entries.still_being_written || []);
+  renderThingLoveGroups(thingsEntries, entries.thing_i_love || [], people);
+  renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people });
   renderEntries(whisperEntries, entries.whisper || [], { limit: 2 });
   renderTally(content, data.tally || []);
   renderAsk(content);
-  renderDetail(content, allEntries);
+  renderDetail(content, allEntries, people);
 
   statusCard.hidden = true;
   secretPage.hidden = false;

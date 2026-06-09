@@ -103,6 +103,7 @@ create table if not exists public.secret_entries (
   is_pinned boolean not null default false,
   is_archived boolean not null default false,
   created_by text references public.tile_keys(user_slug) on update cascade,
+  subject_user_slug text references public.tile_keys(user_slug) on update cascade,
   updated_by text references public.tile_keys(user_slug) on update cascade,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -190,6 +191,7 @@ create index if not exists idx_secret_unlocks_unlocked_at on public.secret_unloc
 create index if not exists idx_private_pages_updated_at on public.private_pages (updated_at desc);
 create index if not exists idx_secret_page_content_updated_at on public.secret_page_content (updated_at desc);
 create index if not exists idx_secret_entries_section on public.secret_entries (section_type, is_archived, is_pinned desc, display_order, created_at desc);
+create index if not exists idx_secret_entries_love_subject on public.secret_entries (section_type, created_by, subject_user_slug, is_archived);
 create index if not exists idx_secret_entries_created_at on public.secret_entries (created_at desc);
 create index if not exists idx_secret_entries_updated_at on public.secret_entries (updated_at desc);
 create index if not exists idx_device_sessions_user_slug on public.device_sessions (user_slug);

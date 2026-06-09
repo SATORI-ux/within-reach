@@ -517,6 +517,13 @@ summary:focus-visible {
   color: var(--text-faint);
 }
 
+.entry-author {
+  margin: 0.35rem 0 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
 .entry-preview,
 .entry-full {
   font-size: 0.96rem;
@@ -558,6 +565,42 @@ summary:focus-visible {
 
 .entry-list .entry-card {
   padding: 0.9rem 1rem;
+}
+
+.thing-love-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.thing-love-group + .thing-love-group {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.thing-love-group > h3 {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 1.02rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.entry-list--compact {
+  margin-top: 0;
+}
+
+.entry-card--compact {
+  padding: 0.78rem 0.9rem;
+}
+
+.entry-card--compact h3 {
+  font-size: 1rem;
+}
+
+.entry-card--compact .entry-preview {
+  margin-top: 0.55rem;
+  font-size: 0.92rem;
 }
 
 .tally-grid {
@@ -859,6 +902,11 @@ textarea {
   .entry-card img,
   .detail-section img {
     max-height: 280px;
+  }
+
+  .thing-love-group + .thing-love-group {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
   }
 
   .ask-section {

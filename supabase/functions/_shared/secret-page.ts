@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { VisitorRow } from './utils.ts';
-import { getSecretAlwaysUnlockUserSlug, getSecretPageAccess } from './secret.ts';
+import { getSecretAlwaysUnlockUserSlug, getSecretPageAccess, getSecretTargetUserSlug } from './secret.ts';
 
 export const SECRET_PAGE_SLUG = 'quietly-kept';
 export const SECRET_PAGE_MEDIA_BUCKET = 'secret-page-media';
@@ -42,6 +42,7 @@ export type SecretEntryRow = {
   is_pinned: boolean;
   is_archived: boolean;
   created_by: string | null;
+  subject_user_slug: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
@@ -144,8 +145,29 @@ export function canManageSecretEntry(
   visitor: VisitorRow,
   entry: Pick<SecretEntryRow, 'created_by'>,
 ): boolean {
-  if (visitor.user_slug === getSecretAlwaysUnlockUserSlug()) return true;
   return Boolean(entry.created_by && entry.created_by === visitor.user_slug);
+}
+
+export function getSecretCounterpartUserSlug(userSlug: string): string | null {
+  const ownerSlug = getSecretAlwaysUnlockUserSlug();
+  const targetSlug = getSecretTargetUserSlug();
+
+  if (userSlug === ownerSlug) return targetSlug;
+  if (userSlug === targetSlug) return ownerSlug;
+  return null;
+}
+
+export function inferSecretEntrySubjectUserSlug(
+  visitor: VisitorRow,
+  sectionType: string,
+  existing?: Pick<SecretEntryRow, 'subject_user_slug'> | null,
+): string | null {
+  if (sectionType !== 'thing_i_love') return null;
+
+  const counterpartSlug = getSecretCounterpartUserSlug(visitor.user_slug);
+  if (counterpartSlug) return counterpartSlug;
+
+  return existing?.subject_user_slug ?? null;
 }
 
 export async function requireSecretEntryCreate(
@@ -340,6 +362,7 @@ export async function getSecretEntries(client: SupabaseClient) {
       'is_pinned',
       'is_archived',
       'created_by',
+      'subject_user_slug',
       'updated_by',
       'created_at',
       'updated_at',
