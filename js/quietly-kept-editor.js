@@ -84,13 +84,6 @@ const EMPTY_CONTENT = {
     thoughts_label: '',
     notes_label: '',
   },
-  ask: {
-    title: '',
-    body: '',
-    question: '',
-    button: '',
-    footnote: '',
-  },
   final_ask: {
     hidden_title: '',
     revealed_title: '',
@@ -143,10 +136,6 @@ function mergeContent(content) {
       ...EMPTY_CONTENT.tally,
       ...(content?.tally || {}),
     },
-    ask: {
-      ...EMPTY_CONTENT.ask,
-      ...(content?.ask || {}),
-    },
     final_ask: {
       ...EMPTY_CONTENT.final_ask,
       ...(content?.final_ask || {}),
@@ -180,11 +169,6 @@ function populateContentForm(contentValue) {
   setField(pageContentForm, 'tally_intro', content.tally.intro);
   setField(pageContentForm, 'tally_thoughts_label', content.tally.thoughts_label);
   setField(pageContentForm, 'tally_notes_label', content.tally.notes_label);
-  setField(pageContentForm, 'ask_title', content.ask.title);
-  setField(pageContentForm, 'ask_body', content.ask.body);
-  setField(pageContentForm, 'ask_question', content.ask.question);
-  setField(pageContentForm, 'ask_button', content.ask.button);
-  setField(pageContentForm, 'ask_footnote', content.ask.footnote);
   setField(pageContentForm, 'final_ask_hidden_title', content.final_ask.hidden_title);
   setField(pageContentForm, 'final_ask_revealed_title', content.final_ask.revealed_title);
   setField(pageContentForm, 'final_ask_intro', content.final_ask.intro);
@@ -243,13 +227,6 @@ function collectPageContent() {
       intro: getFormValue(pageContentForm, 'tally_intro'),
       thoughts_label: getFormValue(pageContentForm, 'tally_thoughts_label'),
       notes_label: getFormValue(pageContentForm, 'tally_notes_label'),
-    },
-    ask: {
-      title: getFormValue(pageContentForm, 'ask_title'),
-      body: getFormValue(pageContentForm, 'ask_body'),
-      question: getFormValue(pageContentForm, 'ask_question'),
-      button: getFormValue(pageContentForm, 'ask_button'),
-      footnote: getFormValue(pageContentForm, 'ask_footnote'),
     },
     final_ask: {
       hidden_title: getFormValue(pageContentForm, 'final_ask_hidden_title'),
@@ -583,8 +560,8 @@ async function handleResetFinalAsk() {
   setMessage(finalAskMessage, 'Resetting...');
 
   try {
-    const result = await resetFinalAsk(sessionToken);
-    renderFinalAskControls(result.final_ask || currentFinalAsk || {});
+    await resetFinalAsk(sessionToken);
+    await refreshPage();
     setMessage(finalAskMessage, 'Hidden.');
   } catch (error) {
     console.error(error);

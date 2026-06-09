@@ -100,13 +100,6 @@ const EMPTY_CONTENT = {
     thoughts_label: 'check-ins',
     notes_label: 'notes',
   },
-  ask: {
-    title: 'Protected note',
-    body: '',
-    question: '',
-    button: '',
-    footnote: '',
-  },
   final_ask: {
     hidden_title: '',
     revealed_title: '',
@@ -161,10 +154,6 @@ function mergeContent(content) {
     tally: {
       ...EMPTY_CONTENT.tally,
       ...(content?.tally || {}),
-    },
-    ask: {
-      ...EMPTY_CONTENT.ask,
-      ...(content?.ask || {}),
     },
     final_ask: {
       ...EMPTY_CONTENT.final_ask,
@@ -687,15 +676,14 @@ function renderTally(content, tally = []) {
 
 function getFinalAskContent(content) {
   const finalAsk = asObject(content.final_ask);
-  const legacyAsk = asObject(content.ask);
 
   return {
-    hiddenTitle: text(finalAsk.hidden_title, text(legacyAsk.title, 'Protected note')),
-    revealedTitle: text(finalAsk.revealed_title, text(legacyAsk.title, 'Protected note')),
-    intro: text(finalAsk.intro, text(legacyAsk.footnote)),
-    body: text(finalAsk.body, text(legacyAsk.body)),
-    question: text(finalAsk.question, text(legacyAsk.question)),
-    openLabel: text(finalAsk.open_label, text(legacyAsk.button, 'Open this part')),
+    hiddenTitle: text(finalAsk.hidden_title, 'Protected note'),
+    revealedTitle: text(finalAsk.revealed_title, 'Protected note'),
+    intro: text(finalAsk.intro),
+    body: text(finalAsk.body),
+    question: text(finalAsk.question),
+    openLabel: text(finalAsk.open_label, 'Open this part'),
     yesLabel: text(finalAsk.yes_label, 'Yes'),
     talkFirstLabel: text(finalAsk.talk_first_label, 'Talk to me first'),
     yesScreenCopy: text(finalAsk.yes_screen_copy),
