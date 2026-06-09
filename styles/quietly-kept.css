@@ -516,7 +516,8 @@ summary:focus-visible {
 }
 
 .entry-card img,
-.detail-section img {
+.detail-section img,
+.reader-dialog__inner img {
   display: block;
   width: 100%;
   max-height: 380px;
