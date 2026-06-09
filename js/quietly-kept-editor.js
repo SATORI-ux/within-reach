@@ -469,8 +469,8 @@ async function bootstrap() {
     }
 
     const data = await getSecretPage(sessionToken);
-    if (!data.viewer?.can_edit_secret_page) {
-      setStatus('This editor is closed.', 'This session can view the page, but cannot edit it.');
+    if (!data.viewer?.can_edit_fixed_content) {
+      setStatus('This editor is closed.', 'This protected editor is only for the page owner.');
       return;
     }
 

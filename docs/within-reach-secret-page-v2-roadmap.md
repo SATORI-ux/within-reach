@@ -2,23 +2,57 @@
 
 ## Purpose
 
-This document defines the next implementation sequence for the private **Quietly Kept** secret page.
+This document defines the revised implementation sequence for the private **Quietly Kept** secret page.
 
-The current implementation has the correct broad pieces, but the mobile experience is too long, too text-heavy, and too close to a document dump. Mobile is the primary surface. The page should feel **deep, not long**.
+The current implementation has the correct broad pieces, but the mobile experience can feel too long, text-heavy, and editor-like. Mobile is the primary surface. The page should feel **deep, not long**.
 
-This roadmap coordinates the follow-up work across layout, permissions, living sections, Whispers, mutual contributions, the Final Ask flow, and later anniversary reminders.
+This roadmap coordinates follow-up work across mobile layout, contribution flows, permissions, living sections, Whispers, the Final Ask flow, celebration behavior, and later anniversary reminders.
+
+## Current State After Existing Work
+
+A prior permissions/editor refactor has already been implemented.
+
+Current reported state:
+
+- Fixed reveal content is Joey-only editable.
+- Jeszi can view after unlock, but cannot edit fixed content.
+- Jeszi after unlock can create/edit/archive only her own allowed living entries: `thing_i_love`, `still_being_written`.
+- Jeszi cannot create/edit/archive `little_proof`.
+- Entry image upload checks the same entry ownership rules.
+- `get-secret-page` returns `can_edit_fixed_content`, `allowed_entry_sections`, and per-entry `can_edit`.
+- `secret_entries.created_by` exists and is used for ownership enforcement.
+- `subject_user_slug` is still deferred.
+
+This is not a failed pass. It is useful backend groundwork. The revised direction is to stop exposing Jeszi to a broad editor workflow and instead route her through focused section-specific contribution pages.
+
+## Revised Product Direction
+
+Do not give Jeszi a general page editor.
+
+Instead:
+
+- The main **Quietly Kept** page remains a reading and returning surface.
+- Joey keeps a private owner/fixed-content editor for original authored content and owner controls.
+- Shared future participation happens through focused contribution flows.
+- Each living section has its own small action such as `Add a memory`, `Add something I love`, or `Add a whisper`.
+- These actions open a focused contribution page rather than a broad CMS/editor.
+
+Working principle:
+
+> Do not give Jeszi a page editor. Give her intentional places to add to the story.
 
 ## Current Product Problem
 
-The secret page currently renders too much long-form content inline, especially the poem. Because the poem uses short lines, it becomes an extremely tall vertical block on mobile.
+The secret page currently risks rendering too much long-form content inline, especially on mobile. Because the poem uses short lines, it can become an extremely tall vertical block.
 
 This creates several problems:
 
 - The poem becomes physically exhausting to scroll through.
 - Later sections feel buried.
-- The final ask is too far down the page.
+- The Final Ask is too far down the page.
 - The page feels like a document instead of a quiet reveal.
-- The emotional rhythm is flattened.
+- Broad editor access can make the experience feel administrative.
+- Mobile interactions feel less intentional than they should.
 
 ## Desired Fix
 
@@ -28,8 +62,9 @@ The page needs a mobile-first disclosure model:
 2. Make the poem central but not fully expanded by default.
 3. Collapse or preview long sections.
 4. Use focused detail views for full reading.
-5. Keep editor access narrow and section-specific.
-6. Treat the Final Ask as a separate stateful feature, not editable page copy.
+5. Use focused contribution pages for adding entries.
+6. Keep the general editor owner-only.
+7. Treat the Final Ask as a separate stateful feature, not editable page copy.
 
 ## Non-Negotiable Product Guardrails
 
@@ -38,6 +73,7 @@ The page needs a mobile-first disclosure model:
 - The poem remains the emotional centerpiece.
 - The full poem should be easy to access, but not dumped inline on the main page.
 - The page should hold a lot, but show only a little at first.
+- Main-page action buttons should feel like small doors, not admin controls.
 - No dashboards, badges, analytics panels, heavy admin chrome, or feature creep.
 - Do not expose final emotional copy in source code, markdown, migrations, seed files, or build artifacts.
 - All protected content should be returned through server-side validation.
@@ -55,6 +91,7 @@ Deliverables:
 
 - Roadmap.
 - Mobile reading/detail spec.
+- Contribution flows spec.
 - Permissions/editor spec.
 - Living sections and Whispers spec.
 - Final Ask flow spec.
@@ -72,29 +109,34 @@ Scope:
 - Do not render the full poem inline by default.
 - Show a **Constantia** preview card with selected excerpt lines.
 - Add a focused **Read Constantia** detail view.
-- Segment the poem into readable parts.
+- Segment the poem into readable parts when content metadata supports it.
 - Collapse or preview long sections.
 - Use compact section cards.
 - Add mobile section chips if useful.
-- Ensure the ask area is reachable without exhausting scroll.
+- Ensure the Final Ask area is reachable without exhausting scroll.
 - Preserve line breaks only in full reading/detail contexts.
 
 Do not add Whispers or Final Ask state in this pass.
 
-### Pass 2 - Permission and Editor Model Refactor
+### Pass 2 - Contribution Flow Walkback / Editor Separation
 
-Goal: prevent broad unlocked edit access.
+Goal: walk back the broad editor experience without throwing away useful permission work already implemented.
 
-Rules:
+Scope:
 
-- Joey can edit fixed reveal content.
-- Jeszi cannot edit fixed reveal content.
-- Fixed reveal content includes opener, poem, Two Names definitions, section intros, tally labels, and Final Ask copy.
-- After unlock, living sections become shared.
-- Living entries are creator-owned.
-- Jeszi can create and edit her own allowed entries after unlock.
-- Jeszi cannot edit Joey’s entries.
-- Backend enforces every rule.
+- Keep the existing server-side ownership enforcement.
+- Keep `allowed_entry_sections` and per-entry `can_edit` behavior if already implemented.
+- Keep `/quietly-kept-editor.html` as Joey-only or owner/fixed-content only.
+- Add a focused contribution route, recommended: `/quietly-kept-entry.html`.
+- Use query parameters for section-specific creation and entry-specific editing:
+  - `/quietly-kept-entry.html?section=still_being_written`
+  - `/quietly-kept-entry.html?section=thing_i_love`
+  - `/quietly-kept-entry.html?section=whisper`
+  - `/quietly-kept-entry.html?entry=<entry_id>`
+- Remove or hide any broad `Edit this page` link for Jeszi.
+- On the main reveal page, show only quiet section-specific actions where permitted.
+
+This pass is the direct response to the revised product direction.
 
 ### Pass 3 - Whispers Section
 
@@ -114,144 +156,94 @@ Rules:
 - Support 15,000 character body text.
 - Show preview on main page.
 - Use a focused detail view for full content.
+- Use focused contribution page for creating/editing.
 - Do not count Whispers in the existing tally unless the product intentionally changes that later.
 - Optional image support may reuse the existing entry media model.
 
 ### Pass 4 - Living Memories and Things I Love Grouping
 
-Goal: make mutual contributions clear.
+Goal: make shared living contributions render clearly.
 
-Living Memories:
+Scope:
 
-- Shared future-facing memory collection.
-- Show author quietly.
-- Preview first, detail on demand.
-
-Things I Love:
-
-- Must support `created_by` and `subject_user_slug`.
-- Render as separate groups:
+- Living Memories show author quietly.
+- Things I Love supports `subject_user_slug`.
+- Render subject-aware groups:
   - Things Joey loves about Jeszi.
   - Things Jeszi loves about Joey.
-- Do not merge both people’s entries into one confusing list.
+- Contribution form infers `subject_user_slug` from current viewer and counterpart.
+- Entries remain creator-owned.
 
 ### Pass 5 - Final Ask Core Flow
 
-Goal: make the girlfriend ask a stateful interaction.
+Goal: implement the stateful Final Ask flow.
 
-Rules:
+Scope:
 
-- Manual reveal by Joey.
+- Dedicated Final Ask state storage.
+- Joey manually reveals the ask.
 - Jeszi cannot reveal it herself.
-- Jeszi can respond only after reveal.
-- Response buttons:
-  - Yes
-  - Talk to me first
-- Joey cannot respond on Jeszi’s behalf.
-- Reset/hide is owner-only.
-- After response, casual overwrites are blocked.
-
-This pass implements state and basic interaction only. Celebration polish can come after.
+- Jeszi can respond only after it is revealed.
+- Response options: `Yes` and `Talk to me first`.
+- Yes stores `accepted_at`.
+- Talk to me first stores a safe non-punishing response.
+- Owner-only hide/reset for mistakes/testing.
+- Copy comes from protected content, not source.
 
 ### Pass 6 - Yes Celebration and Permanent Memory
 
-Goal: make the Yes moment memorable but still in-tone.
+Goal: make the `Yes` response a one-time memorable moment.
 
-On Yes:
+Scope:
 
-- Store acceptance server-side.
-- Set `accepted_at`.
-- Send different push notifications to Joey and Jeszi.
-- Show a one-time, restrained in-app celebration.
-- Respect reduced motion.
-- Convert the section into a permanent quieter memory.
+- Send push to Joey and Jeszi with protected copy.
+- Store notification status without blocking accepted state.
+- Show one-time restrained celebration for Jeszi after Yes.
+- Show one-time restrained celebration for Joey on next relevant page load.
+- Track seen timestamps per user.
+- Respect `prefers-reduced-motion`.
+- Render permanent quieter accepted memory with `accepted_at`.
 
 ### Pass 7 - Anniversary Reminder
 
-Goal: add future anniversary notification.
+Goal: send a best-effort annual reminder based on `accepted_at`.
 
-Rules:
+Scope:
 
-- Depends on `accepted_at`.
-- Scheduled backend job checks anniversary windows.
-- Sends one notification per year.
-- Delivery is best-effort, not guaranteed to the second.
-- Record the sent year to avoid duplicates.
+- Use scheduled Edge Function / Supabase cron if project conventions support it.
+- Send at most once per year.
+- Store `last_anniversary_sent_for_year`.
+- Treat exact timing as best-effort.
 
-### Pass 8 - Final Polish and Content Migration
+### Pass 8 - Final Polish
 
-Goal: make the page feel intentional again.
+Goal: make the page feel intentional and finished.
 
-Checks:
+Scope:
 
-- Mobile first.
-- Desktop second.
-- No long dump sections.
-- No source-committed secret copy.
-- No direct anon access to protected data.
-- Editor is functional but visually secondary.
-- Final Ask states feel safe and private.
+- Mobile spacing and rhythm.
+- Detail views.
+- Contribution buttons.
+- Empty states.
+- Image/caption rendering.
+- Locked/unlocked states.
+- No source exposure of final emotional content.
 
-## Key Definitions
+## Current Strong Foundations to Preserve
 
-### Fixed Reveal Content
+- Warm, object-like tone.
+- Server-side identity validation.
+- Protected content returned through Edge Functions.
+- Creator-owned entry permissions.
+- Mobile-first intent.
+- The poem as emotional centerpiece.
+- No dashboard drift.
+- No admin chrome on the reveal page.
 
-Authored content that belongs to the original secret and should remain Joey-only editable.
+## Bottom Line
 
-Examples:
+The existing permissions refactor does not need to be reverted wholesale. Treat it as server-side groundwork.
 
-- Opening note.
-- Poem content.
-- Two Names definitions.
-- Section intros.
-- Tally labels.
-- Final Ask copy.
+The next move is to change the user-facing workflow:
 
-### Living Entries
-
-Shared or expandable page content that can grow over time.
-
-Examples:
-
-- Little Proofs.
-- Living Memories.
-- Things I Love.
-- Whispers.
-
-### Final Ask
-
-A separate stateful feature for the eventual girlfriend ask. It is not just editable page copy.
-
-## Source Safety Rule
-
-Any final emotional content, including the poem, opener, definitions, ask note, notification copy, or deeply personal section text, must live outside the committed repository.
-
-Acceptable:
-
-- Supabase rows inserted after deployment.
-- Private local SQL file that is never committed.
-- Editor-entered content.
-
-Not acceptable:
-
-- Final copy in client JS.
-- Final copy in HTML.
-- Final copy in Edge Function source.
-- Final copy in markdown committed to repo.
-- Final copy in migrations or seed files.
-
-## Definition of Done for the Full V2 Work
-
-The V2 secret page is complete when:
-
-- Mobile main page reads as a curated overview, not a document dump.
-- Full poem opens in a focused reading view.
-- Long entries use previews and detail views.
-- Jeszi only edits allowed shared/living sections after unlock.
-- Fixed reveal content remains Joey-only.
-- Whispers exist as a long-form intimate section.
-- Things I Love supports mutual subject grouping.
-- Final Ask is manually revealed by Joey.
-- Yes response stores acceptance, sends push, triggers a one-time celebration, and becomes a permanent memory.
-- Future anniversary reminder is either implemented or explicitly deferred.
-- Protected content cannot be read directly through anon Supabase access.
+> The reveal page should be for reading and returning. Contribution pages should be for adding to the story.

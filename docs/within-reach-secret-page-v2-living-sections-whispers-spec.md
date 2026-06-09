@@ -1,327 +1,333 @@
-# Within Reach - Living Sections and Whispers Spec
+# Within Reach - Secret Page V2 Living Sections and Whispers Spec
 
 ## Purpose
 
-This spec defines the expandable living sections for the Quietly Kept secret page.
+This spec defines the living sections of the Quietly Kept secret page and how they should grow over time without making the main page feel cluttered or administrative.
 
-The page should become a place to return to, not only a one-time reveal.
+Living sections are not fixed reveal content. They are places where the relationship can keep accumulating proof, memory, affection, and private writing.
 
-## Section Types
+## Living Section Model
 
-The living content model should support at least these section types:
+Use `secret_entries` or the current equivalent table for living content.
+
+Recommended entry types:
 
 - `little_proof`
-- `living_memory`
+- `still_being_written`
 - `thing_i_love`
 - `whisper`
 
-The existing implementation may already have some names. Use migrations carefully and map old values if needed.
+Product labels:
 
-## Emotional Definitions
+- `little_proof` = Little Proofs
+- `still_being_written` = Living Memories, or Still Being Written if that label remains preferred
+- `thing_i_love` = Things I Love
+- `whisper` = Whispers
 
-### Little Proofs
+## Main Page Display Rule
 
-Meaning:
+The main page should show previews, not full long content.
 
-- Curated evidence of why the poem is true.
-- Past or present moments.
-- Images, texts, screenshots, short observations, and longer captions.
+For each living section:
 
-Tone:
+- show section title
+- show section intro
+- show 1 to 3 recent or pinned cards
+- show `View all` if there are more entries
+- show one quiet section-specific `Add...` action when permitted
 
-- Tender.
-- Specific.
-- Memory-focused.
+The main page should not become an endless scroll of long captions, long poems, or large forms.
 
-Edit policy:
+## Detail View Rule
 
-- Joey-authored by default.
-- Jeszi may view after unlock.
-- Mutual contribution optional later.
+Long content opens in a focused detail view.
 
-### Living Memories
+Recommended URL:
 
-Meaning:
-
-- Future-facing additions.
-- New moments added after the page exists.
-- Proof that the page is still open.
-
-Tone:
-
-- Ongoing.
-- Gentle.
-- Shared.
-
-Edit policy:
-
-- Shared after unlock.
-- Creator-owned entries.
-
-### Things I Love
-
-Meaning:
-
-- Observations about the other person.
-- Not generic compliments.
-- Specific patterns, traits, habits, and private recognitions.
-
-Tone:
-
-- Warm.
-- Specific.
-- Sometimes lightly funny.
-
-Required structure:
-
-- `created_by`
-- `subject_user_slug`
-
-Rendering:
-
-- Things Joey loves about Jeszi.
-- Things Jeszi loves about Joey.
-
-### Whispers
-
-Meaning:
-
-- Long-form intimate keepsakes.
-- Longer poems.
-- Vulnerable notes.
-- Secrets exchanged in person but not ready for ordinary conversation.
-- Words that needed somewhere quiet to stay.
-
-Tone:
-
-- More private than notes.
-- More intimate than ordinary memories.
-- Still restrained.
-
-Recommended section copy should live in Supabase content, not source.
-
-Placeholder intent:
-
-- Title: `Whispers`
-- Subtitle intent: longer things, kept softer
-- Description intent: poems, secrets, and words that needed somewhere quiet to stay
-
-## Naming Collision Note
-
-The existing tally may use the label `whispers left` for homepage notes.
-
-Adding a `Whispers` section creates a possible naming collision.
-
-Recommended internal distinction:
-
-- Homepage notes tally label may remain emotionally named `whispers left`.
-- New long-form section should use internal type `whisper` or `long_whisper`.
-- Backend tally must continue to count only the intended homepage `notes` table unless intentionally changed.
-
-Do not accidentally count long-form Whispers in the homepage note tally.
-
-## Data Model
-
-Recommended `secret_entries` fields:
-
-```sql
-id uuid primary key default gen_random_uuid(),
-section_type text not null,
-created_by text not null references public.tile_keys(user_slug) on update cascade,
-subject_user_slug text references public.tile_keys(user_slug) on update cascade,
-title text,
-subtitle text,
-preview text,
-body text not null default '',
-image_path text,
-image_alt text,
-memory_date date,
-display_order integer not null default 0,
-is_pinned boolean not null default false,
-is_archived boolean not null default false,
-created_at timestamptz not null default now(),
-updated_at timestamptz not null default now()
+```text
+/quietly-kept.html?entry=<entry_id>
 ```
 
-Use existing project conventions if IDs are bigint instead of uuid.
+Detail view should:
 
-### Section Type Constraints
+- preserve line breaks and paragraph spacing
+- render image, title, subtitle/date, author, and full body
+- provide a quiet back link
+- avoid heavy modal styling on mobile
 
-Allowed values:
+## Contribution Flow Rule
 
-- `little_proof`
-- `living_memory`
-- `thing_i_love`
-- `whisper`
+Adding or editing living entries happens on a focused contribution page.
 
-### Body Length Constraints
+Recommended create routes:
 
-Minimum supported body lengths:
+```text
+/quietly-kept-entry.html?section=still_being_written
+/quietly-kept-entry.html?section=thing_i_love
+/quietly-kept-entry.html?section=whisper
+```
 
-- `little_proof`: 20,000 characters
-- `living_memory`: 20,000 characters
-- `thing_i_love`: 10,000 characters
-- `whisper`: 15,000 characters
+Recommended edit route:
 
-Recommendation:
+```text
+/quietly-kept-entry.html?entry=<entry_id>
+```
 
-- Use `text` in Postgres.
-- Enforce app-level max in Edge Functions.
-- Do not use the homepage note 300-character constraint.
+The contribution page is section-specific and should not expose unrelated editor controls.
 
-### Preview
+## Little Proofs
 
-Use either:
+### Purpose
 
-- manually entered preview, or
-- generated preview from body if blank.
+Little Proofs are curated proof-of-origin entries.
 
-Rules:
+They may include:
 
-- Preview length: 180 to 300 characters.
-- Do not strip meaning aggressively.
-- Preserve body line breaks in full detail, not preview.
+- early memories
+- old images
+- old texts
+- moments that explain the poem or original secret
+- things Joey noticed before the relationship became clear
 
-## Media Support
+### First-pass policy
 
-First pass:
+Preferred:
 
-- one primary image per entry
-- image path stored on `secret_entries`
-- image alt text required or strongly encouraged
+- Little Proofs remain Joey-authored.
+- Jeszi can view Little Proofs after unlock.
+- Jeszi does not add/edit Little Proofs in the first shared contribution model.
 
-Storage:
+Reason:
 
-- private Supabase bucket: `secret-page-media`
-- object path: `{entryId}/{safeGeneratedFilename}`
-- signed URL returned by Edge Function
+Little Proofs support the original secret. They are not the same as future shared memories.
 
-Allowed file types:
+### Main page behavior
 
-- jpg
-- jpeg
-- png
-- webp
+- show 2 to 3 proof cards
+- image optional
+- preview optional
+- full story opens in detail view
 
-Recommended max:
+## Living Memories / Still Being Written
 
-- 10 MB
+### Purpose
 
-Future out of scope:
+Living Memories are future-facing additions.
 
-- multi-image galleries
-- image rearrangement
-- reactions on entries
-- public sharing
+They may include:
 
-## Rendering Rules
+- new photos
+- new visits
+- shared experiences
+- meaningful small moments
+- ordinary things that became marked because the other person was there
 
-### Main Page
+### Recommended label
 
-Show previews only.
+Use **Living Memories** if the intent is clarity.
 
-Per card:
+Use **Still Being Written** if the intent is more poetic.
 
-- image thumbnail if present
+Either is acceptable, but do not use both as separate sections unless the distinction is meaningful.
+
+### Main page button
+
+```text
+Add a memory
+```
+
+### Fields
+
 - title
-- subtitle/date if present
-- author if section is shared
+- optional subtitle
+- optional memory date
+- optional image
+- image alt text
 - preview
-- `Read more` or section-appropriate button
+- body/story
+- display order / pinned if supported
 
-### Detail View
+### Body length
 
-Show:
+Use the same long-entry capability as other living entries.
 
-- full image
-- title
-- date
-- author
-- full body
-- back control
+Recommended:
 
-Avoid:
+- hard limit: 15,000 characters
+- preview: 180 to 300 characters
 
-- nested scroll boxes
-- tiny text
-- full long entries inline on the main page
+### Permissions
 
-## Things I Love Grouping
+- Joey can create his own entries.
+- Jeszi can create her own entries after unlock.
+- Each person edits/archives their own entries.
 
-Required fields:
+## Things I Love
+
+### Purpose
+
+Things I Love is for affectionate observations about the counterpart.
+
+It should not become a mixed undifferentiated pile once both people can contribute.
+
+### Required structure
+
+Each entry should support:
 
 - `created_by`
 - `subject_user_slug`
 
-Render as:
+Expected normal mapping:
 
-### Things Joey loves about Jeszi
+- Joey creates entries with `subject_user_slug = jeszi`.
+- Jeszi creates entries with `subject_user_slug = joey`.
 
-Entries:
+The focused contribution form should infer the subject automatically.
 
-- `section_type = thing_i_love`
-- `created_by = joey`
-- `subject_user_slug = jeszi`
+### Main page rendering
 
-### Things Jeszi loves about Joey
+Render separate groups:
 
-Entries:
+```text
+Things Joey loves about Jeszi
+Things Jeszi loves about Joey
+```
 
-- `section_type = thing_i_love`
-- `created_by = jeszi`
-- `subject_user_slug = joey`
+On mobile, show compact previews for each group.
 
-Do not mix both into one undifferentiated list.
+### Main page button
 
-## Editor Behavior
+For Joey:
 
-### Entry Form Fields
+```text
+Add something I love about Jeszi
+```
 
-- Section type
-- Subject user, only for `thing_i_love`
-- Title
-- Subtitle
-- Preview
-- Body
-- Memory date
-- Display order
-- Pinned
-- Image upload
-- Image alt
+For Jeszi:
 
-### Whispers Form
+```text
+Add something I love about Joey
+```
 
-For Whispers:
+### Permissions
 
-- show a clear long-body character count
-- limit 15,000 characters
-- no pressure to add image
-- preserve line breaks
-- title optional but recommended
+- Joey can create/edit/archive his own entries.
+- Jeszi can create/edit/archive her own entries after unlock.
+- Cross-editing is not allowed in normal UI.
 
-### Permission Filtering
+## Whispers
 
-The editor must only show section types allowed for the current viewer.
+### Purpose
 
-After unlock:
+Whispers are long-form intimate keepsakes.
 
-- Jeszi can create:
-  - `living_memory`
-  - `thing_i_love` with subject Joey
-  - `whisper`
-- Jeszi cannot create fixed content.
-- Jeszi cannot edit Joey’s entries.
+They are separate from homepage notes.
+
+Whispers are for:
+
+- long poems
+- vulnerable notes
+- private truths
+- secrets exchanged in person
+- things not ready for ordinary conversation, but worth keeping somewhere safe
+
+### Tone
+
+Whispers should feel more intimate than notes, but not heavy by default.
+
+Suggested section line:
+
+```text
+Longer things, kept softer.
+```
+
+### Main page button
+
+```text
+Add a whisper
+```
+
+### Fields
+
+- title
+- optional subtitle
+- preview
+- body
+- optional image
+- image alt text
+
+### Body limit
+
+- 15,000 characters.
+
+### Main page behavior
+
+- show only previews
+- do not show full Whispers inline by default
+- full content opens in focused detail view
+
+### Tally behavior
+
+Whispers do not count toward the existing tally unless the product intentionally changes later.
+
+The current tally meaning remains:
+
+- `thoughts of you` = `check_ins`
+- `whispers left` = homepage `notes`
+
+This is slightly semantically overloaded. Keep implementation names explicit to avoid confusion:
+
+- `note_count` for homepage notes
+- `whisper_count` for long-form Whispers if displayed later
+
+## Image Support
+
+Living entries may support one primary image in the first pass.
+
+For each image:
+
+- store image path in protected/private storage
+- serve via signed URL when authorized
+- require image alt text or a sensible fallback
+- keep upload permissions aligned with entry ownership
+
+Do not support multi-image galleries in the first pass unless the existing implementation already does so cleanly.
+
+## Empty States
+
+Empty states should be warm and quiet.
+
+Examples:
+
+Living Memories:
+
+```text
+Nothing here yet. This part is still becoming.
+```
+
+Things I Love:
+
+```text
+Nothing written here yet.
+```
+
+Whispers:
+
+```text
+No whispers yet.
+```
+
+Avoid empty states that feel like app boilerplate.
 
 ## Acceptance Criteria
 
-The living section work is complete when:
+Implementation is correct when:
 
-- Long entries do not break mobile layout.
-- Main page shows previews only.
-- Detail views show full bodies.
+- Main page renders living sections as compact previews.
+- Long content opens in focused detail views.
+- Section-specific add buttons route to focused contribution pages.
 - Whispers support 15,000 characters.
-- Whispers are separate from homepage notes.
-- Tally does not accidentally count Whispers.
-- Things I Love is grouped by author and subject.
-- Images upload and render through signed URLs.
-- Each user can only edit allowed sections and owned entries.
+- Things I Love supports or prepares for `subject_user_slug` grouping.
+- Living Memories and Whispers remain creator-owned.
+- Jeszi can contribute only after unlock.
+- The reveal page remains emotionally clean and mobile-friendly.

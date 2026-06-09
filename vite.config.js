@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
   const privateLetterPath = fileURLToPath(new URL('./kept.html', import.meta.url))
   const quietlyKeptPath = fileURLToPath(new URL('./quietly-kept.html', import.meta.url))
   const quietlyKeptEditorPath = fileURLToPath(new URL('./quietly-kept-editor.html', import.meta.url))
+  const quietlyKeptEntryPath = fileURLToPath(new URL('./quietly-kept-entry.html', import.meta.url))
   const privateCopyPath = fileURLToPath(new URL('./js/private-copy.js', import.meta.url))
   const publicCopyPath = fileURLToPath(new URL('./js/private-copy.public.js', import.meta.url))
   const privateWhisperPath = fileURLToPath(new URL('./js/private-whisper.js', import.meta.url))
@@ -35,6 +36,10 @@ export default defineConfig(({ mode }) => {
 
   if (isPrivateBuild && existsSync(quietlyKeptEditorPath)) {
     input.quietlyKeptEditor = quietlyKeptEditorPath
+  }
+
+  if (isPrivateBuild && existsSync(quietlyKeptEntryPath)) {
+    input.quietlyKeptEntry = quietlyKeptEntryPath
   }
 
   return {

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how protected secret-page content, entries, tally data, images, and Final Ask state should be stored and returned.
+This document defines how protected secret-page content, entries, tally data, images, contribution flows, and Final Ask state should be stored and returned.
 
 The goal is to protect the emotional content from source discovery and keep the frontend as a renderer, not a container for the secret.
 
@@ -47,14 +47,6 @@ create table if not exists public.secret_page_content (
   updated_at timestamptz not null default now()
 );
 ```
-
-Possible `content_type` values:
-
-- `text`
-- `markdown`
-- `poem`
-- `json`
-- `label`
 
 Use project conventions if an equivalent table already exists.
 
@@ -119,214 +111,274 @@ Alternative:
 
 - `tally_checkin_label`
 - `tally_note_label`
-- `tally_joey_label`
-- `tally_jeszi_label`
 
-### Final Ask
+Implementation meaning:
 
-- `final_ask_card_title`
-- `final_ask_card_teaser`
-- `final_ask_reveal_button`
+- `tally_checkin_label` may render as `thoughts of you`.
+- `tally_note_label` may render as `whispers left`.
+
+Do not confuse homepage notes with long-form Whispers.
+
+### Final Ask Copy
+
+- `final_ask_hidden_title`
+- `final_ask_revealed_title`
+- `final_ask_intro`
 - `final_ask_body`
 - `final_ask_question`
 - `final_ask_yes_label`
 - `final_ask_talk_first_label`
-- `final_ask_yes_screen_title`
-- `final_ask_yes_screen_body`
-- `final_ask_talk_first_screen_body`
-- `final_ask_memory_title`
-- `final_ask_memory_body`
-- `final_ask_joey_push_title`
-- `final_ask_joey_push_body`
-- `final_ask_jeszi_push_title`
-- `final_ask_jeszi_push_body`
-- `final_ask_talk_first_push_title`
-- `final_ask_talk_first_push_body`
+- `final_ask_yes_screen_copy`
+- `final_ask_talk_first_screen_copy`
+- `final_ask_accepted_memory_copy`
+- `final_ask_joey_yes_push_title`
+- `final_ask_joey_yes_push_body`
+- `final_ask_jeszi_yes_push_title`
+- `final_ask_jeszi_yes_push_body`
 - `final_ask_anniversary_push_title`
 - `final_ask_anniversary_push_body`
 
-## RLS and Direct Client Access
+## Living Entry Model
 
-The frontend likely contains a Supabase anon key. Therefore:
+Use current schema if already implemented. Recommended shape:
 
-- `secret_page_content` should not be directly readable by anon access.
-- `secret_entries` should not be directly readable by anon access.
-- `secret-page-media` should not be public unless deliberately decided.
-- Protected reads should go through Edge Functions.
-- Edge Functions may use service-role access after validating the viewer.
+```sql
+create table if not exists public.secret_entries (
+  id uuid primary key default gen_random_uuid(),
+  section_type text not null check (section_type in (
+    'little_proof',
+    'still_being_written',
+    'thing_i_love',
+    'whisper'
+  )),
+  title text not null,
+  subtitle text,
+  preview text,
+  body text,
+  image_path text,
+  image_alt text,
+  memory_date date,
+  display_order integer not null default 0,
+  is_pinned boolean not null default false,
+  is_archived boolean not null default false,
+  created_by text not null references public.tile_keys(user_slug) on update cascade,
+  subject_user_slug text references public.tile_keys(user_slug) on update cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
 
-RLS should deny direct anon reads/writes unless the project has a very specific and tested policy.
+If `subject_user_slug` is not yet present, add it in the Things I Love grouping pass.
 
-## Storage Contract
+## Length Constraints
 
-Bucket:
+Recommended:
 
-- `secret-page-media`
+- Little Proof body: 15,000 characters.
+- Living Memory body: 15,000 characters.
+- Things I Love body: 15,000 characters.
+- Whisper body: 15,000 characters.
+- Preview: 180 to 300 characters, or a practical upper bound around 500.
 
-Object path:
+Do not reuse the homepage 300-character note limit for secret entries.
 
-- `{entryId}/{safeGeneratedFilename}`
+## Media Storage
+
+Use a private Supabase Storage bucket:
+
+```text
+secret-page-media
+```
+
+Object path pattern:
+
+```text
+{entryId}/{generatedSafeFilename}
+```
 
 Do not duplicate the bucket name inside the object path.
 
+Images should be returned through signed URLs after authorization.
+
 Allowed types:
 
-- image/jpeg
-- image/png
-- image/webp
+- jpg
+- jpeg
+- png
+- webp
 
 Recommended max size:
 
 - 10 MB
 
-Image URLs:
+## API / Edge Function Contract
 
-- returned as signed URLs from Edge Functions
-- not permanently public unless explicitly approved
+### `get-secret-page`
 
-## `get-secret-page` Payload Contract
+Returns protected page data after validating viewer.
 
-The protected page read function should return a structured payload.
-
-Suggested shape:
+Recommended response fields:
 
 ```json
 {
-  "ok": true,
   "viewer": {
     "user_slug": "joey",
-    "display_name": "Joey",
-    "accent_color": "green"
+    "display_name": "Joey"
   },
   "secret": {
-    "unlocked_at": "2026-06-09T00:00:00Z",
-    "can_view": true,
+    "unlocked": true,
+    "unlocked_at": "..."
+  },
+  "permissions": {
     "can_edit_fixed_content": true,
-    "allowed_entry_sections": ["little_proof", "living_memory", "thing_i_love", "whisper"]
+    "allowed_entry_sections": ["still_being_written", "thing_i_love", "whisper"]
   },
-  "content": {
-    "hero": {},
-    "opening_note": {},
-    "poem": {},
-    "two_names": {},
-    "section_intros": {},
-    "tally_labels": {},
-    "final_ask_copy": {}
-  },
+  "content": {},
   "entries": {
     "little_proof": [],
-    "living_memory": [],
+    "still_being_written": [],
     "thing_i_love": [],
     "whisper": []
   },
   "tally": {
     "joey": {
-      "thoughts_of_you": 0,
-      "whispers_left": 0
+      "check_ins": 0,
+      "notes": 0
     },
     "jeszi": {
-      "thoughts_of_you": 0,
-      "whispers_left": 0
+      "check_ins": 0,
+      "notes": 0
     }
   },
-  "final_ask": {
-    "status": "hidden",
-    "response": null,
-    "accepted_at": null,
-    "can_reveal": true,
-    "can_respond": false,
-    "can_reset": true,
-    "should_show_celebration": false
-  }
+  "final_ask": {}
 }
 ```
 
-Use actual project naming conventions, but preserve these concepts.
+Per entry, include `can_edit` only as a UI convenience. Backend functions must still enforce permissions.
 
-## Tally Contract
+### `upsert-secret-page-content`
 
-The tally must count the existing main app tables:
+Joey-only fixed content update.
 
-- `thoughts_of_you` = count of `check_ins` grouped by `from_user_slug`
-- `whispers_left` = count of `notes` grouped by `from_user_slug`
+Do not permit Jeszi to update fixed content after unlock.
+
+### `upsert-secret-entry`
+
+Creates or updates living entries.
+
+Must validate:
+
+- viewer identity
+- section type
+- secret unlock state for Jeszi
+- creator ownership for edits
+- body length
+- subject inference for Things I Love
+
+### `archive-secret-entry`
+
+Soft archives living entries.
+
+Must validate creator ownership or explicit owner override.
+
+### `create-secret-media-upload`
+
+Creates signed upload target for entry media.
+
+Must validate the same permissions as entry editing.
+
+### `get-secret-entry` or detail support
+
+If detail views require a dedicated function, it must validate viewer access and return one entry plus signed image URL.
+
+It may also be handled by `get-secret-page` if the payload size remains reasonable.
+
+## Contribution Route Contract
+
+The focused contribution page should call existing entry APIs.
+
+Recommended route:
+
+```text
+/quietly-kept-entry.html
+```
+
+Create mode:
+
+```text
+?section=still_being_written
+?section=thing_i_love
+?section=whisper
+```
+
+Edit mode:
+
+```text
+?entry=<entry_id>
+```
+
+The route should not expose fixed-content editing.
+
+## Tally Source
+
+Tally counts must come from main app activity:
+
+- `thoughts of you` = `check_ins` grouped by `from_user_slug`
+- `whispers left` = homepage `notes` grouped by `from_user_slug`
 
 Do not count:
 
-- `secret_entries`
-- Whispers section entries
-- image uploads
-- page views
-- reactions
+- Little Proofs
+- Living Memories
+- Things I Love
+- long-form Whispers
+- Final Ask responses
 
-If the label becomes confusing later, rename the display label, not the source of truth.
+## RLS / Direct Client Access
 
-## Entry Contract
+Protected tables and storage should not be directly readable by anon/client access.
 
-Entry payload:
+Content should be returned through validated Edge Functions using service-role access.
 
-```json
-{
-  "id": "entry-id",
-  "section_type": "whisper",
-  "created_by": "joey",
-  "created_by_display_name": "Joey",
-  "subject_user_slug": null,
-  "title": "Optional title",
-  "subtitle": "Optional subtitle",
-  "preview": "Short preview",
-  "body": "Full body",
-  "image_url": "signed-url-or-null",
-  "image_alt": "Alt text",
-  "memory_date": "2026-06-09",
-  "display_order": 0,
-  "is_pinned": false,
-  "created_at": "timestamp",
-  "updated_at": "timestamp",
-  "can_edit": true
-}
-```
-
-The server should attach `can_edit` based on ownership and permissions.
+The frontend should not perform direct Supabase table reads for protected secret content.
 
 ## Noindex
 
-Add to private pages:
+Add this to private pages:
 
 ```html
 <meta name="robots" content="noindex, nofollow">
 ```
 
-This is not security. It is privacy hygiene.
+This is not security, but it is good privacy hygiene.
 
-## Content Bootstrap
+## Protected Route Verification Boundary
 
-Provide one safe path for inserting final protected content.
+A coding agent without a valid Joey/Jeszi tile key or stored session cannot fully verify protected routes in a browser.
 
-Preferred:
+The agent should not:
 
-- Use the editor page after deployment.
+- try to bypass auth
+- invent credentials
+- repeatedly chase generic route access
+- spend tokens debugging expected locked states as if they are implementation failures
 
-Acceptable:
+The agent should verify:
 
-- A local SQL template with placeholders only.
-- User fills it locally and does not commit it.
+- builds
+- Deno checks
+- source-level permission branches
+- closed/unauthorized states
+- manual test cases to run with valid sessions
 
-Avoid:
+## Acceptance Criteria
 
-- committed seed files with final content
-- migrations containing final content
-- markdown docs containing final content
+Implementation is correct when:
 
-## Verification Checklist
-
-Before considering a pass complete:
-
-- Search source for final secret phrases before commit.
-- Confirm no final poem/opener/ask copy exists in repo files.
-- Confirm anon Supabase access cannot read protected tables directly.
-- Confirm Edge Function rejects unauthorized viewers.
-- Confirm signed image URLs expire.
-- Confirm locked Jeszi session receives no protected content.
-- Confirm Joey can view before unlock.
-- Confirm Jeszi can view only after unlock.
-- Confirm editor controls match server permissions.
+- Final emotional content is absent from source.
+- Protected content is returned only after server-side validation.
+- Direct anon/client table reads are not permitted for secret content.
+- Entry media uses signed URLs or protected access.
+- Contribution pages use entry APIs without exposing broad editor controls.
+- Tally values come only from `check_ins` and homepage `notes`.
+- Final Ask state is stored separately from ordinary content.

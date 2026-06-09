@@ -2,45 +2,62 @@
 
 ## Purpose
 
-This spec defines how to restructure the Quietly Kept secret page so it feels better on mobile.
+This spec defines the mobile-first reading model for the **Quietly Kept** secret page.
 
-The page should feel like a private, emotionally layered object. It should not feel like one giant page of text.
+The page should feel deep, private, and intentional. It should not feel like an endless document scroll.
 
-## Primary Design Principle
+## Core Mobile Problem
 
-> The page should feel deep, not long.
+Long blocks of text on mobile weaken the experience.
 
-Mobile users should see a composed sequence of meaningful sections. They should not be forced through the full poem, every caption, every memory, and every note inline.
+Specific risks:
 
-## Current Issue
+- The poem becomes extremely tall because of short line breaks.
+- Long captions bury later sections.
+- The Final Ask becomes too hard to reach.
+- Contribution/editing controls can make the page feel like software instead of an object.
 
-The current page renders the poem and long copy directly into the main page. Because the poem uses short lines, it becomes an extremely tall vertical block on mobile.
+## Core Mobile Solution
 
-This creates several problems:
+Use a layered disclosure model.
 
-- The poem becomes physically exhausting to scroll through.
-- Later sections feel buried.
-- The final ask is too far down the page.
-- The page feels like a document instead of a quiet reveal.
-- The emotional rhythm is flattened.
+Main page:
 
-## Desired Mobile Page Shape
+- compact previews
+- section cards
+- selected excerpts
+- quiet action buttons
+- focused doors into full reading or contribution views
 
-The mobile landing/reveal page should show compact, preview-based cards in this order:
+Detail pages/modes:
 
-1. **Protected / hero state**
-2. **Opening Letter preview**
-3. **Constantia preview card**
-4. **The Two Names**
-5. **Little Proofs preview**
-6. **Living Memories preview**
-7. **Whispers preview**
-8. **Things I Love grouped preview**
-9. **A Small Tally**
-10. **Final Ask state card**
-11. **Quiet footer**
+- full poem
+- full letter
+- full entries
+- full whispers
 
-The full content should be accessible through focused detail views.
+Contribution pages:
+
+- focused create/edit actions only
+- no broad editor behavior
+
+## Desired Mobile Page Order
+
+Recommended order:
+
+1. Protected / hero state
+2. Opening Letter preview
+3. Constantia preview card
+4. The Two Names compact reference
+5. Little Proofs preview
+6. Living Memories preview
+7. Things I Love grouped preview
+8. Whispers preview
+9. A Small Tally
+10. Final Ask state card
+11. Quiet footer
+
+This order can be adjusted for content rhythm, but the poem must remain central and the Final Ask must remain reachable.
 
 ## Main Page Section Behavior
 
@@ -65,7 +82,7 @@ Default mobile behavior:
 
 - Show title: `Constantia`.
 - Subtitle: `A poem for you.`
-- Show 3 to 5 carefully selected excerpt lines from different emotional points.
+- Show 3 to 5 selected excerpt lines.
 - Button: `Read Constantia`.
 
 Do not show the full poem inline by default.
@@ -74,9 +91,9 @@ Full content:
 
 - Opens in focused reading mode.
 - Preserve exact line breaks.
-- Segment into named parts.
+- Segment into named parts when metadata is available.
 - Use generous spacing.
-- Consider a bottom `Next` / `Back to Quietly Kept` control.
+- Consider simple `Next` / `Back to Quietly Kept` controls.
 - Avoid sticky controls that feel app-like.
 
 ### The Two Names
@@ -86,8 +103,8 @@ Default mobile behavior:
 - Compact two-card layout or stacked cards:
   - Constantia
   - Solacium
-- Show the short definitions only.
-- Expand if longer definitions are present.
+- Show short definitions inline.
+- Expand only if longer definitions are present.
 
 This section may remain inline because it is short and reference-like.
 
@@ -114,158 +131,144 @@ Full content:
 
 Default mobile behavior:
 
-- Same preview pattern as Little Proofs.
-- Newest or pinned entries first.
+- Show 1 to 3 recent or pinned entries.
 - Show author quietly.
+- Show `View all` if needed.
+- Show `Add a memory` only when permitted.
 
-Full content:
-
-- Detail view.
-
-### Whispers
-
-Default mobile behavior:
-
-- Show latest 1 to 2 whispers.
-- Use a softer, more private visual tone than memories.
-- Show title, preview, author, date.
-- Button: `Read whisper`.
-
-Full content:
-
-- Focused detail view.
-- Preserve paragraphs and line breaks.
-- Support long text up to the configured limit.
+The add action should open `/quietly-kept-entry.html?section=still_being_written` or the project-equivalent route.
 
 ### Things I Love
 
 Default mobile behavior:
 
-- Group by subject:
-  - Things Joey loves about Jeszi
-  - Things Jeszi loves about Joey
-- Show up to 3 items per group.
-- Use compact rows/cards.
-- Expand group or open detail.
+- Render compact grouped previews.
+- Groups:
+  - Things Joey loves about Jeszi.
+  - Things Jeszi loves about Joey.
+- Show only a few entries per group by default.
+- Show viewer-specific add action only when permitted.
+
+Add action examples:
+
+- `Add something I love about Jeszi`
+- `Add something I love about Joey`
+
+### Whispers
+
+Default mobile behavior:
+
+- Show title and short intro.
+- Show 1 to 2 whisper previews.
+- Show `View all` if needed.
+- Show `Add a whisper` only when permitted.
+
+Full whispers must open in focused detail view.
+
+Do not show full Whispers inline by default.
 
 ### A Small Tally
 
 Default mobile behavior:
 
-- Small, non-dominant section.
-- No charts.
-- No badges.
-- No milestones.
-- No giant scoreboard.
+- compact
+- no charts
+- no badge styling
+- no analytics feel
 
-The tally should feel like a quiet record, not analytics.
+Keep labels emotional:
 
-### Final Ask
+- thoughts of you
+- whispers left
 
-Default behavior depends on ask state. See the Final Ask spec.
+Implementation note:
 
-On the main page, this card must never feel like a generic editable section.
+- `thoughts of you` = check-ins
+- `whispers left` = homepage notes
+- long-form Whispers are separate
 
-## Poem Segmentation
+### Final Ask Card
 
-The full poem should be segmented for reading. Segment titles may be stored as content metadata.
+Before implementation of the stateful flow:
 
-Recommended segments:
+- keep compact
+- do not make it a giant editable content block
 
-1. **The First Memory**
-2. **What Stayed**
-3. **The Years Between**
-4. **The Hidden Place**
-5. **The Constant**
-6. **What I Know Now**
+After stateful implementation:
 
-The exact poem text should not be committed to source. The server should return content and segment metadata only after authorization.
+- hidden until Joey reveals
+- revealed state shows `Read this part`
+- answered state becomes quiet permanent memory
 
-## Detail View Options
+## Navigation Pattern
 
-Use one of these approaches.
+Optional mobile section chips may be used:
 
-### Preferred: Query Parameter Detail Mode
-
-Examples:
-
-- `quietly-kept.html?read=constantia`
-- `quietly-kept.html?entry=<entryId>`
-- `quietly-kept.html?section=letter`
-
-Benefits:
-
-- Simple for vanilla JS.
-- Back button works.
-- Easy to deep-link internally.
-- Main page remains compact.
-
-### Acceptable: In-Page Reading Mode
-
-A full-screen or near-full-screen reading panel replaces the overview.
-
-Requirements:
-
-- Back control.
-- No modal feel if possible.
-- Preserve scroll position when returning.
-
-### Avoid
-
-- Rendering every long section inline.
-- Nested scroll boxes inside cards.
-- Accordion stacks where every section can accidentally be open at once.
-- Modal overlays for the full poem if they feel cramped on mobile.
-
-## Mobile Navigation
-
-The desktop sidebar should not be the primary mobile pattern.
-
-Use optional horizontal section chips near the top:
-
-`Letter · Poem · Names · Proofs · Memories · Whispers · Ask`
+```text
+Letter · Poem · Names · Proofs · Memories · Love · Whispers · Ask
+```
 
 Rules:
 
-- Chips should be small and quiet.
-- Sticky behavior is optional.
-- Do not make them look like dashboard tabs.
-- Do not consume too much vertical space.
+- chips must be visually quiet
+- no heavy sticky nav unless it genuinely improves use
+- no dashboard-style tabs
+- no bright active states
 
-## Typography and Spacing
+## Contribution Buttons
 
-Mobile typography should prioritize reading comfort:
+Contribution buttons should be quiet and section-specific.
 
-- Avoid extremely narrow poem columns.
-- Use a readable max width.
-- Increase stanza spacing in full reading mode.
-- Keep card padding modest.
-- Reduce excessive top/bottom gaps.
-- Avoid tiny text in long sections.
-- Preserve line breaks where they matter.
+Good:
 
-Suggested CSS behavior:
+- `Add a memory`
+- `Add a whisper`
+- `Add something I love about Joey`
 
-- Full poem: `white-space: pre-line` or structured line rendering.
-- Long prose: normal paragraphs with `line-height` around 1.55 to 1.75.
-- Previews: clamp text to a few lines or truncate via server-provided preview.
+Avoid:
 
-## Reduced Motion
+- `Edit page`
+- `Manage entries`
+- `Admin`
+- `Configure section`
 
-Any reveal animation, page transition, or future celebration must respect reduced-motion preferences.
+## Layout Constraints
 
-Use scoped reduced-motion handling in final code rather than blanket disabling if the project already has a pattern.
+Mobile should use:
+
+- single-column layout
+- readable line length
+- generous but not excessive vertical rhythm
+- cards with compact previews
+- no nested scroll panes
+- no giant always-expanded accordions
+
+Desktop may show richer layout, but should not diverge in content behavior.
+
+## Protected Route Verification Boundary
+
+A coding agent without a valid tile key or stored session cannot fully verify protected route runtime behavior.
+
+The agent should verify:
+
+- build success
+- source-level logic
+- function type checks
+- permission branches by reading code
+- presence of closed/unauthorized states
+
+The agent should not waste tokens trying to bypass protected routes, invent credentials, or repeatedly chase unauthenticated browser access.
+
+Manual runtime testing with real Joey/Jeszi sessions remains required.
 
 ## Acceptance Criteria
 
-The mobile restructure is complete when:
+The mobile restructure is correct when:
 
-- The full poem is not rendered inline on the main page by default.
-- `Read Constantia` opens a focused full poem view.
-- The full poem preserves line breaks.
-- The main page can be skimmed without feeling like an endless scroll.
-- Long content uses previews and detail views.
-- The final ask card is reachable without excessive scrolling.
-- Existing authorization behavior is preserved.
-- No final emotional copy is committed to source during the layout work.
-- Desktop remains usable, but mobile is the primary validated layout.
+- The full poem is not dumped inline on the main page.
+- The poem has a prominent preview and focused reading view.
+- Long sections render as previews by default.
+- Contribution actions open focused routes, not the broad editor.
+- The Final Ask is reachable without exhausting scroll.
+- The main page feels curated, not endless.
+- Mobile is validated first.

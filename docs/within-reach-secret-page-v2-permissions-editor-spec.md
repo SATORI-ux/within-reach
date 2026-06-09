@@ -2,13 +2,13 @@
 
 ## Purpose
 
-This spec defines how viewing and editing permissions should work for the Quietly Kept secret page after the mobile restructure.
+This spec defines how viewing, editing, and contribution permissions should work for the **Quietly Kept** secret page.
 
-The current issue is that once Jeszi unlocks edit access, she may be able to edit too much of the page. That should be narrowed.
+The current product decision is to avoid broad shared editor access. After unlock, Jeszi should become a contributor to specific living sections, not a global page editor.
 
 ## Identity Model
 
-The app already resolves users through tile/session validation.
+The app resolves users through tile/session validation.
 
 Known users:
 
@@ -19,7 +19,7 @@ For this private feature:
 
 - Joey is the original author/owner.
 - Jeszi is the intended recipient.
-- After unlock, Jeszi becomes a contributor to specific living sections, not a global page editor.
+- After unlock, Jeszi becomes a contributor to specific living sections.
 
 ## Secret Unlock Model
 
@@ -32,7 +32,7 @@ Rules:
 - Jeszi cannot view before unlock.
 - Jeszi cannot edit before unlock.
 - After `secret_unlocked_at` exists, both can view.
-- After `secret_unlocked_at` exists, Jeszi can edit only specific living sections.
+- After `secret_unlocked_at` exists, Jeszi can contribute only to allowed living sections.
 
 The permission check must happen server-side.
 
@@ -40,7 +40,7 @@ The permission check must happen server-side.
 
 ### Fixed Reveal Content
 
-Fixed content belongs to the original secret and should remain Joey-only editable.
+Fixed content belongs to the original secret and remains Joey-only editable.
 
 Examples:
 
@@ -51,6 +51,7 @@ Examples:
 - Section intros.
 - Tally labels.
 - Final Ask copy.
+- Final Ask reveal/reset controls.
 - Any static emotional framing.
 
 Jeszi should not edit fixed reveal content, even after unlock.
@@ -61,18 +62,77 @@ Living entries are meant to grow over time.
 
 Examples:
 
-- Little Proofs, if the product permits only Joey to maintain original proof archive.
 - Living Memories.
 - Things I Love.
 - Whispers.
 
-Living entries should be creator-owned.
+Living entries are creator-owned.
+
+### Little Proofs
+
+Preferred policy:
+
+- Little Proofs are Joey-authored original proof archive.
+- Jeszi can view after unlock.
+- Jeszi does not add/edit Little Proofs in the first shared contribution model.
+
+Optional later:
+
+- A separate mutual proof section may be added, but do not mix it into the initial original proof archive.
 
 ### Final Ask State
 
 Final Ask is not regular content. It is a stateful interaction.
 
 See the Final Ask spec for separate permissions.
+
+## Route Permissions
+
+### `/quietly-kept.html`
+
+Purpose:
+
+- reveal page
+- reading/returning surface
+- compact previews
+- focused detail views
+- quiet section-specific contribution buttons
+
+Permissions:
+
+- Joey can view before and after unlock.
+- Jeszi can view only after unlock.
+- No fixed-content editing controls should appear here.
+- Section-specific contribution buttons may appear only if permitted.
+
+### `/quietly-kept-editor.html`
+
+Purpose:
+
+- Joey owner/fixed-content editor
+- original secret maintenance
+- owner-only state controls
+
+Permissions:
+
+- Joey only.
+- Jeszi should not use this route for ordinary participation.
+- If Jeszi reaches it, show a closed/unauthorized state.
+
+This route may remain plain and functional, but it should not be the shared contribution UX.
+
+### `/quietly-kept-entry.html`
+
+Purpose:
+
+- focused living-entry creation/editing
+
+Permissions:
+
+- Joey can create/edit his own permitted living entries.
+- Jeszi can create/edit her own permitted living entries after unlock.
+- Entry-specific edits require creator ownership unless explicit owner override is intentionally preserved.
+- Fixed-content editing is never handled here.
 
 ## Recommended Section Permissions
 
@@ -82,7 +142,7 @@ See the Final Ask spec for separate permissions.
 | Opening letter | view/edit | no access | view/edit | view only |
 | Constantia poem | view/edit | no access | view/edit | view only |
 | Two Names | view/edit | no access | view/edit | view only |
-| Little Proofs | view/edit own/all depending owner policy | no access | view/edit own/all depending owner policy | view only or create own if enabled |
+| Little Proofs | view/edit own/all depending owner policy | no access | view/edit own/all depending owner policy | view only |
 | Living Memories | view/edit own | no access | view/edit own | view/create/edit own |
 | Things I Love | view/edit own | no access | view/edit own | view/create/edit own |
 | Whispers | view/edit own | no access | view/edit own | view/create/edit own |
@@ -90,175 +150,57 @@ See the Final Ask spec for separate permissions.
 | Final Ask reveal/reset | owner-only | no access | owner-only | no access |
 | Final Ask response | cannot respond as Jeszi | no access | cannot respond as Jeszi | can respond if revealed |
 
-## Recommended Policy Decisions
+## Recommended Section Actions
 
-### Little Proofs
+On the reveal page:
 
-Preferred:
+- Living Memories: `Add a memory`
+- Things I Love: `Add something I love about {counterpart}`
+- Whispers: `Add a whisper`
 
-- Joey-authored original proof archive.
-- Jeszi can view after unlock.
-- Jeszi does not edit Joey’s original proof entries.
+These actions should route to `/quietly-kept-entry.html`, not to the owner editor.
 
-Optional later:
+## Backend Enforcement Requirements
 
-- Allow Jeszi to add her own proof entries if the section becomes mutual.
+Edge Functions must enforce:
 
-### Living Memories
+- view permission
+- fixed-content edit permission
+- allowed entry sections
+- creator-owned entry edits
+- creator-owned archives
+- creator-owned media uploads
+- subject inference for Things I Love
+- Final Ask owner/recipient rules
 
-Shared after unlock:
+Frontend conditionals are only presentation helpers.
 
-- Joey can add his own.
-- Jeszi can add her own.
-- Each person can edit/archive their own entries.
-- Entries show author quietly.
+## Current Implementation Compatibility
 
-### Things I Love
+If the repo already has:
 
-Shared after unlock, but subject-aware:
+- `can_edit_fixed_content`
+- `allowed_entry_sections`
+- per-entry `can_edit`
+- `created_by` ownership checks
+- section-specific server validation
 
-- Joey creates entries with `subject_user_slug = jeszi`.
-- Jeszi creates entries with `subject_user_slug = joey`.
-- Each person edits only their own entries.
+then keep those server-side rules.
 
-### Whispers
+The revised work is mostly to change the user-facing workflow:
 
-Shared after unlock:
-
-- Joey can create/edit his own.
-- Jeszi can create/edit her own.
-- Each person can archive their own.
-- Future draft/private states are out of scope unless explicitly added later.
-
-## Backend Enforcement
-
-Do not rely on frontend hiding.
-
-Every write Edge Function must verify:
-
-- current viewer identity
-- secret unlock state
-- section type
-- action type
-- entry ownership
-- fixed vs living content category
-
-## Suggested Shared Helper Functions
-
-Implement or update shared permission helpers similar to:
-
-```ts
-type SecretAction =
-  | "view_page"
-  | "edit_fixed_content"
-  | "create_entry"
-  | "edit_entry"
-  | "archive_entry"
-  | "reveal_final_ask"
-  | "reset_final_ask"
-  | "respond_final_ask";
-
-function canViewSecretPage(viewer, secretState): boolean;
-function canEditFixedContent(viewer): boolean;
-function canCreateSecretEntry(viewer, sectionType, secretState): boolean;
-function canEditSecretEntry(viewer, entry, secretState): boolean;
-function canArchiveSecretEntry(viewer, entry, secretState): boolean;
-function canRevealFinalAsk(viewer): boolean;
-function canRespondFinalAsk(viewer, finalAskState): boolean;
-```
-
-The exact function names can match repo conventions, but the logic should be centralized.
-
-## Editor UX
-
-The editor page should be plain and functional, but permission-aware.
-
-### Joey before unlock
-
-Can see:
-
-- Fixed content editor.
-- Living entry editor.
-- Secret entry list.
-- Final Ask owner controls, once implemented.
-
-### Joey after unlock
-
-Same as before unlock.
-
-### Jeszi before unlock
-
-No editor access.
-
-### Jeszi after unlock
-
-Can see:
-
-- Living Memories entry form.
-- Things I Love entry form scoped to Joey.
-- Whispers entry form.
-- Her own existing entries.
-- No fixed content editor.
-- No Final Ask owner controls.
-- No ability to edit Joey’s entries.
-
-## Editor Filtering
-
-The editor should not show section options the user cannot write.
-
-Example:
-
-- Jeszi should not see `opening_note`, `poem`, `two_names`, or fixed content slugs in a dropdown.
-- Jeszi should not see Joey’s entries as editable.
-- If a malicious request is made anyway, the server returns an error.
-
-## API Behavior
-
-### `get-secret-page`
-
-Returns:
-
-- viewer identity
-- can view
-- can edit fixed content
-- allowed entry section types
-- allowed entry ids for editing, or ownership metadata
-- final ask permission flags
-- content and entries only if viewer can view
-
-### `upsert-secret-entry`
-
-Requires:
-
-- viewer can create or edit the specific section
-- if update, viewer owns the entry unless Joey owner override is explicitly intended
-- body length constraints per type
-- section type constraints
-
-### `archive-secret-entry`
-
-Requires:
-
-- viewer owns the entry, or Joey owner override if intentionally allowed
-- soft archive only
-
-### Fixed Content Update Function
-
-If implemented:
-
-- Joey-only.
-- Not available to Jeszi after unlock.
-- Should never be called by generic entry update functions.
+- owner fixed-content editor remains Joey-only
+- Jeszi does not use broad editor
+- focused entry route handles allowed contributions
 
 ## Acceptance Criteria
 
-The permission refactor is complete when:
+The permission/editor implementation is correct when:
 
-- Jeszi cannot edit fixed reveal content after unlock.
-- Jeszi cannot edit the poem, opener, Two Names, tally labels, or Final Ask copy.
-- Jeszi can create/edit her own allowed living entries after unlock.
+- Jeszi cannot edit fixed reveal content.
+- Jeszi does not see or use the general editor for normal participation.
+- Jeszi can add only permitted living entries after unlock.
 - Jeszi cannot edit Joey’s entries.
-- Joey can still maintain fixed content and his own entries.
-- Backend rejects unauthorized writes even if the UI is bypassed.
-- Editor dropdowns and forms only show allowed actions.
-- The reveal page does not look like an admin surface.
+- Joey’s owner controls remain available without cluttering the reveal page.
+- Backend rejects unauthorized writes even if a user manually calls the endpoint.
+- Main reveal page feels like a private object, not an admin tool.

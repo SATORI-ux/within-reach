@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Quietly Kept Entry</title>
+    <meta name="description" content="Protected contribution page for Quietly Kept." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#1a131a" />
+    <script>
+      (() => {
+        const storageKey = 'withinReachAppearance';
+        const saved = window.localStorage.getItem(storageKey);
+        const theme =
+          saved === 'dark' || saved === 'light' || saved === 'secret'
+            ? saved
+            : 'dark';
+
+        const themeColor = theme === 'secret' ? '#342a2a' : theme === 'light' ? '#eee5d7' : '#1a131a';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--browser-chrome-bg', themeColor);
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) themeMeta.setAttribute('content', themeColor);
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles/quietly-kept.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+    <div class="quiet-chrome">
+      <span class="site-wordmark" aria-hidden="true">within reach</span>
+      <div class="quiet-chrome__actions">
+        <a class="quiet-link" href="./quietly-kept.html">Quietly Kept</a>
+        <a class="quiet-link" href="./">Return</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme" aria-pressed="false">
+          <span class="theme-toggle__icon" data-theme-toggle-icon></span>
+          <span class="sr-only" data-theme-toggle-text>Switch theme</span>
+        </button>
+      </div>
+    </div>
+
+    <main class="quiet-page quiet-page--entry">
+      <section class="status-card" id="statusCard" aria-live="polite">
+        <p class="section-label">Protected room</p>
+        <h1 id="statusTitle">Opening this place.</h1>
+        <p id="statusBody">Checking whether this session can write here.</p>
+      </section>
+
+      <article class="entry-shell" id="entryShell" hidden>
+        <header class="secret-hero secret-hero--entry">
+          <p class="section-label" id="entryKicker">Quiet contribution</p>
+          <h1 id="entryTitle">Add to Quietly Kept.</h1>
+          <p id="entryDescription"></p>
+        </header>
+
+        <section class="quiet-section entry-contribution" aria-labelledby="entryTitle">
+          <form class="editor-form entry-contribution__form" id="entryForm">
+            <div class="field-grid">
+              <label>
+                <span>Title</span>
+                <input name="title" type="text" maxlength="160" required />
+              </label>
+              <label>
+                <span>Subtitle</span>
+                <input name="subtitle" type="text" maxlength="220" />
+              </label>
+            </div>
+
+            <label class="memory-date-field" id="memoryDateField">
+              <span>Memory date</span>
+              <input name="memory_date" type="date" />
+            </label>
+
+            <label>
+              <span>Preview</span>
+              <textarea name="preview" rows="3" maxlength="520"></textarea>
+            </label>
+
+            <label>
+              <span id="bodyLabel">Body</span>
+              <textarea name="body" rows="12" maxlength="20000" required></textarea>
+            </label>
+            <p class="quiet-note"><span id="bodyCount">0</span> / <span id="bodyMax">20000</span> characters</p>
+
+            <div class="field-grid">
+              <label>
+                <span>Image</span>
+                <input name="image" type="file" accept="image/jpeg,image/png,image/webp" />
+              </label>
+              <label>
+                <span>Image alt text</span>
+                <input name="image_alt" type="text" maxlength="240" />
+              </label>
+            </div>
+
+            <div class="editor-actions entry-contribution__actions">
+              <button class="quiet-button" id="saveButton" type="submit">Save</button>
+              <a class="quiet-button quiet-button--ghost" id="cancelLink" href="./quietly-kept.html">Cancel</a>
+              <button class="quiet-button quiet-button--danger" id="archiveEntryButton" type="button" hidden>Archive entry</button>
+              <p class="inline-message" id="entryMessage" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+      </article>
+    </main>
+
+    <script type="module" src="./js/quietly-kept-entry.js"></script>
+  </body>
+</html>

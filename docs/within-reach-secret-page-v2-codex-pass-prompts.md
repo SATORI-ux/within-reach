@@ -1,112 +1,63 @@
 # Within Reach - Secret Page V2 Codex Pass Prompts
 
-## Purpose
+## How to Use This File
 
-Use this file to run the remaining Quietly Kept V2 work in small, controlled Codex passes.
+Use one pass at a time. Do not paste the whole implementation sequence as one giant coding request.
 
-Do **not** paste the whole file into Codex. Use one pass at a time.
+Recommended workflow:
 
-These prompts are optimized to:
-
-- reduce wasted Codex tokens
-- prevent stale-context drift
-- keep slash/session commands outside the actual task prompt
-- avoid impossible protected-route verification loops
-- keep implementation aligned with the private, mobile-first, object-like design direction
+1. Start a fresh Codex session for each major pass if context is getting heavy.
+2. Ask Codex to inspect current files first.
+3. Require a short plan before edits.
+4. Keep each pass narrow.
+5. Ask for verification output and changed-file report.
 
 ## Critical Verification Boundary
 
-The Quietly Kept routes are protected by tile/session identity and private-build state. Codex should **not** waste time trying to manually access protected pages with generic URLs.
+Quietly Kept routes are protected by tile/session identity. If Codex does not have a valid Joey/Jeszi tile key or stored browser session, it cannot fully verify protected runtime behavior through a browser.
 
-### Do not let Codex do this
+Codex should not waste tokens trying to:
 
-- Do not repeatedly open `/quietly-kept.html` or `/quietly-kept-editor.html` without a valid tile key or stored session and treat the locked state as a failure.
-- Do not brute-force routes, query parameters, localStorage keys, or bypasses.
-- Do not add temporary auth bypasses, mock secrets, public fallback content, or hardcoded tile keys to source.
-- Do not commit real emotional content, final poem text, ask copy, or private content to source.
-- Do not spend time trying to perform authenticated browser verification unless a valid local token/session is already available in the workspace.
+- bypass auth
+- invent credentials
+- repeatedly access protected routes generically
+- treat expected locked states as implementation failures
+- chase route access that requires real private tokens
 
-### What Codex should do instead
+Codex should verify:
 
-- Verify static behavior with build checks.
-- Verify rendering logic through source inspection and payload-shape handling.
-- Verify Edge Functions with Deno checks when available.
-- Verify schema/migrations through SQL review and type-compatible function code.
-- Document protected-route runtime checks as **manual verification required** when valid tile/session tokens are unavailable.
-- If runtime verification is blocked by missing secrets, state that clearly and stop. Do not chase alternate access routes.
+- source-level logic
+- build success
+- Deno/type checks for Edge Functions when available
+- permission branches by reading code
+- manual test cases to run with valid Joey/Jeszi sessions
 
-### Acceptable verification wording
-
-Use wording like:
-
-```text
-Protected-route runtime verification was not performed because this session does not have a valid Joey/Jeszi tile key or stored device session. Static build checks, function checks, and source-level payload handling were verified. Manual authenticated verification is required on a real private session.
-```
-
-## General Codex Workflow
-
-For each pass:
-
-1. Use a clean or compacted Codex session.
-2. Paste only the selected pass prompt.
-3. Require Codex to inspect current source and produce a short plan before editing.
-4. Keep the pass narrow.
-5. Require changed files, verification output, risks, and manual verification notes.
-6. Run `/diff` before follow-up fixes.
-
-## Common Pre-Flight Guidance
-
-Use this before each implementation pass. These commands are for you to run in Codex before pasting the prompt. They are intentionally **not** inside the prompts.
-
-### Before you paste any implementation prompt
-
-- Run `/status`.
-- Run `/diff` if the prior pass changed files.
-- Use `/new` or `/clear` when starting a distinct new pass and stale context is likely.
-- Use `/compact` if the current Codex thread contains useful recent decisions but is getting long.
-- Use `/plan` for passes that touch auth, permissions, migrations, protected content, push, or multi-file architecture.
-- Use a lower-cost/standard reasoning model for small CSS or documentation-only edits.
-- Use stronger reasoning for permissions, Edge Functions, schema changes, push, Final Ask state, anniversary scheduling, or unclear failures.
-
-## Standard Verification Commands
-
-Codex should inspect `package.json` first and adjust commands to the repo’s real scripts.
-
-Typical build checks:
-
-```bash
-git status --short
-npm run build
-```
-
-Private build check, if current project conventions still match prior passes:
-
-```powershell
-$env:VITE_WITHIN_REACH_BUILD='private'; $env:VITE_ENABLE_PRIVATE_BUILD='true'; npm.cmd run build
-```
-
-Edge Function checks, if Deno is available:
-
-```bash
-deno check --node-modules-dir=none supabase/functions/<function-name>/index.ts
-```
-
-Do not require protected-page browser E2E unless a valid tile key/session is available. If it is not available, report manual verification steps instead.
+Protected-route browser verification should be reported as **manual verification required** when no valid token/session is available.
 
 ---
 
-# Pass 1 - Mobile-First Reveal Restructure
+## Pass 1 - Mobile-First Reveal Restructure
 
-## Before you paste this prompt
+### Before you paste this prompt
+
+#### If Codex
 
 - Run `/status`.
-- Run `/diff` if Codex has already modified this branch.
-- Use `/new` or `/clear` if this is a clean new implementation pass.
-- Use `/compact` only if the current session contains useful context from the previous Quietly Kept pass.
-- Recommended reasoning: standard or medium is enough unless current code is messy or route/state handling is unclear.
-- Use `/plan` before implementation because this touches several frontend files.
+- Run `/diff` if prior work changed files.
+- Use `/new` or `/clear` if the current session contains stale or unrelated context.
+- Use `/compact` if the current session contains useful Quietly Kept decisions but is long.
+- Recommended model/reasoning: use a normal implementation-capable Codex model with medium reasoning. This is source-review-heavy UI work, but not a new auth boundary.
+- Use `/plan` first because this pass touches multiple frontend files and protected route rendering.
 
-## Prompt to paste
+#### If Claude Code
+
+- Run `/context`.
+- Run `/diff` if prior work changed files.
+- Use `/compact` if current context is useful but long, or `/clear` if stale context is likely.
+- Recommended model/effort: current Sonnet-class model with medium effort.
+- Use `/plan` before implementation.
+
+### Prompt to paste
 
 ```text
 Implement the next Quietly Kept secret-page pass: mobile-first reveal restructure.
@@ -117,10 +68,7 @@ Read these docs first:
 - docs/within-reach-secret-page-v2-content-security-data-contract.md
 
 Goal:
-Make /quietly-kept.html feel good on mobile. The page should feel deep, not long. Do not add Whispers, Final Ask state, or permission model changes in this pass unless a tiny supporting change is unavoidable.
-
-Important verification boundary:
-The Quietly Kept page is protected by tile/session identity. Do not waste time trying to access /quietly-kept.html in a browser without a valid Joey/Jeszi tile key or stored session. Do not add bypasses, fake credentials, source-committed secrets, or mock final emotional content. If authenticated route verification is not possible in this Codex session, document it as manual verification required and proceed with build/static/source-level checks.
+Make /quietly-kept.html feel good on mobile. The page should feel deep, not long. Do not add Whispers, Final Ask state, or new contribution-page behavior in this pass unless a tiny supporting change is unavoidable.
 
 Required behavior:
 1. Do not render the full Constantia poem inline on the main page by default.
@@ -130,116 +78,129 @@ Required behavior:
 5. Segment the poem using server-provided content metadata if available, or gracefully render unsegmented content if metadata is missing.
 6. Convert long sections into previews/cards on the main page.
 7. Avoid nested scroll boxes and long open accordions on mobile.
-8. Make the final ask area reachable without exhausting scroll, but do not implement the stateful Final Ask flow yet.
+8. Make the Final Ask area reachable without exhausting scroll, but do not implement the stateful Final Ask flow yet.
 9. Keep mobile as the primary validation target.
 10. Do not commit final emotional content to source. Use existing protected content payloads/placeholders only.
-
-Non-goals:
-- Do not add Whispers.
-- Do not change editor permissions.
-- Do not add Final Ask state.
-- Do not alter hidden unlock rules unless existing routing requires a tiny compatibility fix.
-- Do not add a public fallback page for unauthenticated viewers.
+11. Do not waste time trying to access protected routes without valid tile/session identity. If no valid identity is available, mark protected-route browser checks as manual verification required.
 
 Before coding:
 - Inspect current quiet page, CSS, JS, get-secret-page payload, and content rendering.
 - Report a short plan.
 
-Verification:
-- Run the available build checks from package.json.
-- Run the private build command if available.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- If protected-route verification is unavailable, explicitly report that manual authenticated verification is required.
-
-Output report:
-- Files read.
-- Files changed.
-- Behavior changes.
-- Verification commands and output.
-- Protected-route verification status.
-- Deferred items.
+After coding:
+- Run the available build checks.
+- Run Deno/function checks only if relevant files changed and Deno is available.
+- Report changed files, behavior changes, verification output, protected-route manual checks, and any deferred items.
 ```
 
 ---
 
-# Pass 2 - Permissions and Editor Refactor
+## Pass 2 - Already Completed Permission Refactor Baseline
 
-## Before you paste this prompt
+This pass may already be implemented in the repo.
+
+Reported implemented behavior:
+
+- Fixed reveal content is Joey-only editable.
+- Jeszi can view after unlock but cannot edit fixed content.
+- Jeszi after unlock can create/edit/archive only her own allowed living entries: `thing_i_love`, `still_being_written`.
+- Jeszi cannot create/edit/archive `little_proof`.
+- Entry image upload checks the same ownership rules.
+- `get-secret-page` returns `can_edit_fixed_content`, `allowed_entry_sections`, and per-entry `can_edit`.
+
+Do not revert this work wholesale. Treat it as useful server-side groundwork.
+
+The revised direction is handled in Pass 2B.
+
+---
+
+## Pass 2B - Contribution Flow Walkback / Editor Separation
+
+### Before you paste this prompt
+
+#### If Codex
 
 - Run `/status`.
-- Run `/diff` to review Pass 1 changes.
-- Use `/new` or `/clear` if the prior session is cluttered.
-- Use `/compact` if the prior session has useful implementation context and is not confused.
-- Recommended reasoning: stronger reasoning. This pass touches permission boundaries and server-side enforcement.
-- Use `/plan` before implementation.
+- Run `/diff` first because this pass directly follows recent permission/editor changes.
+- Continue the same session only if Codex just made the permission refactor and context is clean; otherwise use `/new` or `/clear` with these docs attached.
+- Recommended model/reasoning: medium reasoning. This is mostly frontend workflow plus permission-aware integration. Use stronger reasoning only if Codex identifies auth/schema uncertainty.
+- Use `/plan` first.
 
-## Prompt to paste
+#### If Claude Code
+
+- Run `/context` and `/diff`.
+- Continue same session if it just completed the permission refactor; otherwise use `/compact` or `/clear` based on context quality.
+- Recommended model/effort: current Sonnet-class model with medium effort; high effort only if auth helper behavior is unclear.
+- Use `/plan` first.
+
+### Prompt to paste
 
 ```text
-Implement the next Quietly Kept pass: permissions and editor model refactor.
+Implement the next Quietly Kept pass: contribution flow walkback / editor separation.
+
+Context:
+A prior permissions/editor refactor may already be implemented. Do not revert the server-side hardening. Keep useful permission helpers such as can_edit_fixed_content, allowed_entry_sections, created_by ownership checks, and per-entry can_edit if they exist.
 
 Read these docs first:
 - docs/within-reach-secret-page-v2-roadmap.md
+- docs/within-reach-secret-page-v2-contribution-flows-spec.md
 - docs/within-reach-secret-page-v2-permissions-editor-spec.md
 - docs/within-reach-secret-page-v2-content-security-data-contract.md
 
 Goal:
-After unlock, Jeszi should not get global edit access. Fixed reveal content remains Joey-only. Living entries become shared after unlock and creator-owned.
-
-Important verification boundary:
-Do not attempt to verify protected pages through generic URLs without a valid Joey/Jeszi tile key or stored session. Do not add temporary auth bypasses. Do not hardcode tile keys or source-commit private content. Verify permissions by inspecting backend checks, request handling, and UI gating. If runtime authenticated verification is unavailable, document manual verification steps instead of chasing access routes.
+Stop treating Jeszi as a broad editor user. The reveal page should remain a reading/returning surface. Shared participation should happen through focused section-specific contribution pages.
 
 Required behavior:
-1. Fixed reveal content is Joey-only editable.
-2. Jeszi cannot edit opener, poem, Two Names definitions, section intros, tally labels, or Final Ask copy.
-3. After secret_unlocked_at exists, Jeszi may create/edit only her own allowed living entries.
-4. Living entry edits are creator-owned unless an explicit Joey owner override already exists and is intentionally preserved.
-5. Backend Edge Functions must enforce all write permissions.
-6. Editor UI must only show section types/actions the current viewer can use.
-7. Unauthorized write attempts must fail server-side.
-8. Keep reveal-page edit controls visually secondary.
-
-Non-goals:
-- Do not implement Whispers yet unless required as a placeholder enum for future compatibility.
-- Do not implement Final Ask response flow.
-- Do not broaden access for convenience.
-- Do not rely on frontend-only enforcement.
+1. Keep /quietly-kept-editor.html as Joey-only or owner/fixed-content only.
+2. Jeszi should not see or use the broad editor for normal participation after unlock.
+3. Add a focused contribution route, recommended /quietly-kept-entry.html.
+4. Support create mode by section query:
+   - ?section=still_being_written
+   - ?section=thing_i_love
+   - ?section=whisper if the section type already exists; otherwise handle gracefully until Whispers pass.
+5. Support edit mode by entry query:
+   - ?entry=<entry_id>
+6. The focused contribution page should show only fields/actions relevant to the selected section or entry.
+7. Main reveal page should show quiet permission-gated action buttons inside living sections instead of a broad Edit this page link:
+   - Add a memory
+   - Add something I love about {counterpart}
+   - Add a whisper, only if Whispers exists or is safely placeholder-disabled
+8. Contribution buttons must only appear when the current viewer is permitted to use them.
+9. Backend must still enforce all entry permissions. Do not rely on UI hiding.
+10. Existing entry APIs may be reused. Avoid duplicating server logic.
+11. Do not commit final emotional content to source.
+12. Do not waste time trying protected-route browser access without valid tile/session identity. Mark those checks as manual verification required if no valid identity is available.
 
 Before coding:
-- Inspect current permission helpers, secret functions, editor implementation, schema, and RLS assumptions.
-- Report a short plan and call out any migration needed.
+- Inspect current editor route, reveal page edit controls, API wrappers, permission payload, entry upsert/archive/media functions, and Vite inputs.
+- Report a short plan and whether any schema migration is needed.
 
-Verification:
+After coding:
 - Run build checks.
-- Run Deno checks for modified Edge Functions if available.
-- Verify permission logic at source/function level.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- If protected-route verification is unavailable, report manual authenticated verification cases.
-
-Output report:
-- Files read.
-- Files changed.
-- Schema/function changes.
-- Permission rules implemented.
-- Verification commands and output.
-- Protected-route verification status.
-- Manual test cases.
-- Risks/deferred items.
+- Run Deno checks for changed Edge Functions if applicable and available.
+- Report changed files, behavior changes, permission behavior, protected-route manual checks, and any deferred items.
 ```
 
 ---
 
-# Pass 3 - Whispers Section
+## Pass 3 - Whispers Section
 
-## Before you paste this prompt
+### Before you paste this prompt
 
-- Run `/status`.
-- Run `/diff` to confirm prior permission changes are clean.
-- Continue the same session only if it is short and focused; otherwise use `/new` or `/clear`.
-- Recommended reasoning: medium or stronger if a migration is required.
-- Use `/plan` before implementation because this touches schema, editor, rendering, and permissions.
+#### If Codex
 
-## Prompt to paste
+- Run `/status` and `/diff`.
+- Use `/new` or `/clear` if moving from layout work to schema/function work and stale context is likely.
+- Recommended model/reasoning: stronger reasoning or medium-high reasoning because this may touch schema, function validation, and long text handling.
+- Use `/plan` first.
+
+#### If Claude Code
+
+- Run `/context` and `/diff`.
+- Recommended model/effort: current Sonnet-class model with medium or high effort because this may touch schema/data writes and protected content.
+- Use `/plan` first.
+
+### Prompt to paste
 
 ```text
 Implement the next Quietly Kept pass: Whispers section.
@@ -247,14 +208,12 @@ Implement the next Quietly Kept pass: Whispers section.
 Read these docs first:
 - docs/within-reach-secret-page-v2-roadmap.md
 - docs/within-reach-secret-page-v2-living-sections-whispers-spec.md
+- docs/within-reach-secret-page-v2-contribution-flows-spec.md
 - docs/within-reach-secret-page-v2-permissions-editor-spec.md
 - docs/within-reach-secret-page-v2-content-security-data-contract.md
 
 Goal:
-Add Whispers as a long-form intimate keepsake section. Whispers are separate from homepage notes.
-
-Important verification boundary:
-Do not attempt generic browser access to protected Quietly Kept routes without a valid tile/session. Do not add auth bypasses or source-committed secrets. Verify with build checks, function checks, schema/source review, and documented manual authenticated test cases when runtime tokens are unavailable.
+Add Whispers as a long-form intimate keepsake section. Whispers are separate from homepage notes and use the focused contribution route, not the broad editor.
 
 Required behavior:
 1. Add a living entry type for Whispers, using the existing secret_entries model or a safe migration.
@@ -264,50 +223,39 @@ Required behavior:
 5. Preserve paragraph and line breaks in full view.
 6. Whispers do not appear on the homepage notes feed.
 7. Whispers do not count toward the existing tally unless the product intentionally changes later.
-8. Editor supports creating/editing/archiving owned Whispers.
+8. /quietly-kept-entry.html supports creating/editing/archiving owned Whispers.
 9. Jeszi can create/edit her own Whispers only after unlock.
 10. No final emotional content is committed to source.
-
-Non-goals:
-- Do not add private drafts unless the existing spec explicitly supports them.
-- Do not add multi-image galleries.
-- Do not rename the homepage tally unless required by existing UI conflicts.
-- Do not make Whispers visible on the home page.
+11. Do not waste time trying protected-route browser access without valid tile/session identity. Mark those checks as manual verification required if no valid identity is available.
 
 Before coding:
-- Inspect current section types, entry schema, editor form, entry rendering, detail mode, and permission helper behavior.
+- Inspect current section types, entry schema, contribution route, entry rendering, and detail mode.
 - Report a short plan and any migration needed.
 
-Verification:
-- Run build checks.
-- Run Deno checks for modified Edge Functions if available.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- If authenticated route verification is unavailable, report manual test cases.
-
-Output report:
-- Files read.
-- Files changed.
-- Schema/function changes.
-- Whispers behavior implemented.
-- Verification commands and output.
-- Protected-route verification status.
-- Manual test cases.
-- Risks/deferred items.
+After coding:
+- Run build checks and Deno checks if available.
+- Report changed files, schema/function changes, verification output, protected-route manual checks, and manual test cases.
 ```
 
 ---
 
-# Pass 4 - Living Memories and Things I Love Grouping
+## Pass 4 - Living Memories and Things I Love Grouping
 
-## Before you paste this prompt
+### Before you paste this prompt
 
-- Run `/status`.
-- Run `/diff` to inspect Pass 3 changes.
-- Use `/new` or `/clear` if prior context is stale.
-- Recommended reasoning: medium. Use stronger reasoning if schema/permission behavior is unclear.
-- Use `/plan` if Codex expects a migration.
+#### If Codex
 
-## Prompt to paste
+- Run `/status` and `/diff`.
+- Recommended model/reasoning: medium reasoning; increase if schema migration or backfill is needed.
+- Use `/plan` first.
+
+#### If Claude Code
+
+- Run `/context` and `/diff`.
+- Recommended model/effort: current Sonnet-class model with medium effort.
+- Use `/plan` first.
+
+### Prompt to paste
 
 ```text
 Implement the next Quietly Kept pass: Living Memories and Things I Love grouping.
@@ -315,13 +263,11 @@ Implement the next Quietly Kept pass: Living Memories and Things I Love grouping
 Read these docs first:
 - docs/within-reach-secret-page-v2-roadmap.md
 - docs/within-reach-secret-page-v2-living-sections-whispers-spec.md
+- docs/within-reach-secret-page-v2-contribution-flows-spec.md
 - docs/within-reach-secret-page-v2-permissions-editor-spec.md
 
 Goal:
-Make shared living contributions render clearly. Things I Love must be grouped by author and subject.
-
-Important verification boundary:
-Do not attempt protected-route runtime testing without a valid tile/session. Do not add token bypasses or fake source credentials. If authenticated UI verification is unavailable, verify source/build behavior and document manual checks.
+Make shared living contributions render clearly. Things I Love must be grouped by author and subject. Focused contribution pages should infer the subject automatically.
 
 Required behavior:
 1. Living Memories show author quietly and use previews/detail views.
@@ -329,51 +275,47 @@ Required behavior:
 3. Render groups:
    - Things Joey loves about Jeszi
    - Things Jeszi loves about Joey
-4. Editor should set or infer subject_user_slug for Things I Love.
-5. Jeszi can create Things I Love entries about Joey after unlock.
-6. Joey can create Things I Love entries about Jeszi.
-7. Entries remain creator-owned.
-8. Mobile should show compact grouped previews.
-
-Non-goals:
-- Do not allow either user to edit the other user’s entries.
-- Do not move fixed reveal content into living sections.
-- Do not make the grouped sections feel like an admin dashboard.
+4. The Things I Love contribution flow should infer subject_user_slug from the current viewer:
+   - Joey => subject Jeszi
+   - Jeszi => subject Joey
+5. Do not make users manually choose the subject in the normal two-person flow.
+6. Jeszi can create Things I Love entries about Joey after unlock.
+7. Joey can create Things I Love entries about Jeszi.
+8. Entries remain creator-owned.
+9. Mobile should show compact grouped previews.
+10. Do not commit final emotional content to source.
+11. Do not waste time trying protected-route browser access without valid tile/session identity. Mark those checks as manual verification required if no valid identity is available.
 
 Before coding:
-- Inspect current entry schema, rendering, editor defaults, and permission enforcement.
+- Inspect current entry schema, contribution route, API functions, and rendering.
 - Report a short plan and any migration/mapping needed.
 
-Verification:
+After coding:
 - Run build checks.
-- Run Deno checks for modified Edge Functions if available.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- If authenticated route verification is unavailable, report manual test cases.
-
-Output report:
-- Files read.
-- Files changed.
-- Schema/function changes.
-- Grouping behavior implemented.
-- Verification commands and output.
-- Protected-route verification status.
-- Manual test cases.
-- Risks/deferred items.
+- Run Deno checks for changed functions if applicable.
+- Report changed files, schema/function changes, verification output, protected-route manual checks, and manual test cases.
 ```
 
 ---
 
-# Pass 5 - Final Ask Core Flow
+## Pass 5 - Final Ask Core Flow
 
-## Before you paste this prompt
+### Before you paste this prompt
 
-- Run `/status`.
-- Run `/diff` to inspect prior living-section changes.
-- Start a fresh session with `/new` or `/clear` unless the current session is short and focused.
-- Recommended reasoning: stronger reasoning. This pass touches protected state, permissions, and a sensitive relationship flow.
-- Use `/plan` before implementation.
+#### If Codex
 
-## Prompt to paste
+- Run `/status` and `/diff`.
+- Use `/new` or `/clear` if this starts after several UI/content passes.
+- Recommended model/reasoning: stronger reasoning or medium-high reasoning. This pass adds stateful interaction, permissions, and response writes.
+- Use `/plan` first.
+
+#### If Claude Code
+
+- Run `/context` and `/diff`.
+- Recommended model/effort: current Sonnet-class model with high effort, or stronger model if available, because this pass touches state, permissions, and emotionally sensitive behavior.
+- Use `/plan` first.
+
+### Prompt to paste
 
 ```text
 Implement the next Quietly Kept pass: Final Ask core flow.
@@ -386,9 +328,6 @@ Read these docs first:
 
 Goal:
 Implement the stateful Final Ask flow without celebration polish yet.
-
-Important verification boundary:
-Do not attempt to manually access protected routes without a valid Joey/Jeszi tile key or stored session. Do not add bypasses, hardcoded tile keys, source-committed final copy, or fake response shortcuts. Verify state and permissions through schema/function/source checks. If runtime authenticated verification is unavailable, document manual test cases and stop.
 
 Required behavior:
 1. Add dedicated final ask state storage.
@@ -403,49 +342,36 @@ Required behavior:
 10. Owner-only reset/hide exists for mistakes/testing.
 11. Final Ask copy comes from protected content rows, not source.
 12. Do not hardcode final romantic copy or notification copy.
-
-Non-goals:
-- Do not implement push notifications for Yes yet.
-- Do not implement confetti/celebration yet.
-- Do not implement anniversary reminders yet.
-- Do not expose Final Ask controls to Jeszi.
+13. Do not waste time trying protected-route browser access without valid tile/session identity. Mark those checks as manual verification required if no valid identity is available.
 
 Before coding:
-- Inspect secret_page_content, get-secret-page, editor, push helpers, existing state tables, and permission helpers.
+- Inspect secret_page_content, get-secret-page, editor/owner controls, push helpers, and existing state tables.
 - Report a short plan and migration details.
 
-Verification:
-- Run build checks.
-- Run Deno checks for modified Edge Functions if available.
-- Verify state transitions at source/function level.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- If authenticated route verification is unavailable, report manual test cases.
-
-Output report:
-- Files read.
-- Files changed.
-- Schema/function changes.
-- Final Ask state behavior.
-- Verification commands and output.
-- Protected-route verification status.
-- Manual test cases.
-- Deferred celebration work.
-- Risks/deferred items.
+After coding:
+- Run build checks and Deno checks if available.
+- Report changed files, schema/function changes, verification output, protected-route manual checks, manual test cases, and deferred celebration work.
 ```
 
 ---
 
-# Pass 6 - Yes Celebration and Permanent Memory
+## Pass 6 - Yes Celebration and Permanent Memory
 
-## Before you paste this prompt
+### Before you paste this prompt
 
-- Run `/status`.
-- Run `/diff` to inspect Final Ask core changes.
-- Continue the same session only if it is clean and focused; otherwise use `/new` or `/clear`.
-- Recommended reasoning: stronger reasoning because this touches push, state, and one-time UI behavior.
-- Use `/plan` before implementation.
+#### If Codex
 
-## Prompt to paste
+- Run `/status` and `/diff`.
+- Recommended model/reasoning: medium-high reasoning because this touches push, one-time state, and UI celebration behavior.
+- Use `/plan` first.
+
+#### If Claude Code
+
+- Run `/context` and `/diff`.
+- Recommended model/effort: current Sonnet-class model with medium/high effort.
+- Use `/plan` first.
+
+### Prompt to paste
 
 ```text
 Implement the next Quietly Kept pass: Yes celebration and permanent memory.
@@ -456,9 +382,6 @@ Read these docs first:
 
 Goal:
 Make the Yes response a one-time memorable experience while staying within the quiet tone of Within Reach.
-
-Important verification boundary:
-Do not attempt protected-route browser testing without a valid tile/session. Do not add auth bypasses or source-committed secrets. Push delivery may not be fully testable in Codex; verify source-level behavior, build checks, and function checks, then document manual device/push verification requirements.
 
 Required behavior:
 1. On Yes, send push notification to Joey using protected content copy.
@@ -471,49 +394,36 @@ Required behavior:
 8. Use soft hearts/petals/stars or similarly restrained particles, not loud party confetti.
 9. Convert the ask section into a quieter permanent memory with accepted_at.
 10. Do not commit final copy to source.
-
-Non-goals:
-- Do not implement anniversary reminders yet.
-- Do not require push success for accepted state.
-- Do not make the celebration repeat on every page load.
-- Do not make the page feel like a party app.
+11. Do not waste time trying protected-route browser access without valid tile/session identity. Mark those checks as manual verification required if no valid identity is available.
 
 Before coding:
 - Inspect final ask state from Pass 5, push helper functions, service worker behavior, and page rendering.
 - Report a short plan.
 
-Verification:
-- Run build checks.
-- Run Deno checks for modified Edge Functions if available.
-- Verify source-level push invocation and failure handling.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- If push/device verification is unavailable, report manual test cases.
-
-Output report:
-- Files read.
-- Files changed.
-- State/function changes.
-- Celebration behavior.
-- Verification commands and output.
-- Protected-route verification status.
-- Push caveats.
-- Manual test cases.
-- Risks/deferred items.
+After coding:
+- Run build checks and Deno checks if available.
+- Report changed files, verification output, push caveats, protected-route manual checks, and manual test cases.
 ```
 
 ---
 
-# Pass 7 - Anniversary Reminder
+## Pass 7 - Anniversary Reminder
 
-## Before you paste this prompt
+### Before you paste this prompt
 
-- Run `/status`.
-- Run `/diff` to inspect Final Ask and celebration changes.
-- Start a fresh session with `/new` or `/clear` unless the current session is specifically focused on scheduled push work.
-- Recommended reasoning: stronger reasoning. This pass touches scheduled jobs, push, database state, and deployment setup.
-- Use `/plan` before implementation.
+#### If Codex
 
-## Prompt to paste
+- Run `/status` and `/diff`.
+- Recommended model/reasoning: stronger reasoning or medium-high reasoning because this may touch scheduled functions and push delivery.
+- Use `/plan` first.
+
+#### If Claude Code
+
+- Run `/context` and `/diff`.
+- Recommended model/effort: current Sonnet-class model with high effort, or stronger model if available, because this touches scheduled backend behavior.
+- Use `/plan` first.
+
+### Prompt to paste
 
 ```text
 Implement the next Quietly Kept pass: Final Ask anniversary reminder.
@@ -525,9 +435,6 @@ Read these docs first:
 Goal:
 Send a best-effort annual anniversary push based on accepted_at.
 
-Important verification boundary:
-Do not attempt protected-route browser verification without a valid tile/session. Scheduled push behavior may not be fully testable in Codex. Verify function logic, scheduling assumptions, idempotency, and deployment instructions. Document manual Supabase cron and real-device push verification requirements.
-
 Required behavior:
 1. Use accepted_at from secret_final_ask.
 2. Only send when anniversary_enabled is true.
@@ -537,88 +444,13 @@ Required behavior:
 6. Use protected content rows for copy.
 7. Use existing push helpers if possible.
 8. Treat delivery as best-effort and document limitations.
-
-Non-goals:
-- Do not create a visible calendar UI.
-- Do not send duplicate annual pushes.
-- Do not hardcode final anniversary copy into source.
-- Do not depend on exact-to-the-second push delivery.
+9. Do not commit final notification copy to source.
 
 Before coding:
-- Inspect current scheduled function/cron patterns, push helper, Supabase deployment expectations, and final ask accepted_at state.
+- Inspect current scheduled function/cron patterns, push helper, and Supabase deployment expectations.
 - Report a short plan and any manual Supabase cron setup required.
 
-Verification:
+After coding:
 - Run function checks if available.
-- Verify idempotency and annual-send logic at source level.
-- Do not perform protected-route browser verification unless a valid tile/session is available.
-- Document manual Supabase cron setup and push testing steps.
-
-Output report:
-- Files read.
-- Files changed.
-- Function/schema changes.
-- Deployment commands.
-- Cron setup.
-- Verification commands and output.
-- Manual verification strategy.
-- Risks/deferred items.
-```
-
----
-
-# Verification / Closeout Prompt
-
-## Before you paste this prompt
-
-- Run `/status`.
-- Run `/diff` to confirm the working tree state.
-- Use a lower-cost model if this is only documentation/output-report cleanup.
-- Use stronger reasoning if reviewing auth, migrations, protected content, or push behavior.
-- Use review mode if available and source changes are substantial.
-
-## Prompt to paste
-
-```text
-Perform a Quietly Kept V2 verification/closeout review for the current branch.
-
-Read these docs first:
-- docs/within-reach-secret-page-v2-roadmap.md
-- docs/within-reach-secret-page-v2-mobile-reading-spec.md
-- docs/within-reach-secret-page-v2-permissions-editor-spec.md
-- docs/within-reach-secret-page-v2-living-sections-whispers-spec.md
-- docs/within-reach-secret-page-v2-final-ask-spec.md
-- docs/within-reach-secret-page-v2-content-security-data-contract.md
-
-Goal:
-Review the implemented changes against the V2 specs without wasting time on protected-route browser access that is unavailable in this session.
-
-Important verification boundary:
-The Quietly Kept routes require valid tile/session identity and server-side unlock state. If this Codex session lacks valid Joey/Jeszi tile keys or stored sessions, do not attempt route-chasing, bypasses, or fake credentials. Mark authenticated runtime checks as manual verification required.
-
-Tasks:
-1. Inspect changed files.
-2. Confirm final emotional content is not committed to source.
-3. Confirm protected content is loaded through authorized server/API paths.
-4. Confirm mobile-first rendering does not default to endless full-text scroll.
-5. Confirm permission rules are enforced server-side, not only in UI.
-6. Confirm Whispers, Things I Love, Living Memories, and Final Ask behavior match implemented pass scope.
-7. Confirm build/function checks available in this workspace.
-8. Identify risks, manual steps, and deployment commands.
-
-Verification:
-- Run available build checks.
-- Run private build check if available.
-- Run Deno/function checks if available and relevant.
-- Do not perform protected-route browser verification unless valid tile/session is available.
-
-Output report:
-- Files inspected.
-- Verification commands and output.
-- Spec compliance summary.
-- Protected-route verification status.
-- Manual authenticated test checklist.
-- Remaining risks.
-- Deployment commands.
-- Recommended next pass.
+- Report changed files, deployment commands, cron setup, verification strategy, and risks.
 ```

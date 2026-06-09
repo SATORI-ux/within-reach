@@ -7,7 +7,6 @@ const statusCard = document.querySelector('#statusCard');
 const statusTitle = document.querySelector('#statusTitle');
 const statusBody = document.querySelector('#statusBody');
 const secretPage = document.querySelector('#secretPage');
-const editPageLink = document.querySelector('#editPageLink');
 const themeToggle = document.querySelector('#themeToggle');
 
 const heroEyebrow = document.querySelector('#heroEyebrow');
@@ -27,10 +26,13 @@ const littleProofIntro = document.querySelector('#littleProofIntro');
 const littleProofEntries = document.querySelector('#littleProofEntries');
 const thingsIntro = document.querySelector('#thingsIntro');
 const thingsEntries = document.querySelector('#thingsEntries');
+const thingsActions = document.querySelector('#thingsActions');
 const stillIntro = document.querySelector('#stillIntro');
 const stillEntries = document.querySelector('#stillEntries');
+const stillActions = document.querySelector('#stillActions');
 const whispersIntro = document.querySelector('#whispersIntro');
 const whisperEntries = document.querySelector('#whisperEntries');
+const whisperActions = document.querySelector('#whisperActions');
 const tallyTitle = document.querySelector('#tallyTitle');
 const tallyIntro = document.querySelector('#tallyIntro');
 const tallyGrid = document.querySelector('#tallyGrid');
@@ -149,6 +151,22 @@ function getPageHref(params = {}) {
 
   const query = search.toString();
   return `${window.location.pathname}${query ? `?${query}` : ''}`;
+}
+
+function getContributionHref(sectionType) {
+  const search = new URLSearchParams({ section: sectionType });
+  return `./quietly-kept-entry.html?${search.toString()}`;
+}
+
+function getEntryEditHref(entryId) {
+  const search = new URLSearchParams({ entry: entryId });
+  return `./quietly-kept-entry.html?${search.toString()}`;
+}
+
+function getCounterpartName(viewer = {}) {
+  if (viewer.user_slug === 'joey') return 'Jeszi';
+  if (viewer.user_slug === 'jeszi') return 'Joey';
+  return 'the other side';
 }
 
 function makePreview(value, maxLength = 260) {
@@ -276,6 +294,21 @@ function setDetailMode(isDetail) {
   secretPage?.classList.toggle('secret-page--detail', isDetail);
 }
 
+function renderSectionAction(container, allowedSections, sectionType, label) {
+  if (!container) return;
+
+  container.innerHTML = '';
+  const canCreate = Array.isArray(allowedSections) && allowedSections.includes(sectionType);
+  container.hidden = !canCreate;
+  if (!canCreate) return;
+
+  const link = document.createElement('a');
+  link.className = 'quiet-button quiet-button--soft section-action';
+  link.href = getContributionHref(sectionType);
+  link.textContent = label;
+  container.appendChild(link);
+}
+
 function renderNames(content) {
   namesTitle.textContent = text(content.two_names.title, 'Names');
   namesClosing.textContent = text(content.two_names.closing);
@@ -334,7 +367,20 @@ function renderEntryCard(entry) {
   detailLink.className = 'quiet-link section-action';
   detailLink.href = getPageHref({ entry: entry.id });
   detailLink.textContent = entry.section_type === 'whisper' ? 'Read whisper' : 'Read the rest';
-  article.appendChild(detailLink);
+
+  const actions = document.createElement('div');
+  actions.className = 'entry-card__actions';
+  actions.appendChild(detailLink);
+
+  if (entry.can_edit) {
+    const editLink = document.createElement('a');
+    editLink.className = 'quiet-link quiet-link--secondary section-action';
+    editLink.href = getEntryEditHref(entry.id);
+    editLink.textContent = 'Edit';
+    actions.appendChild(editLink);
+  }
+
+  article.appendChild(actions);
 
   return article;
 }
@@ -519,7 +565,19 @@ function renderEntryDetail(entries) {
   body.className = 'prose preserve-lines';
   body.textContent = entry.body || '';
 
-  readingDetail.append(...nodes, body, renderBackLink());
+  const actions = document.createElement('div');
+  actions.className = 'entry-card__actions detail-actions';
+  actions.appendChild(renderBackLink());
+
+  if (entry.can_edit) {
+    const editLink = document.createElement('a');
+    editLink.className = 'quiet-link quiet-link--secondary section-action';
+    editLink.href = getEntryEditHref(entry.id);
+    editLink.textContent = 'Edit';
+    actions.appendChild(editLink);
+  }
+
+  readingDetail.append(...nodes, body, actions);
   return true;
 }
 
@@ -546,10 +604,10 @@ function renderPage(data) {
   const content = mergeContent(data.content);
   const entries = data.entries || {};
   const allEntries = flattenEntries(entries);
-
-  if (editPageLink) {
-    editPageLink.hidden = !data.viewer?.can_edit_secret_page;
-  }
+  const allowedEntrySections = Array.isArray(data.viewer?.allowed_entry_sections)
+    ? data.viewer.allowed_entry_sections
+    : [];
+  const counterpartName = getCounterpartName(data.viewer);
 
   heroEyebrow.textContent = text(content.hero.eyebrow, 'Private page');
   heroTitle.textContent = text(content.hero.title, 'Protected content waits here.');
@@ -574,6 +632,14 @@ function renderPage(data) {
   thingsIntro.textContent = text(content.section_intros.thing_i_love);
   stillIntro.textContent = text(content.section_intros.still_being_written);
   whispersIntro.textContent = text(content.section_intros.whisper);
+  renderSectionAction(stillActions, allowedEntrySections, 'still_being_written', 'Add a memory');
+  renderSectionAction(
+    thingsActions,
+    allowedEntrySections,
+    'thing_i_love',
+    `Add something I love about ${counterpartName}`,
+  );
+  renderSectionAction(whisperActions, allowedEntrySections, 'whisper', 'Add a whisper');
 
   renderEntries(littleProofEntries, entries.little_proof || []);
   renderEntries(thingsEntries, entries.thing_i_love || []);

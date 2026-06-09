@@ -195,6 +195,12 @@ summary:focus-visible {
   color: color-mix(in srgb, var(--accent-warm) 80%, var(--text));
 }
 
+.quiet-link--secondary {
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+  background: transparent;
+  color: var(--text-muted);
+}
+
 .quiet-button--ghost {
   background: transparent;
 }
@@ -254,6 +260,10 @@ summary:focus-visible {
   width: min(100% - 1.4rem, 960px);
 }
 
+.quiet-page--entry {
+  width: min(100% - 1.4rem, 820px);
+}
+
 .status-card,
 .quiet-section {
   border: 1px solid var(--line-soft);
@@ -295,7 +305,8 @@ summary:focus-visible {
 }
 
 .secret-page__content,
-.editor-shell {
+.editor-shell,
+.entry-shell {
   display: grid;
   gap: 1rem;
   min-width: 0;
@@ -335,6 +346,10 @@ summary:focus-visible {
   padding-bottom: 0.2rem;
 }
 
+.secret-hero--entry {
+  padding-bottom: 0.4rem;
+}
+
 .section-label {
   margin: 0 0 0.72rem;
   font-family: Arial, Helvetica, sans-serif;
@@ -353,6 +368,25 @@ summary:focus-visible {
   font-size: clamp(1.35rem, 3vw, 2.15rem);
   line-height: 1.18;
   font-weight: 500;
+}
+
+.section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.section-heading > div:first-child {
+  min-width: 0;
+}
+
+.section-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
 }
 
 .prose,
@@ -491,6 +525,17 @@ summary:focus-visible {
 
 .entry-preview {
   margin-bottom: 0;
+}
+
+.entry-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.detail-actions {
+  margin-top: 1rem;
 }
 
 .entry-card details {
@@ -708,6 +753,20 @@ textarea {
   font-size: 0.82rem;
 }
 
+.entry-contribution {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.entry-contribution__form {
+  margin-top: 0;
+}
+
+.entry-contribution__actions {
+  padding-top: 0.2rem;
+}
+
 @media (max-width: 860px) {
   .secret-page {
     display: block;
@@ -745,6 +804,14 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .section-heading {
+    display: grid;
+  }
+
+  .section-actions {
+    justify-content: flex-start;
+  }
+
   .field-grid > label:nth-child(3):last-child {
     grid-column: auto;
   }
@@ -753,7 +820,8 @@ textarea {
 @media (max-width: 560px) {
   .quiet-chrome,
   .quiet-page,
-  .quiet-page--editor {
+  .quiet-page--editor,
+  .quiet-page--entry {
     width: min(100% - 1rem, 1120px);
   }
 
@@ -770,7 +838,8 @@ textarea {
   }
 
   .secret-page__content,
-  .editor-shell {
+  .editor-shell,
+  .entry-shell {
     gap: 0.75rem;
   }
 

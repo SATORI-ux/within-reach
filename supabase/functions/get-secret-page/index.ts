@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
         user_slug: visitor.user_slug,
         display_name: visitor.display_name,
         accent_color: visitor.accent_color,
-        can_edit_secret_page: access.can_edit_fixed_content || access.allowed_entry_sections.length > 0,
+        can_edit_secret_page: access.can_edit_fixed_content,
         can_edit_fixed_content: access.can_edit_fixed_content,
         allowed_entry_sections: access.allowed_entry_sections,
       },
