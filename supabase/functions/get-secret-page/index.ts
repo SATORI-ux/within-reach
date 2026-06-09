@@ -8,7 +8,7 @@ import {
 } from '../_shared/utils.ts';
 import {
   assertPrivatePagesEnabled,
-  getSecretEntries,
+  getSecretEntriesForViewer,
   getSecretPageContent,
   getSecretTallyCounts,
   requireSecretPageView,
@@ -40,14 +40,22 @@ Deno.serve(async (req) => {
         user_slug: visitor.user_slug,
         display_name: visitor.display_name,
         accent_color: visitor.accent_color,
-        can_edit_secret_page: access.can_edit_secret_page,
+        can_edit_secret_page: access.can_edit_fixed_content || access.allowed_entry_sections.length > 0,
+        can_edit_fixed_content: access.can_edit_fixed_content,
+        allowed_entry_sections: access.allowed_entry_sections,
+      },
+      secret: {
+        unlocked_at: access.secret_unlocked_at,
+        can_view: access.can_view_secret_page,
+        can_edit_fixed_content: access.can_edit_fixed_content,
+        allowed_entry_sections: access.allowed_entry_sections,
       },
       page: {
         secret_unlocked_at: access.secret_unlocked_at,
         content_updated_at: pageContent.updated_at,
       },
       content: pageContent.content,
-      entries: await getSecretEntries(client),
+      entries: await getSecretEntriesForViewer(client, visitor),
       tally: await getSecretTallyCounts(client),
     }, 200, { req });
   } catch (error) {

@@ -263,7 +263,8 @@ export async function getSecretState(
 
 export type SecretPageAccess = {
   can_view_secret_page: boolean;
-  can_edit_secret_page: boolean;
+  can_edit_fixed_content: boolean;
+  allowed_entry_sections: string[];
   secret_unlocked_at: string | null;
 };
 
@@ -279,7 +280,12 @@ export async function getSecretPageAccess(
   if (userSlug === ownerSlug) {
     return {
       can_view_secret_page: true,
-      can_edit_secret_page: true,
+      can_edit_fixed_content: true,
+      allowed_entry_sections: [
+        'little_proof',
+        'thing_i_love',
+        'still_being_written',
+      ],
       secret_unlocked_at: targetState.unlocked_at,
     };
   }
@@ -287,14 +293,19 @@ export async function getSecretPageAccess(
   if (userSlug === targetSlug && sharedUnlocked) {
     return {
       can_view_secret_page: true,
-      can_edit_secret_page: true,
+      can_edit_fixed_content: false,
+      allowed_entry_sections: [
+        'thing_i_love',
+        'still_being_written',
+      ],
       secret_unlocked_at: targetState.unlocked_at,
     };
   }
 
   return {
     can_view_secret_page: false,
-    can_edit_secret_page: false,
+    can_edit_fixed_content: false,
+    allowed_entry_sections: [],
     secret_unlocked_at: targetState.unlocked_at,
   };
 }

@@ -10,7 +10,7 @@ import {
   SECRET_PAGE_SLUG,
   assertPrivatePagesEnabled,
   normalizeSecretPageContent,
-  requireSecretPageEdit,
+  requireSecretFixedContentEdit,
 } from '../_shared/secret-page.ts';
 
 type Payload = {
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
-    await requireSecretPageEdit(client, visitor);
+    await requireSecretFixedContentEdit(client, visitor);
 
     const now = new Date().toISOString();
     const content = normalizeSecretPageContent(body.content);

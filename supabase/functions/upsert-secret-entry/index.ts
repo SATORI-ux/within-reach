@@ -16,8 +16,10 @@ import {
   normalizeInteger,
   normalizeOptionalText,
   normalizeText,
-  requireSecretPageEdit,
+  requireSecretEntryCreate,
+  requireSecretEntryManage,
   withSignedSecretImage,
+  type SecretEntryRow,
 } from '../_shared/secret-page.ts';
 
 type Payload = {
@@ -50,7 +52,6 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
-    await requireSecretPageEdit(client, visitor);
 
     const entry = body.entry ?? {};
     const sectionType = normalizeText(entry.section_type, 80);
@@ -80,6 +81,24 @@ Deno.serve(async (req) => {
       updated_at: now,
     };
     const entryId = normalizeEntryId(entry.id);
+
+    if (entryId) {
+      const { data: existing, error: existingError } = await client
+        .from('secret_entries')
+        .select('*')
+        .eq('id', entryId)
+        .eq('is_archived', false)
+        .single<SecretEntryRow>();
+
+      if (existingError || !existing) {
+        throw new Error(existingError?.message || 'Entry not found.');
+      }
+
+      await requireSecretEntryManage(client, visitor, existing);
+      await requireSecretEntryCreate(client, visitor, sectionType);
+    } else {
+      await requireSecretEntryCreate(client, visitor, sectionType);
+    }
 
     const query = entryId
       ? client

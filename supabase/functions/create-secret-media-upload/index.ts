@@ -13,7 +13,7 @@ import {
   getImageExtension,
   normalizeEntryId,
   normalizeOptionalText,
-  requireSecretPageEdit,
+  requireSecretEntryManage,
   withSignedSecretImage,
   type SecretEntryRow,
 } from '../_shared/secret-page.ts';
@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
     const visitor = await validateTileKey(client, body.tile_key ?? '');
-    await requireSecretPageEdit(client, visitor);
 
     const entryId = normalizeEntryId(body.entry_id);
     if (!entryId) {
@@ -61,6 +60,8 @@ Deno.serve(async (req) => {
     if (existingError || !existing) {
       throw new Error(existingError?.message || 'Entry not found.');
     }
+
+    await requireSecretEntryManage(client, visitor, existing);
 
     const objectPath = `${entryId}/${crypto.randomUUID()}.${extension}`;
     const upload = await client.storage

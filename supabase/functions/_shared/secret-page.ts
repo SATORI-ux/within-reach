@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import type { VisitorRow } from './utils.ts';
-import { getSecretPageAccess } from './secret.ts';
+import { getSecretAlwaysUnlockUserSlug, getSecretPageAccess } from './secret.ts';
 
 export const SECRET_PAGE_SLUG = 'quietly-kept';
 export const SECRET_PAGE_MEDIA_BUCKET = 'secret-page-media';
@@ -36,6 +36,11 @@ export type SecretEntryRow = {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type SecretEntryWithPermissions = SecretEntryRow & {
+  image_url: string | null;
+  can_edit: boolean;
 };
 
 export type SecretPageContentRow = {
@@ -106,13 +111,54 @@ export async function requireSecretPageView(
   return access;
 }
 
-export async function requireSecretPageEdit(
+export async function requireSecretFixedContentEdit(
   client: SupabaseClient,
   visitor: VisitorRow,
 ) {
   const access = await requireSecretPageView(client, visitor);
-  if (!access.can_edit_secret_page) {
-    throw new Error('This page cannot be edited from this session.');
+  if (!access.can_edit_fixed_content) {
+    throw new Error('Fixed page content can only be edited by its owner.');
+  }
+
+  return access;
+}
+
+export function canCreateSecretEntry(
+  allowedEntrySections: string[],
+  sectionType: string,
+): boolean {
+  return allowedEntrySections.includes(sectionType);
+}
+
+export function canManageSecretEntry(
+  visitor: VisitorRow,
+  entry: Pick<SecretEntryRow, 'created_by'>,
+): boolean {
+  if (visitor.user_slug === getSecretAlwaysUnlockUserSlug()) return true;
+  return Boolean(entry.created_by && entry.created_by === visitor.user_slug);
+}
+
+export async function requireSecretEntryCreate(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+  sectionType: string,
+) {
+  const access = await requireSecretPageView(client, visitor);
+  if (!canCreateSecretEntry(access.allowed_entry_sections, sectionType)) {
+    throw new Error('This session cannot add entries to that section.');
+  }
+
+  return access;
+}
+
+export async function requireSecretEntryManage(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+  entry: SecretEntryRow,
+) {
+  const access = await requireSecretPageView(client, visitor);
+  if (!canCreateSecretEntry(access.allowed_entry_sections, entry.section_type) || !canManageSecretEntry(visitor, entry)) {
+    throw new Error('This session cannot edit that entry.');
   }
 
   return access;
@@ -244,7 +290,7 @@ export async function getSecretTallyCounts(client: SupabaseClient): Promise<Tall
 export async function withSignedSecretImage(
   client: SupabaseClient,
   entry: SecretEntryRow,
-) {
+): Promise<SecretEntryRow & { image_url: string | null }> {
   let image_url: string | null = null;
 
   if (entry.image_path) {
@@ -301,6 +347,30 @@ export async function getSecretEntries(client: SupabaseClient) {
     little_proof: entries.filter((entry) => entry.section_type === 'little_proof'),
     thing_i_love: entries.filter((entry) => entry.section_type === 'thing_i_love'),
     still_being_written: entries.filter((entry) => entry.section_type === 'still_being_written'),
+  };
+}
+
+export async function getSecretEntriesForViewer(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+): Promise<{
+  little_proof: SecretEntryWithPermissions[];
+  thing_i_love: SecretEntryWithPermissions[];
+  still_being_written: SecretEntryWithPermissions[];
+}> {
+  const access = await requireSecretPageView(client, visitor);
+  const groups = await getSecretEntries(client);
+  const markPermissions = (entries: Array<SecretEntryRow & { image_url: string | null }>) =>
+    entries.map((entry) => ({
+      ...entry,
+      can_edit: canCreateSecretEntry(access.allowed_entry_sections, entry.section_type) &&
+        canManageSecretEntry(visitor, entry),
+    }));
+
+  return {
+    little_proof: markPermissions(groups.little_proof),
+    thing_i_love: markPermissions(groups.thing_i_love),
+    still_being_written: markPermissions(groups.still_being_written),
   };
 }
 

@@ -23,9 +23,20 @@ const entryList = document.querySelector('#entryList');
 const bodyCount = document.querySelector('#bodyCount');
 const newEntryButton = document.querySelector('#newEntryButton');
 const archiveEntryButton = document.querySelector('#archiveEntryButton');
+const pageContentSection = pageContentForm?.closest('.editor-section');
+const entryEditorSection = entryForm?.closest('.editor-section');
+const sectionSelect = entryForm?.elements.namedItem('section_type');
 
 let sessionToken = '';
 let currentEntries = [];
+let canEditFixedContent = false;
+let allowedEntrySections = [];
+
+const SECTION_LABELS = {
+  little_proof: 'Little Proofs',
+  thing_i_love: 'Things I Love',
+  still_being_written: 'Still Being Written',
+};
 
 const EMPTY_CONTENT = {
   hero: {
@@ -202,18 +213,49 @@ function flattenEntries(groups = {}) {
   ];
 }
 
+function setSectionOptions(sections = []) {
+  if (!sectionSelect) return;
+
+  sectionSelect.innerHTML = '';
+  sections.forEach((sectionType) => {
+    const option = document.createElement('option');
+    option.value = sectionType;
+    option.textContent = SECTION_LABELS[sectionType] || sectionType;
+    sectionSelect.appendChild(option);
+  });
+
+  sectionSelect.disabled = sections.length === 0;
+}
+
+function configureEditorPermissions(viewer = {}) {
+  canEditFixedContent = Boolean(viewer.can_edit_fixed_content);
+  allowedEntrySections = Array.isArray(viewer.allowed_entry_sections) ? viewer.allowed_entry_sections : [];
+
+  if (pageContentSection) {
+    pageContentSection.hidden = !canEditFixedContent;
+  }
+
+  if (entryEditorSection) {
+    entryEditorSection.hidden = allowedEntrySections.length === 0;
+  }
+
+  setSectionOptions(allowedEntrySections);
+}
+
 function renderEntryList(entries) {
   entryList.innerHTML = '';
 
-  if (!entries.length) {
+  const editableEntries = entries.filter((entry) => entry.can_edit);
+
+  if (!editableEntries.length) {
     const empty = document.createElement('p');
     empty.className = 'quiet-note';
-    empty.textContent = 'No entries have been added yet.';
+    empty.textContent = 'No editable entries are waiting here.';
     entryList.appendChild(empty);
     return;
   }
 
-  entries.forEach((entry) => {
+  editableEntries.forEach((entry) => {
     const item = document.createElement('article');
     item.className = 'editor-list__item';
 
@@ -244,12 +286,20 @@ function resetEntryForm() {
   entryForm.reset();
   setField(entryForm, 'display_order', '0');
   entryForm.elements.namedItem('id').value = '';
+  if (sectionSelect && allowedEntrySections.length) {
+    sectionSelect.value = allowedEntrySections[0];
+  }
   archiveEntryButton.hidden = true;
   updateBodyCount();
   setMessage(entryMessage, '');
 }
 
 function populateEntryForm(entry) {
+  if (!entry.can_edit) {
+    setMessage(entryMessage, 'This entry belongs to the other side of the page.');
+    return;
+  }
+
   setField(entryForm, 'id', entry.id);
   setField(entryForm, 'section_type', entry.section_type);
   setField(entryForm, 'title', entry.title);
@@ -296,13 +346,21 @@ function readFileAsDataUrl(file) {
 
 async function refreshPage() {
   const data = await getSecretPage(sessionToken);
+  configureEditorPermissions(data.viewer || {});
   currentEntries = flattenEntries(data.entries);
-  populateContentForm(data.content);
+  if (canEditFixedContent) {
+    populateContentForm(data.content);
+  }
   renderEntryList(currentEntries);
 }
 
 async function handlePageContentSubmit(event) {
   event.preventDefault();
+  if (!canEditFixedContent) {
+    setMessage(pageContentMessage, 'Fixed page content can only be edited by its owner.');
+    return;
+  }
+
   setMessage(pageContentMessage, 'Saving...');
 
   try {
@@ -317,6 +375,11 @@ async function handlePageContentSubmit(event) {
 
 async function handleEntrySubmit(event) {
   event.preventDefault();
+  if (!allowedEntrySections.length) {
+    setMessage(entryMessage, 'This session cannot edit living entries.');
+    return;
+  }
+
   setMessage(entryMessage, 'Saving...');
 
   try {
@@ -382,8 +445,11 @@ async function bootstrap() {
       return;
     }
 
+    configureEditorPermissions(data.viewer || {});
     currentEntries = flattenEntries(data.entries);
-    populateContentForm(data.content);
+    if (canEditFixedContent) {
+      populateContentForm(data.content);
+    }
     renderEntryList(currentEntries);
     resetEntryForm();
 
