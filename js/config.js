@@ -91,7 +91,7 @@ export const SECRET_CLUE_FRAGMENTS = [
   'one part of this place remembers you.',
   'something here is waiting in the margins.',
 ];
-export const HIDDEN_LETTER_PATH = './kept.html';
+export const HIDDEN_LETTER_PATH = './quietly-kept.html';
 
 export const FUNNY_FACTS_SHARED = {
   outOfTheBox: [

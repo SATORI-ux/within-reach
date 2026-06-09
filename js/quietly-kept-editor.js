@@ -1,0 +1,404 @@
+import {
+  archiveSecretEntry,
+  getSecretPage,
+  uploadSecretMedia,
+  upsertSecretEntry,
+  upsertSecretPageContent,
+} from './api.js';
+import { IS_PRIVATE_BUILD } from './config.js';
+import { resolveQuietSession } from './quiet-session.js';
+import { initializeThemeToggle, setDocumentTheme } from './theme.js';
+
+const statusCard = document.querySelector('#statusCard');
+const statusTitle = document.querySelector('#statusTitle');
+const statusBody = document.querySelector('#statusBody');
+const editorShell = document.querySelector('#editorShell');
+const themeToggle = document.querySelector('#themeToggle');
+
+const pageContentForm = document.querySelector('#pageContentForm');
+const pageContentMessage = document.querySelector('#pageContentMessage');
+const entryForm = document.querySelector('#entryForm');
+const entryMessage = document.querySelector('#entryMessage');
+const entryList = document.querySelector('#entryList');
+const bodyCount = document.querySelector('#bodyCount');
+const newEntryButton = document.querySelector('#newEntryButton');
+const archiveEntryButton = document.querySelector('#archiveEntryButton');
+
+let sessionToken = '';
+let currentEntries = [];
+
+const EMPTY_CONTENT = {
+  hero: {
+    eyebrow: '',
+    title: '',
+    opening: '',
+  },
+  opening_note: '',
+  poem: {
+    title: '',
+    body: '',
+  },
+  two_names: {
+    title: '',
+    cards: [],
+    closing: '',
+  },
+  section_intros: {
+    little_proof: '',
+    thing_i_love: '',
+    still_being_written: '',
+  },
+  tally: {
+    title: '',
+    intro: '',
+    thoughts_label: '',
+    notes_label: '',
+  },
+  ask: {
+    title: '',
+    body: '',
+    question: '',
+    button: '',
+    footnote: '',
+  },
+};
+
+function setStatus(title, body) {
+  statusTitle.textContent = title;
+  statusBody.textContent = body;
+}
+
+function setMessage(target, message) {
+  target.textContent = message || '';
+}
+
+function getFormValue(form, name) {
+  return String(new FormData(form).get(name) || '');
+}
+
+function mergeContent(content) {
+  return {
+    ...EMPTY_CONTENT,
+    ...(content || {}),
+    hero: {
+      ...EMPTY_CONTENT.hero,
+      ...(content?.hero || {}),
+    },
+    poem: {
+      ...EMPTY_CONTENT.poem,
+      ...(content?.poem || {}),
+    },
+    two_names: {
+      ...EMPTY_CONTENT.two_names,
+      ...(content?.two_names || {}),
+    },
+    section_intros: {
+      ...EMPTY_CONTENT.section_intros,
+      ...(content?.section_intros || {}),
+    },
+    tally: {
+      ...EMPTY_CONTENT.tally,
+      ...(content?.tally || {}),
+    },
+    ask: {
+      ...EMPTY_CONTENT.ask,
+      ...(content?.ask || {}),
+    },
+  };
+}
+
+function setField(form, name, value) {
+  const field = form.elements.namedItem(name);
+  if (!field) return;
+  field.value = value || '';
+}
+
+function populateContentForm(contentValue) {
+  const content = mergeContent(contentValue);
+
+  setField(pageContentForm, 'hero_eyebrow', content.hero.eyebrow);
+  setField(pageContentForm, 'hero_title', content.hero.title);
+  setField(pageContentForm, 'hero_opening', content.hero.opening);
+  setField(pageContentForm, 'opening_note', content.opening_note);
+  setField(pageContentForm, 'poem_title', content.poem.title);
+  setField(pageContentForm, 'poem_body', content.poem.body);
+  setField(pageContentForm, 'two_names_title', content.two_names.title);
+  setField(pageContentForm, 'two_names_cards', JSON.stringify(content.two_names.cards || [], null, 2));
+  setField(pageContentForm, 'two_names_closing', content.two_names.closing);
+  setField(pageContentForm, 'intro_little_proof', content.section_intros.little_proof);
+  setField(pageContentForm, 'intro_thing_i_love', content.section_intros.thing_i_love);
+  setField(pageContentForm, 'intro_still_being_written', content.section_intros.still_being_written);
+  setField(pageContentForm, 'tally_title', content.tally.title);
+  setField(pageContentForm, 'tally_intro', content.tally.intro);
+  setField(pageContentForm, 'tally_thoughts_label', content.tally.thoughts_label);
+  setField(pageContentForm, 'tally_notes_label', content.tally.notes_label);
+  setField(pageContentForm, 'ask_title', content.ask.title);
+  setField(pageContentForm, 'ask_body', content.ask.body);
+  setField(pageContentForm, 'ask_question', content.ask.question);
+  setField(pageContentForm, 'ask_button', content.ask.button);
+  setField(pageContentForm, 'ask_footnote', content.ask.footnote);
+}
+
+function parseNameCards() {
+  const raw = getFormValue(pageContentForm, 'two_names_cards').trim();
+  if (!raw) return [];
+
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error('Name cards must be a JSON array.');
+  }
+
+  return parsed
+    .filter((card) => card && typeof card === 'object')
+    .map((card) => ({
+      title: String(card.title || '').trim(),
+      body: String(card.body || '').trim(),
+    }));
+}
+
+function collectPageContent() {
+  return {
+    hero: {
+      eyebrow: getFormValue(pageContentForm, 'hero_eyebrow'),
+      title: getFormValue(pageContentForm, 'hero_title'),
+      opening: getFormValue(pageContentForm, 'hero_opening'),
+    },
+    opening_note: getFormValue(pageContentForm, 'opening_note'),
+    poem: {
+      title: getFormValue(pageContentForm, 'poem_title'),
+      body: getFormValue(pageContentForm, 'poem_body'),
+    },
+    two_names: {
+      title: getFormValue(pageContentForm, 'two_names_title'),
+      cards: parseNameCards(),
+      closing: getFormValue(pageContentForm, 'two_names_closing'),
+    },
+    section_intros: {
+      little_proof: getFormValue(pageContentForm, 'intro_little_proof'),
+      thing_i_love: getFormValue(pageContentForm, 'intro_thing_i_love'),
+      still_being_written: getFormValue(pageContentForm, 'intro_still_being_written'),
+    },
+    tally: {
+      title: getFormValue(pageContentForm, 'tally_title'),
+      intro: getFormValue(pageContentForm, 'tally_intro'),
+      thoughts_label: getFormValue(pageContentForm, 'tally_thoughts_label'),
+      notes_label: getFormValue(pageContentForm, 'tally_notes_label'),
+    },
+    ask: {
+      title: getFormValue(pageContentForm, 'ask_title'),
+      body: getFormValue(pageContentForm, 'ask_body'),
+      question: getFormValue(pageContentForm, 'ask_question'),
+      button: getFormValue(pageContentForm, 'ask_button'),
+      footnote: getFormValue(pageContentForm, 'ask_footnote'),
+    },
+  };
+}
+
+function flattenEntries(groups = {}) {
+  return [
+    ...(groups.little_proof || []),
+    ...(groups.thing_i_love || []),
+    ...(groups.still_being_written || []),
+  ];
+}
+
+function renderEntryList(entries) {
+  entryList.innerHTML = '';
+
+  if (!entries.length) {
+    const empty = document.createElement('p');
+    empty.className = 'quiet-note';
+    empty.textContent = 'No entries have been added yet.';
+    entryList.appendChild(empty);
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const item = document.createElement('article');
+    item.className = 'editor-list__item';
+
+    const copy = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = entry.title || 'Untitled';
+    const meta = document.createElement('p');
+    meta.textContent = [entry.section_type, entry.display_date].filter(Boolean).join(' · ');
+    copy.append(title, meta);
+
+    const button = document.createElement('button');
+    button.className = 'quiet-button quiet-button--ghost';
+    button.type = 'button';
+    button.textContent = 'Edit';
+    button.addEventListener('click', () => populateEntryForm(entry));
+
+    item.append(copy, button);
+    entryList.appendChild(item);
+  });
+}
+
+function updateBodyCount() {
+  const body = entryForm.elements.namedItem('body');
+  bodyCount.textContent = String(body?.value?.length || 0);
+}
+
+function resetEntryForm() {
+  entryForm.reset();
+  setField(entryForm, 'display_order', '0');
+  entryForm.elements.namedItem('id').value = '';
+  archiveEntryButton.hidden = true;
+  updateBodyCount();
+  setMessage(entryMessage, '');
+}
+
+function populateEntryForm(entry) {
+  setField(entryForm, 'id', entry.id);
+  setField(entryForm, 'section_type', entry.section_type);
+  setField(entryForm, 'title', entry.title);
+  setField(entryForm, 'subtitle', entry.subtitle);
+  setField(entryForm, 'memory_date', entry.memory_date);
+  setField(entryForm, 'display_date', entry.display_date);
+  setField(entryForm, 'display_order', String(entry.display_order ?? 0));
+  setField(entryForm, 'preview', entry.preview);
+  setField(entryForm, 'body', entry.body);
+  setField(entryForm, 'image_alt', entry.image_alt);
+  entryForm.elements.namedItem('is_pinned').checked = Boolean(entry.is_pinned);
+  entryForm.elements.namedItem('image').value = '';
+  archiveEntryButton.hidden = false;
+  updateBodyCount();
+  setMessage(entryMessage, '');
+  entryForm.scrollIntoView({ block: 'start' });
+}
+
+function collectEntry() {
+  const formData = new FormData(entryForm);
+  return {
+    id: String(formData.get('id') || '').trim() || undefined,
+    section_type: String(formData.get('section_type') || ''),
+    title: String(formData.get('title') || ''),
+    subtitle: String(formData.get('subtitle') || ''),
+    memory_date: String(formData.get('memory_date') || '') || null,
+    display_date: String(formData.get('display_date') || ''),
+    display_order: Number(formData.get('display_order') || 0),
+    is_pinned: Boolean(formData.get('is_pinned')),
+    preview: String(formData.get('preview') || ''),
+    body: String(formData.get('body') || ''),
+    image_alt: String(formData.get('image_alt') || ''),
+  };
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result || '')));
+    reader.addEventListener('error', () => reject(reader.error || new Error('Could not read image.')));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function refreshPage() {
+  const data = await getSecretPage(sessionToken);
+  currentEntries = flattenEntries(data.entries);
+  populateContentForm(data.content);
+  renderEntryList(currentEntries);
+}
+
+async function handlePageContentSubmit(event) {
+  event.preventDefault();
+  setMessage(pageContentMessage, 'Saving...');
+
+  try {
+    const saved = await upsertSecretPageContent(sessionToken, collectPageContent());
+    populateContentForm(saved.content);
+    setMessage(pageContentMessage, 'Saved.');
+  } catch (error) {
+    console.error(error);
+    setMessage(pageContentMessage, error?.message || 'Could not save page content.');
+  }
+}
+
+async function handleEntrySubmit(event) {
+  event.preventDefault();
+  setMessage(entryMessage, 'Saving...');
+
+  try {
+    const imageInput = entryForm.elements.namedItem('image');
+    const imageFile = imageInput?.files?.[0] || null;
+    const saved = await upsertSecretEntry(sessionToken, collectEntry());
+
+    if (imageFile) {
+      const imageBase64 = await readFileAsDataUrl(imageFile);
+      await uploadSecretMedia(sessionToken, saved.entry.id, {
+        filename: imageFile.name,
+        mime_type: imageFile.type,
+        image_base64: imageBase64,
+        image_alt: getFormValue(entryForm, 'image_alt'),
+      });
+    }
+
+    await refreshPage();
+    populateEntryForm(currentEntries.find((entry) => entry.id === saved.entry.id) || saved.entry);
+    setMessage(entryMessage, 'Saved.');
+  } catch (error) {
+    console.error(error);
+    setMessage(entryMessage, error?.message || 'Could not save entry.');
+  }
+}
+
+async function handleArchiveEntry() {
+  const entryId = getFormValue(entryForm, 'id');
+  if (!entryId) return;
+
+  setMessage(entryMessage, 'Archiving...');
+
+  try {
+    await archiveSecretEntry(sessionToken, entryId);
+    resetEntryForm();
+    await refreshPage();
+    setMessage(entryMessage, 'Archived.');
+  } catch (error) {
+    console.error(error);
+    setMessage(entryMessage, error?.message || 'Could not archive entry.');
+  }
+}
+
+async function bootstrap() {
+  setDocumentTheme(document.documentElement.dataset.theme);
+  initializeThemeToggle(themeToggle, { enableSecretTheme: IS_PRIVATE_BUILD });
+
+  if (!IS_PRIVATE_BUILD) {
+    setStatus('This editor is not available here.', 'The protected editor only opens in the private build.');
+    return;
+  }
+
+  try {
+    sessionToken = await resolveQuietSession('quietly-kept-editor');
+    if (!sessionToken) {
+      setStatus('This editor needs your session.', 'Open the shared space first, then return here.');
+      return;
+    }
+
+    const data = await getSecretPage(sessionToken);
+    if (!data.viewer?.can_edit_secret_page) {
+      setStatus('This editor is closed.', 'This session can view the page, but cannot edit it.');
+      return;
+    }
+
+    currentEntries = flattenEntries(data.entries);
+    populateContentForm(data.content);
+    renderEntryList(currentEntries);
+    resetEntryForm();
+
+    statusCard.hidden = true;
+    editorShell.hidden = false;
+  } catch (error) {
+    console.error(error);
+    setStatus('This editor could not open.', error?.message || 'Try again in a moment.');
+  }
+}
+
+pageContentForm?.addEventListener('submit', handlePageContentSubmit);
+entryForm?.addEventListener('submit', handleEntrySubmit);
+entryForm?.elements.namedItem('body')?.addEventListener('input', updateBodyCount);
+newEntryButton?.addEventListener('click', resetEntryForm);
+archiveEntryButton?.addEventListener('click', handleArchiveEntry);
+
+bootstrap();

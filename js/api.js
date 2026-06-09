@@ -134,3 +134,38 @@ export function getPrivatePage(tileKey) {
     tile_key: tileKey,
   });
 }
+
+export function getSecretPage(tileKey) {
+  return callFunction('get-secret-page', {
+    tile_key: tileKey,
+  });
+}
+
+export function upsertSecretPageContent(tileKey, content) {
+  return callFunction('upsert-secret-page-content', {
+    tile_key: tileKey,
+    content,
+  });
+}
+
+export function upsertSecretEntry(tileKey, entry) {
+  return callFunction('upsert-secret-entry', {
+    tile_key: tileKey,
+    entry,
+  });
+}
+
+export function archiveSecretEntry(tileKey, entryId) {
+  return callFunction('archive-secret-entry', {
+    tile_key: tileKey,
+    entry_id: entryId,
+  });
+}
+
+export function uploadSecretMedia(tileKey, entryId, filePayload) {
+  return callFunction('create-secret-media-upload', {
+    tile_key: tileKey,
+    entry_id: entryId,
+    ...filePayload,
+  });
+}

@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   const strictPublicBuild = process.env.VITE_STRICT_PUBLIC_BUILD !== 'false'
   const isPrivateBuild = wantsPrivateBuild && allowPrivateBuild
   const privateLetterPath = fileURLToPath(new URL('./kept.html', import.meta.url))
+  const quietlyKeptPath = fileURLToPath(new URL('./quietly-kept.html', import.meta.url))
+  const quietlyKeptEditorPath = fileURLToPath(new URL('./quietly-kept-editor.html', import.meta.url))
   const privateCopyPath = fileURLToPath(new URL('./js/private-copy.js', import.meta.url))
   const publicCopyPath = fileURLToPath(new URL('./js/private-copy.public.js', import.meta.url))
   const privateWhisperPath = fileURLToPath(new URL('./js/private-whisper.js', import.meta.url))
@@ -25,6 +27,14 @@ export default defineConfig(({ mode }) => {
 
   if (isPrivateBuild && existsSync(privateLetterPath)) {
     input.kept = privateLetterPath
+  }
+
+  if (isPrivateBuild && existsSync(quietlyKeptPath)) {
+    input.quietlyKept = quietlyKeptPath
+  }
+
+  if (isPrivateBuild && existsSync(quietlyKeptEditorPath)) {
+    input.quietlyKeptEditor = quietlyKeptEditorPath
   }
 
   return {

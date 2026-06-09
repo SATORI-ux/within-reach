@@ -71,6 +71,42 @@ create table if not exists public.private_pages (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.secret_page_content (
+  page_slug text primary key default 'quietly-kept',
+  content jsonb not null default '{}'::jsonb,
+  created_by text references public.tile_keys(user_slug) on update cascade,
+  updated_by text references public.tile_keys(user_slug) on update cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint secret_page_content_slug_check check (page_slug = 'quietly-kept')
+);
+
+create table if not exists public.secret_entries (
+  id uuid primary key default gen_random_uuid(),
+  section_type text not null check (
+    section_type in (
+      'little_proof',
+      'thing_i_love',
+      'still_being_written'
+    )
+  ),
+  title text not null,
+  subtitle text,
+  body text not null check (char_length(body) <= 20000),
+  preview text,
+  image_path text,
+  image_alt text,
+  memory_date date,
+  display_date text,
+  display_order integer not null default 0,
+  is_pinned boolean not null default false,
+  is_archived boolean not null default false,
+  created_by text references public.tile_keys(user_slug) on update cascade,
+  updated_by text references public.tile_keys(user_slug) on update cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.device_sessions (
   id bigint generated always as identity primary key,
   user_slug text not null references public.tile_keys(user_slug) on update cascade,
@@ -151,6 +187,10 @@ create index if not exists idx_urgent_signals_signal_id on public.urgent_signals
 create index if not exists idx_urgent_signals_status on public.urgent_signals (status);
 create index if not exists idx_secret_unlocks_unlocked_at on public.secret_unlocks (unlocked_at desc);
 create index if not exists idx_private_pages_updated_at on public.private_pages (updated_at desc);
+create index if not exists idx_secret_page_content_updated_at on public.secret_page_content (updated_at desc);
+create index if not exists idx_secret_entries_section on public.secret_entries (section_type, is_archived, is_pinned desc, display_order, created_at desc);
+create index if not exists idx_secret_entries_created_at on public.secret_entries (created_at desc);
+create index if not exists idx_secret_entries_updated_at on public.secret_entries (updated_at desc);
 create index if not exists idx_device_sessions_user_slug on public.device_sessions (user_slug);
 create index if not exists idx_device_sessions_last_seen_at on public.device_sessions (last_seen_at desc);
 create index if not exists idx_device_sessions_expires_at on public.device_sessions (expires_at);
@@ -158,6 +198,20 @@ create index if not exists idx_push_subscriptions_user_slug on public.push_subsc
 create index if not exists idx_push_subscriptions_device_session_id on public.push_subscriptions (device_session_id);
 create index if not exists idx_native_push_tokens_user_slug on public.native_push_tokens (user_slug);
 create index if not exists idx_native_push_tokens_device_session_id on public.native_push_tokens (device_session_id);
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'secret-page-media',
+  'secret-page-media',
+  false,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update
+set
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 alter table public.tile_keys enable row level security;
 alter table public.check_ins enable row level security;
@@ -167,6 +221,8 @@ alter table public.urgent_signals enable row level security;
 alter table public.urgent_contacts enable row level security;
 alter table public.secret_unlocks enable row level security;
 alter table public.private_pages enable row level security;
+alter table public.secret_page_content enable row level security;
+alter table public.secret_entries enable row level security;
 alter table public.device_sessions enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.native_push_tokens enable row level security;

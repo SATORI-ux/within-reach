@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Quietly Kept Editor</title>
+    <meta name="description" content="Protected editor for a private Within Reach page." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#1a131a" />
+    <script>
+      (() => {
+        const storageKey = 'withinReachAppearance';
+        const saved = window.localStorage.getItem(storageKey);
+        const theme =
+          saved === 'dark' || saved === 'light' || saved === 'secret'
+            ? saved
+            : 'dark';
+
+        const themeColor = theme === 'secret' ? '#342a2a' : theme === 'light' ? '#eee5d7' : '#1a131a';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--browser-chrome-bg', themeColor);
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) themeMeta.setAttribute('content', themeColor);
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles/quietly-kept.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+    <div class="quiet-chrome">
+      <span class="site-wordmark" aria-hidden="true">within reach</span>
+      <div class="quiet-chrome__actions">
+        <a class="quiet-link" href="./quietly-kept.html">View page</a>
+        <a class="quiet-link" href="./">Return</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme" aria-pressed="false">
+          <span class="theme-toggle__icon" data-theme-toggle-icon></span>
+          <span class="sr-only" data-theme-toggle-text>Switch theme</span>
+        </button>
+      </div>
+    </div>
+
+    <main class="quiet-page quiet-page--editor">
+      <section class="status-card" id="statusCard" aria-live="polite">
+        <p class="section-label">Protected editor</p>
+        <h1 id="statusTitle">Opening editor.</h1>
+        <p id="statusBody">Checking whether this session can edit.</p>
+      </section>
+
+      <article class="editor-shell" id="editorShell" hidden>
+        <header class="secret-hero secret-hero--editor">
+          <p class="section-label">Protected editor</p>
+          <h1>Quiet page content.</h1>
+          <p>Use this page to place protected copy and living entries after deployment.</p>
+        </header>
+
+        <section class="quiet-section editor-section" aria-labelledby="pageContentTitle">
+          <h2 id="pageContentTitle">Fixed page content</h2>
+          <form class="editor-form" id="pageContentForm">
+            <div class="field-grid">
+              <label>
+                <span>Hero eyebrow</span>
+                <input name="hero_eyebrow" type="text" />
+              </label>
+              <label>
+                <span>Hero title</span>
+                <input name="hero_title" type="text" />
+              </label>
+            </div>
+            <label>
+              <span>Hero opening</span>
+              <textarea name="hero_opening" rows="2"></textarea>
+            </label>
+            <label>
+              <span>Opening note</span>
+              <textarea name="opening_note" rows="8"></textarea>
+            </label>
+            <div class="field-grid">
+              <label>
+                <span>Poem title</span>
+                <input name="poem_title" type="text" />
+              </label>
+              <label>
+                <span>Names title</span>
+                <input name="two_names_title" type="text" />
+              </label>
+            </div>
+            <label>
+              <span>Poem body</span>
+              <textarea name="poem_body" rows="12"></textarea>
+            </label>
+            <label>
+              <span>Name cards JSON</span>
+              <textarea name="two_names_cards" rows="8"></textarea>
+            </label>
+            <label>
+              <span>Names closing</span>
+              <textarea name="two_names_closing" rows="3"></textarea>
+            </label>
+            <div class="field-grid">
+              <label>
+                <span>Little Proofs intro</span>
+                <textarea name="intro_little_proof" rows="4"></textarea>
+              </label>
+              <label>
+                <span>Things intro</span>
+                <textarea name="intro_thing_i_love" rows="4"></textarea>
+              </label>
+              <label>
+                <span>Still Being Written intro</span>
+                <textarea name="intro_still_being_written" rows="4"></textarea>
+              </label>
+            </div>
+            <div class="field-grid">
+              <label>
+                <span>Tally title</span>
+                <input name="tally_title" type="text" />
+              </label>
+              <label>
+                <span>Check-in label</span>
+                <input name="tally_thoughts_label" type="text" />
+              </label>
+              <label>
+                <span>Note label</span>
+                <input name="tally_notes_label" type="text" />
+              </label>
+            </div>
+            <label>
+              <span>Tally intro</span>
+              <textarea name="tally_intro" rows="4"></textarea>
+            </label>
+            <div class="field-grid">
+              <label>
+                <span>Ask title</span>
+                <input name="ask_title" type="text" />
+              </label>
+              <label>
+                <span>Ask button</span>
+                <input name="ask_button" type="text" />
+              </label>
+            </div>
+            <label>
+              <span>Ask body</span>
+              <textarea name="ask_body" rows="6"></textarea>
+            </label>
+            <label>
+              <span>Ask question</span>
+              <textarea name="ask_question" rows="3"></textarea>
+            </label>
+            <label>
+              <span>Ask footnote</span>
+              <textarea name="ask_footnote" rows="2"></textarea>
+            </label>
+            <div class="editor-actions">
+              <button class="quiet-button" type="submit">Save page content</button>
+              <p class="inline-message" id="pageContentMessage" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+
+        <section class="quiet-section editor-section" aria-labelledby="entryEditorTitle">
+          <h2 id="entryEditorTitle">Living entries</h2>
+          <form class="editor-form" id="entryForm">
+            <input name="id" type="hidden" />
+            <div class="field-grid">
+              <label>
+                <span>Section</span>
+                <select name="section_type">
+                  <option value="little_proof">Little Proofs</option>
+                  <option value="thing_i_love">Things I Love</option>
+                  <option value="still_being_written">Still Being Written</option>
+                </select>
+              </label>
+              <label>
+                <span>Title</span>
+                <input name="title" type="text" required />
+              </label>
+              <label>
+                <span>Subtitle</span>
+                <input name="subtitle" type="text" />
+              </label>
+            </div>
+            <div class="field-grid">
+              <label>
+                <span>Memory date</span>
+                <input name="memory_date" type="date" />
+              </label>
+              <label>
+                <span>Display date</span>
+                <input name="display_date" type="text" />
+              </label>
+              <label>
+                <span>Display order</span>
+                <input name="display_order" type="number" step="1" value="0" />
+              </label>
+            </div>
+            <label class="check-field">
+              <input name="is_pinned" type="checkbox" />
+              <span>Pin quietly near the top</span>
+            </label>
+            <label>
+              <span>Preview</span>
+              <textarea name="preview" rows="3"></textarea>
+            </label>
+            <label>
+              <span>Body / caption</span>
+              <textarea name="body" rows="12" maxlength="20000" required></textarea>
+            </label>
+            <p class="quiet-note"><span id="bodyCount">0</span> / 20000 characters</p>
+            <div class="field-grid">
+              <label>
+                <span>Image</span>
+                <input name="image" type="file" accept="image/jpeg,image/png,image/webp" />
+              </label>
+              <label>
+                <span>Image alt text</span>
+                <input name="image_alt" type="text" />
+              </label>
+            </div>
+            <div class="editor-actions">
+              <button class="quiet-button" type="submit">Save entry</button>
+              <button class="quiet-button quiet-button--ghost" id="newEntryButton" type="button">New entry</button>
+              <button class="quiet-button quiet-button--danger" id="archiveEntryButton" type="button" hidden>Archive entry</button>
+              <p class="inline-message" id="entryMessage" aria-live="polite"></p>
+            </div>
+          </form>
+          <div class="editor-list" id="entryList"></div>
+        </section>
+      </article>
+    </main>
+
+    <script type="module" src="./js/quietly-kept-editor.js"></script>
+  </body>
+</html>

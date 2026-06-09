@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Quietly Kept</title>
+    <meta name="description" content="A protected private page inside Within Reach." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#1a131a" />
+    <script>
+      (() => {
+        const storageKey = 'withinReachAppearance';
+        const saved = window.localStorage.getItem(storageKey);
+        const theme =
+          saved === 'dark' || saved === 'light' || saved === 'secret'
+            ? saved
+            : 'dark';
+
+        const themeColor = theme === 'secret' ? '#342a2a' : theme === 'light' ? '#eee5d7' : '#1a131a';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--browser-chrome-bg', themeColor);
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) themeMeta.setAttribute('content', themeColor);
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles/quietly-kept.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+    <div class="quiet-chrome">
+      <span class="site-wordmark" aria-hidden="true">within reach</span>
+      <div class="quiet-chrome__actions">
+        <a class="quiet-link" href="./">Return</a>
+        <a class="quiet-link quiet-link--edit" id="editPageLink" href="./quietly-kept-editor.html" hidden>Edit this page</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme" aria-pressed="false">
+          <span class="theme-toggle__icon" data-theme-toggle-icon></span>
+          <span class="sr-only" data-theme-toggle-text>Switch theme</span>
+        </button>
+      </div>
+    </div>
+
+    <main class="quiet-page">
+      <section class="status-card" id="statusCard" aria-live="polite">
+        <p class="section-label">Private page</p>
+        <h1 id="statusTitle">Opening this page.</h1>
+        <p id="statusBody">Checking whether this session can view it.</p>
+      </section>
+
+      <article class="secret-page" id="secretPage" hidden>
+        <aside class="section-rail" aria-label="Page sections">
+          <a href="#opening">Opening</a>
+          <a href="#poem">Poem</a>
+          <a href="#names">Names</a>
+          <a href="#little-proof">Proofs</a>
+          <a href="#thing-i-love">Things</a>
+          <a href="#still-being-written">Written</a>
+          <a href="#tally">Tally</a>
+          <a href="#ask">Ask</a>
+        </aside>
+
+        <div class="secret-page__content">
+          <header class="secret-hero">
+            <p class="section-label" id="heroEyebrow"></p>
+            <h1 id="heroTitle"></h1>
+            <p id="heroOpening"></p>
+          </header>
+
+          <section class="quiet-section opening-section" id="opening" aria-labelledby="openingTitle">
+            <p class="section-label">Opening</p>
+            <h2 id="openingTitle">A protected note.</h2>
+            <div class="prose preserve-lines" id="openingNote"></div>
+          </section>
+
+          <section class="quiet-section poem-section" id="poem" aria-labelledby="poemTitle">
+            <p class="section-label">Center</p>
+            <h2 id="poemTitle"></h2>
+            <div class="poem-body preserve-lines" id="poemBody"></div>
+          </section>
+
+          <section class="quiet-section" id="names" aria-labelledby="namesTitle">
+            <p class="section-label">Names</p>
+            <h2 id="namesTitle"></h2>
+            <div class="name-grid" id="namesGrid"></div>
+            <p class="quiet-closing preserve-lines" id="namesClosing"></p>
+          </section>
+
+          <section class="quiet-section" id="little-proof" aria-labelledby="littleProofTitle">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Section</p>
+                <h2 id="littleProofTitle">Little Proofs</h2>
+                <p class="section-intro preserve-lines" id="littleProofIntro"></p>
+              </div>
+            </div>
+            <div class="entry-grid" id="littleProofEntries"></div>
+          </section>
+
+          <section class="quiet-section" id="thing-i-love" aria-labelledby="thingsTitle">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Section</p>
+                <h2 id="thingsTitle">Things I Love</h2>
+                <p class="section-intro preserve-lines" id="thingsIntro"></p>
+              </div>
+            </div>
+            <div class="entry-list" id="thingsEntries"></div>
+          </section>
+
+          <section class="quiet-section" id="still-being-written" aria-labelledby="stillTitle">
+            <div class="section-heading">
+              <div>
+                <p class="section-label">Section</p>
+                <h2 id="stillTitle">Still Being Written</h2>
+                <p class="section-intro preserve-lines" id="stillIntro"></p>
+              </div>
+            </div>
+            <div class="entry-grid entry-grid--wide" id="stillEntries"></div>
+          </section>
+
+          <section class="quiet-section tally-section" id="tally" aria-labelledby="tallyTitle">
+            <p class="section-label">Small count</p>
+            <h2 id="tallyTitle"></h2>
+            <p class="section-intro preserve-lines" id="tallyIntro"></p>
+            <div class="tally-grid" id="tallyGrid"></div>
+          </section>
+
+          <section class="quiet-section ask-section" id="ask" aria-labelledby="askTitle">
+            <div>
+              <p class="section-label">A protected part</p>
+              <h2 id="askTitle"></h2>
+              <div class="prose preserve-lines" id="askBody"></div>
+            </div>
+            <div class="ask-section__question">
+              <p id="askQuestion"></p>
+              <button class="quiet-button quiet-button--soft" id="askButton" type="button" hidden></button>
+              <p class="quiet-note" id="askFootnote"></p>
+            </div>
+          </section>
+
+          <section class="quiet-section detail-section" id="entryDetail" hidden></section>
+
+          <footer class="quiet-footer">
+            <p>Quietly kept.</p>
+          </footer>
+        </div>
+      </article>
+    </main>
+
+    <script type="module" src="./js/quietly-kept.js"></script>
+  </body>
+</html>

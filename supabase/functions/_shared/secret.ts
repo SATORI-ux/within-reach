@@ -55,11 +55,11 @@ const DEFAULT_SECRET_THOUGHT_TARGET = 150;
 const DEFAULT_SECRET_MINIMUM_DAYS = 90;
 const SECRET_SOFT_REVEAL_TAGLINE = 'Something in this little place has started keeping your name.';
 
-function getSecretTargetUserSlug(): string {
+export function getSecretTargetUserSlug(): string {
   return Deno.env.get('SECRET_TARGET_USER_SLUG') || DEFAULT_SECRET_TARGET_USER_SLUG;
 }
 
-function getSecretAlwaysUnlockUserSlug(): string {
+export function getSecretAlwaysUnlockUserSlug(): string {
   return Deno.env.get('SECRET_ALWAYS_UNLOCK_USER_SLUG') ?? DEFAULT_SECRET_ALWAYS_UNLOCK_USER_SLUG;
 }
 
@@ -258,6 +258,44 @@ export async function getSecretState(
     unlocked_at: unlocked.unlocked_at,
     soft_reveal: softReveal,
     unlock_notice: getSecretUnlockNotice(`persisted:${unlocked.unlocked_at}`),
+  };
+}
+
+export type SecretPageAccess = {
+  can_view_secret_page: boolean;
+  can_edit_secret_page: boolean;
+  secret_unlocked_at: string | null;
+};
+
+export async function getSecretPageAccess(
+  client: SupabaseClient,
+  userSlug: string,
+): Promise<SecretPageAccess> {
+  const ownerSlug = getSecretAlwaysUnlockUserSlug();
+  const targetSlug = getSecretTargetUserSlug();
+  const targetState = await getSecretState(client, targetSlug);
+  const sharedUnlocked = Boolean(targetState.unlocked);
+
+  if (userSlug === ownerSlug) {
+    return {
+      can_view_secret_page: true,
+      can_edit_secret_page: true,
+      secret_unlocked_at: targetState.unlocked_at,
+    };
+  }
+
+  if (userSlug === targetSlug && sharedUnlocked) {
+    return {
+      can_view_secret_page: true,
+      can_edit_secret_page: true,
+      secret_unlocked_at: targetState.unlocked_at,
+    };
+  }
+
+  return {
+    can_view_secret_page: false,
+    can_edit_secret_page: false,
+    secret_unlocked_at: targetState.unlocked_at,
   };
 }
 
