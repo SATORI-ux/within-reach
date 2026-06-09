@@ -405,6 +405,21 @@ verify_jwt = false
 [functions.get-private-page]
 verify_jwt = false
 
+[functions.get-secret-page]
+verify_jwt = false
+
+[functions.upsert-secret-page-content]
+verify_jwt = false
+
+[functions.upsert-secret-entry]
+verify_jwt = false
+
+[functions.archive-secret-entry]
+verify_jwt = false
+
+[functions.create-secret-media-upload]
+verify_jwt = false
+
 [functions.issue-device-session]
 verify_jwt = false
 

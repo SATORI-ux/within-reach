@@ -13,9 +13,13 @@ const themeToggle = document.querySelector('#themeToggle');
 const heroEyebrow = document.querySelector('#heroEyebrow');
 const heroTitle = document.querySelector('#heroTitle');
 const heroOpening = document.querySelector('#heroOpening');
-const openingNote = document.querySelector('#openingNote');
+const openingTitle = document.querySelector('#openingTitle');
+const openingPreview = document.querySelector('#openingPreview');
+const openingReadLink = document.querySelector('#openingReadLink');
 const poemTitle = document.querySelector('#poemTitle');
-const poemBody = document.querySelector('#poemBody');
+const poemSubtitle = document.querySelector('#poemSubtitle');
+const poemPreview = document.querySelector('#poemPreview');
+const poemReadLink = document.querySelector('#poemReadLink');
 const namesTitle = document.querySelector('#namesTitle');
 const namesGrid = document.querySelector('#namesGrid');
 const namesClosing = document.querySelector('#namesClosing');
@@ -33,7 +37,11 @@ const askBody = document.querySelector('#askBody');
 const askQuestion = document.querySelector('#askQuestion');
 const askButton = document.querySelector('#askButton');
 const askFootnote = document.querySelector('#askFootnote');
-const entryDetail = document.querySelector('#entryDetail');
+const readingDetail = document.querySelector('#readingDetail');
+const sectionRail = document.querySelector('.section-rail');
+const overviewSections = Array.from(document.querySelectorAll('[data-overview-section]'));
+
+const OVERVIEW_ENTRY_LIMIT = 3;
 
 const EMPTY_CONTENT = {
   hero: {
@@ -44,7 +52,10 @@ const EMPTY_CONTENT = {
   opening_note: '',
   poem: {
     title: 'Untitled',
+    subtitle: 'A poem for you.',
+    preview: '',
     body: '',
+    segments: [],
   },
   two_names: {
     title: 'Names',
@@ -78,6 +89,14 @@ function setStatus(title, body) {
 
 function text(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function asObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function mergeContent(content) {
@@ -119,12 +138,138 @@ function getEntryPreview(entry) {
   return body.length > 260 ? `${body.slice(0, 260).trim()}...` : body;
 }
 
+function getPageHref(params = {}) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) search.set(key, value);
+  });
+
+  const query = search.toString();
+  return `${window.location.pathname}${query ? `?${query}` : ''}`;
+}
+
+function makePreview(value, maxLength = 260) {
+  const normalized = text(value).replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).trim()}...`;
+}
+
+function getOpeningContent(content) {
+  const opening = content.opening_note;
+  const openingObject = asObject(opening);
+
+  return {
+    title: text(openingObject.title, text(content.opening_note_title, 'A protected note.')),
+    body: text(openingObject.body, text(content.opening_note_body, text(opening))),
+    preview: text(openingObject.preview, text(content.opening_note_preview)),
+  };
+}
+
+function getPoemContent(content) {
+  const rawPoem = content.poem;
+  const poem = asObject(rawPoem);
+  return {
+    title: text(poem.title, text(content.poem_title, 'Constantia')),
+    subtitle: text(poem.subtitle, text(content.poem_subtitle, 'A poem for you.')),
+    body: text(poem.body, text(content.poem_body, text(rawPoem))),
+    preview: poem.preview ?? content.poem_preview,
+    segments: asArray(poem.segments).length ? asArray(poem.segments) : asArray(content.poem_segments),
+  };
+}
+
+function getPoemPreviewText(poem) {
+  if (Array.isArray(poem.preview)) {
+    return poem.preview.map((line) => text(line)).filter(Boolean).slice(0, 5).join('\n');
+  }
+
+  const explicitPreview = text(poem.preview);
+  if (explicitPreview) return explicitPreview;
+
+  const lines = poem.body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 5) return lines.join('\n');
+
+  const indices = [0, 0.24, 0.48, 0.72, 1]
+    .map((position) => Math.round((lines.length - 1) * position));
+
+  return Array.from(new Set(indices))
+    .map((index) => lines[index])
+    .filter(Boolean)
+    .join('\n');
+}
+
+function createPoemSegments(poem) {
+  const lines = poem.body.split(/\r?\n/);
+  const configuredSegments = asArray(poem.segments);
+
+  const segments = configuredSegments
+    .map((segment, index) => {
+      const title = text(segment?.title);
+      const directBody = Array.isArray(segment?.lines)
+        ? segment.lines.join('\n')
+        : text(segment?.body);
+
+      if (directBody) {
+        return {
+          id: text(segment?.id, `segment-${index + 1}`),
+          title,
+          body: directBody,
+        };
+      }
+
+      const startLine = Number(segment?.startLine);
+      const endLine = Number(segment?.endLine);
+      if (!Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine < 0 || endLine < startLine) {
+        return null;
+      }
+
+      const body = lines.slice(startLine, Math.min(lines.length, endLine + 1)).join('\n').trim();
+      if (!body) return null;
+
+      return {
+        id: text(segment?.id, `segment-${index + 1}`),
+        title,
+        body,
+      };
+    })
+    .filter(Boolean);
+
+  if (segments.length) return segments;
+
+  return [
+    {
+      id: 'constantia',
+      title: '',
+      body: poem.body,
+    },
+  ];
+}
+
 function flattenEntries(groups = {}) {
   return [
     ...(groups.little_proof || []),
     ...(groups.thing_i_love || []),
     ...(groups.still_being_written || []),
   ];
+}
+
+function setDetailMode(isDetail) {
+  overviewSections.forEach((section) => {
+    section.hidden = isDetail;
+  });
+
+  if (readingDetail) {
+    readingDetail.hidden = !isDetail;
+  }
+
+  if (sectionRail) {
+    sectionRail.hidden = isDetail;
+  }
+
+  secretPage?.classList.toggle('secret-page--detail', isDetail);
 }
 
 function renderNames(content) {
@@ -181,27 +326,16 @@ function renderEntryCard(entry) {
   preview.textContent = getEntryPreview(entry);
   article.appendChild(preview);
 
-  const details = document.createElement('details');
-  const summary = document.createElement('summary');
-  summary.textContent = 'Read more';
-
-  const full = document.createElement('p');
-  full.className = 'entry-full preserve-lines';
-  full.textContent = entry.body || '';
-
-  details.append(summary, full);
-  article.appendChild(details);
-
   const detailLink = document.createElement('a');
-  detailLink.className = 'quiet-link';
-  detailLink.href = `?entry=${encodeURIComponent(entry.id)}`;
-  detailLink.textContent = 'Open';
+  detailLink.className = 'quiet-link section-action';
+  detailLink.href = getPageHref({ entry: entry.id });
+  detailLink.textContent = 'Read the rest';
   article.appendChild(detailLink);
 
   return article;
 }
 
-function renderEntries(container, entries = []) {
+function renderEntries(container, entries = [], options = {}) {
   container.innerHTML = '';
 
   if (!entries.length) {
@@ -212,7 +346,24 @@ function renderEntries(container, entries = []) {
     return;
   }
 
-  entries.forEach((entry) => container.appendChild(renderEntryCard(entry)));
+  const limit = Number(options.limit) || OVERVIEW_ENTRY_LIMIT;
+
+  function renderCards(isExpanded = false) {
+    container.innerHTML = '';
+    const visibleEntries = isExpanded ? entries : entries.slice(0, limit);
+    visibleEntries.forEach((entry) => container.appendChild(renderEntryCard(entry)));
+
+    if (!isExpanded && entries.length > limit) {
+      const reveal = document.createElement('button');
+      reveal.className = 'quiet-button quiet-button--ghost section-action';
+      reveal.type = 'button';
+      reveal.textContent = 'Show more';
+      reveal.addEventListener('click', () => renderCards(true));
+      container.appendChild(reveal);
+    }
+  }
+
+  renderCards(false);
 }
 
 function renderTally(content, tally = []) {
@@ -256,15 +407,89 @@ function renderAsk(content) {
   askButton.textContent = buttonText;
 }
 
-function renderDetail(entries) {
+function renderBackLink(label = 'Back to Quietly Kept') {
+  const back = document.createElement('a');
+  back.className = 'quiet-link section-action';
+  back.href = getPageHref();
+  back.textContent = label;
+  return back;
+}
+
+function renderOpeningDetail(content) {
+  const opening = getOpeningContent(content);
+  setDetailMode(true);
+  readingDetail.innerHTML = '';
+
+  const label = document.createElement('p');
+  label.className = 'section-label';
+  label.textContent = 'Opening';
+
+  const heading = document.createElement('h1');
+  heading.textContent = opening.title || 'A protected note.';
+
+  const body = document.createElement('div');
+  body.className = 'prose preserve-lines detail-copy';
+  body.textContent = opening.body || 'Nothing has been placed here yet.';
+
+  readingDetail.append(label, heading, body, renderBackLink());
+}
+
+function renderPoemDetail(content) {
+  const poem = getPoemContent(content);
+  setDetailMode(true);
+  readingDetail.innerHTML = '';
+  readingDetail.classList.add('detail-section--reader');
+
+  const label = document.createElement('p');
+  label.className = 'section-label';
+  label.textContent = 'Constantia';
+
+  const heading = document.createElement('h1');
+  heading.textContent = poem.title || 'Constantia';
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'poem-subtitle';
+  subtitle.textContent = poem.subtitle || 'A poem for you.';
+
+  readingDetail.append(label, heading, subtitle);
+
+  if (poem.body) {
+    createPoemSegments(poem).forEach((segment) => {
+      const section = document.createElement('section');
+      section.className = 'poem-reader__segment';
+
+      if (segment.title) {
+        const segmentTitle = document.createElement('h2');
+        segmentTitle.textContent = segment.title;
+        section.appendChild(segmentTitle);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'poem-reader__body preserve-lines';
+      body.textContent = segment.body;
+      section.appendChild(body);
+      readingDetail.appendChild(section);
+    });
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'quiet-note';
+    empty.textContent = 'Nothing has been placed here yet.';
+    readingDetail.appendChild(empty);
+  }
+
+  readingDetail.appendChild(renderBackLink());
+}
+
+function renderEntryDetail(entries) {
   const entryId = new URLSearchParams(window.location.search).get('entry');
-  if (!entryId) return;
+  if (!entryId) return false;
 
   const entry = entries.find((item) => item.id === entryId);
-  if (!entry) return;
+  if (!entry) return false;
 
-  entryDetail.hidden = false;
-  entryDetail.innerHTML = '';
+  setDetailMode(true);
+  readingDetail.innerHTML = '';
+  readingDetail.classList.remove('detail-section--reader');
 
   const label = document.createElement('p');
   label.className = 'section-label';
@@ -290,13 +515,27 @@ function renderDetail(entries) {
   body.className = 'prose preserve-lines';
   body.textContent = entry.body || '';
 
-  const back = document.createElement('a');
-  back.className = 'quiet-link';
-  back.href = window.location.pathname;
-  back.textContent = 'Return to page';
+  readingDetail.append(...nodes, body, renderBackLink());
+  return true;
+}
 
-  entryDetail.append(...nodes, body, back);
-  window.requestAnimationFrame(() => entryDetail.scrollIntoView({ block: 'start' }));
+function renderDetail(content, entries) {
+  const params = new URLSearchParams(window.location.search);
+  readingDetail?.classList.remove('detail-section--reader');
+
+  if (params.get('read') === 'constantia') {
+    renderPoemDetail(content);
+    return;
+  }
+
+  if (params.get('section') === 'opening') {
+    renderOpeningDetail(content);
+    return;
+  }
+
+  if (renderEntryDetail(entries)) return;
+
+  setDetailMode(false);
 }
 
 function renderPage(data) {
@@ -311,9 +550,19 @@ function renderPage(data) {
   heroEyebrow.textContent = text(content.hero.eyebrow, 'Private page');
   heroTitle.textContent = text(content.hero.title, 'Protected content waits here.');
   heroOpening.textContent = text(content.hero.opening);
-  openingNote.textContent = text(content.opening_note);
-  poemTitle.textContent = text(content.poem.title, 'Untitled');
-  poemBody.textContent = text(content.poem.body);
+
+  const opening = getOpeningContent(content);
+  openingTitle.textContent = opening.title || 'A protected note.';
+  openingPreview.textContent = opening.preview || makePreview(opening.body);
+  openingReadLink.href = getPageHref({ section: 'opening' });
+  openingReadLink.hidden = !opening.body;
+
+  const poem = getPoemContent(content);
+  poemTitle.textContent = poem.title || 'Constantia';
+  poemSubtitle.textContent = poem.subtitle || 'A poem for you.';
+  poemPreview.textContent = getPoemPreviewText(poem);
+  poemReadLink.href = getPageHref({ read: 'constantia' });
+  poemReadLink.hidden = !poem.body;
 
   renderNames(content);
 
@@ -326,7 +575,7 @@ function renderPage(data) {
   renderEntries(stillEntries, entries.still_being_written || []);
   renderTally(content, data.tally || []);
   renderAsk(content);
-  renderDetail(allEntries);
+  renderDetail(content, allEntries);
 
   statusCard.hidden = true;
   secretPage.hidden = false;

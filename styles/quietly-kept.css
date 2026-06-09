@@ -210,6 +210,11 @@ summary:focus-visible {
   color: var(--danger);
 }
 
+.section-action {
+  width: fit-content;
+  margin-top: 0.65rem;
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -283,6 +288,10 @@ summary:focus-visible {
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
+}
+
+.secret-page--detail {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .secret-page__content,
@@ -377,12 +386,31 @@ summary:focus-visible {
   text-align: center;
 }
 
+.poem-subtitle {
+  max-width: 32rem;
+  margin: 0.6rem auto 0;
+  color: var(--text-soft);
+  text-align: center;
+  line-height: 1.55;
+}
+
+.poem-preview,
 .poem-body {
   max-width: 42rem;
   margin: 1rem auto 0;
   color: var(--text);
   font-size: clamp(1.02rem, 2vw, 1.17rem);
   line-height: 1.78;
+}
+
+.poem-preview {
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.poem-section .section-action {
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .name-grid,
@@ -454,6 +482,10 @@ summary:focus-visible {
   line-height: 1.7;
 }
 
+.entry-preview {
+  margin-bottom: 0;
+}
+
 .entry-card details {
   margin-top: 0.65rem;
 }
@@ -521,6 +553,51 @@ summary:focus-visible {
 
 .detail-section {
   border-color: color-mix(in srgb, var(--accent-warm) 22%, var(--line));
+}
+
+.detail-section h1 {
+  max-width: 48rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--accent-warm) 70%, var(--text));
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 1.04;
+  font-weight: 500;
+}
+
+.detail-copy {
+  max-width: 44rem;
+  margin-top: 1rem;
+  font-size: clamp(1rem, 2vw, 1.12rem);
+}
+
+.detail-section--reader {
+  padding: clamp(1.1rem, 4vw, 2.2rem);
+}
+
+.poem-reader__segment {
+  max-width: 44rem;
+  margin: 2rem auto 0;
+}
+
+.poem-reader__segment h2 {
+  color: var(--text-muted);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.poem-reader__body {
+  margin-top: 0.85rem;
+  color: var(--text);
+  font-size: clamp(1.02rem, 2.4vw, 1.22rem);
+  line-height: 1.82;
+}
+
+.detail-section--reader > .section-action:last-child {
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .quiet-footer {
@@ -630,7 +707,26 @@ textarea {
   }
 
   .section-rail {
+    position: sticky;
+    top: 0.35rem;
+    z-index: 4;
+    display: flex;
+    gap: 0.35rem;
+    width: 100%;
+    margin-bottom: 0.85rem;
+    overflow-x: auto;
+    padding: 0.45rem;
+    scrollbar-width: none;
+  }
+
+  .section-rail::-webkit-scrollbar {
     display: none;
+  }
+
+  .section-rail a {
+    flex: 0 0 auto;
+    padding: 0.48rem 0.62rem;
+    white-space: nowrap;
   }
 
   .entry-grid,
@@ -666,8 +762,43 @@ textarea {
     padding: 1rem;
   }
 
+  .secret-page__content,
+  .editor-shell {
+    gap: 0.75rem;
+  }
+
   .secret-hero {
     padding-top: 1.2rem;
+  }
+
+  .poem-section {
+    padding: 1.15rem;
+  }
+
+  .poem-preview {
+    font-size: 1rem;
+    line-height: 1.72;
+  }
+
+  .entry-card img,
+  .detail-section img {
+    max-height: 280px;
+  }
+
+  .ask-section {
+    align-items: start;
+  }
+
+  .ask-section__question {
+    text-align: left;
+  }
+
+  .detail-section h1 {
+    font-size: clamp(2rem, 12vw, 3.25rem);
+  }
+
+  .poem-reader__segment {
+    margin-top: 1.55rem;
   }
 }
 

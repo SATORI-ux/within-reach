@@ -48,43 +48,46 @@
 
       <article class="secret-page" id="secretPage" hidden>
         <aside class="section-rail" aria-label="Page sections">
-          <a href="#opening">Opening</a>
+          <a href="#opening">Letter</a>
           <a href="#poem">Poem</a>
           <a href="#names">Names</a>
           <a href="#little-proof">Proofs</a>
           <a href="#thing-i-love">Things</a>
-          <a href="#still-being-written">Written</a>
+          <a href="#still-being-written">Memories</a>
           <a href="#tally">Tally</a>
           <a href="#ask">Ask</a>
         </aside>
 
         <div class="secret-page__content">
-          <header class="secret-hero">
+          <header class="secret-hero" data-overview-section>
             <p class="section-label" id="heroEyebrow"></p>
             <h1 id="heroTitle"></h1>
             <p id="heroOpening"></p>
           </header>
 
-          <section class="quiet-section opening-section" id="opening" aria-labelledby="openingTitle">
+          <section class="quiet-section opening-section" id="opening" aria-labelledby="openingTitle" data-overview-section>
             <p class="section-label">Opening</p>
             <h2 id="openingTitle">A protected note.</h2>
-            <div class="prose preserve-lines" id="openingNote"></div>
+            <p class="section-intro preserve-lines" id="openingPreview"></p>
+            <a class="quiet-button quiet-button--soft section-action" id="openingReadLink" href="?section=opening">Read the letter</a>
           </section>
 
-          <section class="quiet-section poem-section" id="poem" aria-labelledby="poemTitle">
+          <section class="quiet-section poem-section" id="poem" aria-labelledby="poemTitle" data-overview-section>
             <p class="section-label">Center</p>
             <h2 id="poemTitle"></h2>
-            <div class="poem-body preserve-lines" id="poemBody"></div>
+            <p class="poem-subtitle" id="poemSubtitle"></p>
+            <div class="poem-preview preserve-lines" id="poemPreview"></div>
+            <a class="quiet-button quiet-button--soft section-action" id="poemReadLink" href="?read=constantia">Read Constantia</a>
           </section>
 
-          <section class="quiet-section" id="names" aria-labelledby="namesTitle">
+          <section class="quiet-section" id="names" aria-labelledby="namesTitle" data-overview-section>
             <p class="section-label">Names</p>
             <h2 id="namesTitle"></h2>
             <div class="name-grid" id="namesGrid"></div>
             <p class="quiet-closing preserve-lines" id="namesClosing"></p>
           </section>
 
-          <section class="quiet-section" id="little-proof" aria-labelledby="littleProofTitle">
+          <section class="quiet-section" id="little-proof" aria-labelledby="littleProofTitle" data-overview-section>
             <div class="section-heading">
               <div>
                 <p class="section-label">Section</p>
@@ -95,7 +98,7 @@
             <div class="entry-grid" id="littleProofEntries"></div>
           </section>
 
-          <section class="quiet-section" id="thing-i-love" aria-labelledby="thingsTitle">
+          <section class="quiet-section" id="thing-i-love" aria-labelledby="thingsTitle" data-overview-section>
             <div class="section-heading">
               <div>
                 <p class="section-label">Section</p>
@@ -106,7 +109,7 @@
             <div class="entry-list" id="thingsEntries"></div>
           </section>
 
-          <section class="quiet-section" id="still-being-written" aria-labelledby="stillTitle">
+          <section class="quiet-section" id="still-being-written" aria-labelledby="stillTitle" data-overview-section>
             <div class="section-heading">
               <div>
                 <p class="section-label">Section</p>
@@ -117,14 +120,14 @@
             <div class="entry-grid entry-grid--wide" id="stillEntries"></div>
           </section>
 
-          <section class="quiet-section tally-section" id="tally" aria-labelledby="tallyTitle">
+          <section class="quiet-section tally-section" id="tally" aria-labelledby="tallyTitle" data-overview-section>
             <p class="section-label">Small count</p>
             <h2 id="tallyTitle"></h2>
             <p class="section-intro preserve-lines" id="tallyIntro"></p>
             <div class="tally-grid" id="tallyGrid"></div>
           </section>
 
-          <section class="quiet-section ask-section" id="ask" aria-labelledby="askTitle">
+          <section class="quiet-section ask-section" id="ask" aria-labelledby="askTitle" data-overview-section>
             <div>
               <p class="section-label">A protected part</p>
               <h2 id="askTitle"></h2>
@@ -137,9 +140,9 @@
             </div>
           </section>
 
-          <section class="quiet-section detail-section" id="entryDetail" hidden></section>
+          <section class="quiet-section detail-section" id="readingDetail" hidden></section>
 
-          <footer class="quiet-footer">
+          <footer class="quiet-footer" data-overview-section>
             <p>Quietly kept.</p>
           </footer>
         </div>
