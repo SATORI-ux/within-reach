@@ -71,7 +71,7 @@ const SECTION_CONFIG = {
     bodyMax: 15000,
     bodyRows: 12,
     showMemoryDate: false,
-    showTitle: false,
+    showTitle: true,
     showSubtitle: false,
     showPreview: false,
     showImage: false,
@@ -223,18 +223,26 @@ function populateEntryForm(entry) {
 function collectEntry() {
   const existing = currentEntry || {};
   const config = getConfig();
+  const body = getFormValue('body');
+
+  let title = getFormValue('title');
+  if (sectionType === 'thing_i_love') {
+    title = body.slice(0, 80).trim() || 'A kept detail';
+  } else if (sectionType === 'whisper' && !title) {
+    title = 'Whisper';
+  }
 
   return {
     id: mode === 'edit' ? existing.id : undefined,
     section_type: sectionType,
-    title: getFormValue('title'),
+    title,
     subtitle: getFormValue('subtitle'),
     memory_date: config?.showMemoryDate ? getFormValue('memory_date') || null : existing.memory_date ?? null,
     display_date: existing.display_date || '',
     display_order: Number(existing.display_order ?? 0),
     is_pinned: Boolean(existing.is_pinned),
     preview: getFormValue('preview'),
-    body: getFormValue('body'),
+    body,
     image_alt: getFormValue('image_alt'),
   };
 }
