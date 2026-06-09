@@ -285,6 +285,7 @@ export async function getSecretPageAccess(
         'little_proof',
         'thing_i_love',
         'still_being_written',
+        'whisper',
       ],
       secret_unlocked_at: targetState.unlocked_at,
     };
@@ -297,6 +298,7 @@ export async function getSecretPageAccess(
       allowed_entry_sections: [
         'thing_i_love',
         'still_being_written',
+        'whisper',
       ],
       secret_unlocked_at: targetState.unlocked_at,
     };

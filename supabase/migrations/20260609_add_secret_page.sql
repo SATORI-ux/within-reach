@@ -14,7 +14,8 @@ create table if not exists public.secret_entries (
     section_type in (
       'little_proof',
       'thing_i_love',
-      'still_being_written'
+      'still_being_written',
+      'whisper'
     )
   ),
   title text not null,

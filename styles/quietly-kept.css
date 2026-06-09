@@ -381,6 +381,13 @@ summary:focus-visible {
     var(--surface);
 }
 
+.whispers-section {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 30%),
+    var(--surface);
+}
+
 .poem-section h2 {
   color: color-mix(in srgb, var(--accent-warm) 72%, var(--text));
   text-align: center;

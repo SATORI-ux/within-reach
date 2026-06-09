@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       section_type: sectionType,
       title,
       subtitle: normalizeOptionalText(entry.subtitle, 220),
-      body: normalizeBody(entry.body),
+      body: normalizeBody(entry.body, sectionType),
       preview: normalizeOptionalText(entry.preview, 520),
       image_alt: normalizeOptionalText(entry.image_alt, 240),
       memory_date: normalizeDate(entry.memory_date),

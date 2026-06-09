@@ -109,6 +109,10 @@
                 <span>Still Being Written intro</span>
                 <textarea name="intro_still_being_written" rows="4"></textarea>
               </label>
+              <label>
+                <span>Whispers intro</span>
+                <textarea name="intro_whisper" rows="4"></textarea>
+              </label>
             </div>
             <div class="field-grid">
               <label>
@@ -168,6 +172,7 @@
                   <option value="little_proof">Little Proofs</option>
                   <option value="thing_i_love">Things I Love</option>
                   <option value="still_being_written">Still Being Written</option>
+                  <option value="whisper">Whispers</option>
                 </select>
               </label>
               <label>
@@ -205,7 +210,7 @@
               <span>Body / caption</span>
               <textarea name="body" rows="12" maxlength="20000" required></textarea>
             </label>
-            <p class="quiet-note"><span id="bodyCount">0</span> / 20000 characters</p>
+            <p class="quiet-note"><span id="bodyCount">0</span> / <span id="bodyMax">20000</span> characters</p>
             <div class="field-grid">
               <label>
                 <span>Image</span>

@@ -29,6 +29,8 @@ const thingsIntro = document.querySelector('#thingsIntro');
 const thingsEntries = document.querySelector('#thingsEntries');
 const stillIntro = document.querySelector('#stillIntro');
 const stillEntries = document.querySelector('#stillEntries');
+const whispersIntro = document.querySelector('#whispersIntro');
+const whisperEntries = document.querySelector('#whisperEntries');
 const tallyTitle = document.querySelector('#tallyTitle');
 const tallyIntro = document.querySelector('#tallyIntro');
 const tallyGrid = document.querySelector('#tallyGrid');
@@ -66,6 +68,7 @@ const EMPTY_CONTENT = {
     little_proof: '',
     thing_i_love: '',
     still_being_written: '',
+    whisper: '',
   },
   tally: {
     title: 'Private tally',
@@ -253,6 +256,7 @@ function flattenEntries(groups = {}) {
     ...(groups.little_proof || []),
     ...(groups.thing_i_love || []),
     ...(groups.still_being_written || []),
+    ...(groups.whisper || []),
   ];
 }
 
@@ -329,7 +333,7 @@ function renderEntryCard(entry) {
   const detailLink = document.createElement('a');
   detailLink.className = 'quiet-link section-action';
   detailLink.href = getPageHref({ entry: entry.id });
-  detailLink.textContent = 'Read the rest';
+  detailLink.textContent = entry.section_type === 'whisper' ? 'Read whisper' : 'Read the rest';
   article.appendChild(detailLink);
 
   return article;
@@ -493,7 +497,7 @@ function renderEntryDetail(entries) {
 
   const label = document.createElement('p');
   label.className = 'section-label';
-  label.textContent = 'Entry';
+  label.textContent = entry.section_type === 'whisper' ? 'Whisper' : 'Entry';
 
   const heading = document.createElement('h2');
   heading.textContent = entry.title || 'Untitled';
@@ -569,10 +573,12 @@ function renderPage(data) {
   littleProofIntro.textContent = text(content.section_intros.little_proof);
   thingsIntro.textContent = text(content.section_intros.thing_i_love);
   stillIntro.textContent = text(content.section_intros.still_being_written);
+  whispersIntro.textContent = text(content.section_intros.whisper);
 
   renderEntries(littleProofEntries, entries.little_proof || []);
   renderEntries(thingsEntries, entries.thing_i_love || []);
   renderEntries(stillEntries, entries.still_being_written || []);
+  renderEntries(whisperEntries, entries.whisper || [], { limit: 2 });
   renderTally(content, data.tally || []);
   renderAsk(content);
   renderDetail(content, allEntries);

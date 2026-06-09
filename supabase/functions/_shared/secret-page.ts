@@ -5,12 +5,21 @@ import { getSecretAlwaysUnlockUserSlug, getSecretPageAccess } from './secret.ts'
 export const SECRET_PAGE_SLUG = 'quietly-kept';
 export const SECRET_PAGE_MEDIA_BUCKET = 'secret-page-media';
 export const SECRET_ENTRY_BODY_MAX_LENGTH = 20000;
+export const SECRET_WHISPER_BODY_MAX_LENGTH = 15000;
 
 const SECTION_TYPES = new Set([
   'little_proof',
   'thing_i_love',
   'still_being_written',
+  'whisper',
 ]);
+
+const SECTION_BODY_MAX_LENGTHS: Record<string, number> = {
+  little_proof: SECRET_ENTRY_BODY_MAX_LENGTH,
+  thing_i_love: SECRET_ENTRY_BODY_MAX_LENGTH,
+  still_being_written: SECRET_ENTRY_BODY_MAX_LENGTH,
+  whisper: SECRET_WHISPER_BODY_MAX_LENGTH,
+};
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -77,6 +86,7 @@ export const EMPTY_SECRET_PAGE_CONTENT = {
     little_proof: '',
     thing_i_love: '',
     still_being_written: '',
+    whisper: '',
   },
   tally: {
     title: 'Private tally',
@@ -188,15 +198,20 @@ export function normalizeOptionalText(value: unknown, maxLength: number): string
   return text || null;
 }
 
-export function normalizeBody(value: unknown): string {
+export function getSecretEntryBodyMaxLength(sectionType: string): number {
+  return SECTION_BODY_MAX_LENGTHS[sectionType] ?? SECRET_ENTRY_BODY_MAX_LENGTH;
+}
+
+export function normalizeBody(value: unknown, sectionType: string): string {
   const body = String(value ?? '').trim();
+  const maxLength = getSecretEntryBodyMaxLength(sectionType);
 
   if (!body) {
     throw new Error('Entry body is required.');
   }
 
-  if (body.length > SECRET_ENTRY_BODY_MAX_LENGTH) {
-    throw new Error(`Keep entry body at ${SECRET_ENTRY_BODY_MAX_LENGTH} characters or fewer.`);
+  if (body.length > maxLength) {
+    throw new Error(`Keep entry body at ${maxLength} characters or fewer.`);
   }
 
   return body;
@@ -347,6 +362,7 @@ export async function getSecretEntries(client: SupabaseClient) {
     little_proof: entries.filter((entry) => entry.section_type === 'little_proof'),
     thing_i_love: entries.filter((entry) => entry.section_type === 'thing_i_love'),
     still_being_written: entries.filter((entry) => entry.section_type === 'still_being_written'),
+    whisper: entries.filter((entry) => entry.section_type === 'whisper'),
   };
 }
 
@@ -357,6 +373,7 @@ export async function getSecretEntriesForViewer(
   little_proof: SecretEntryWithPermissions[];
   thing_i_love: SecretEntryWithPermissions[];
   still_being_written: SecretEntryWithPermissions[];
+  whisper: SecretEntryWithPermissions[];
 }> {
   const access = await requireSecretPageView(client, visitor);
   const groups = await getSecretEntries(client);
@@ -371,6 +388,7 @@ export async function getSecretEntriesForViewer(
     little_proof: markPermissions(groups.little_proof),
     thing_i_love: markPermissions(groups.thing_i_love),
     still_being_written: markPermissions(groups.still_being_written),
+    whisper: markPermissions(groups.whisper),
   };
 }
 

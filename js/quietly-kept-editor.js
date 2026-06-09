@@ -21,6 +21,7 @@ const entryForm = document.querySelector('#entryForm');
 const entryMessage = document.querySelector('#entryMessage');
 const entryList = document.querySelector('#entryList');
 const bodyCount = document.querySelector('#bodyCount');
+const bodyMax = document.querySelector('#bodyMax');
 const newEntryButton = document.querySelector('#newEntryButton');
 const archiveEntryButton = document.querySelector('#archiveEntryButton');
 const pageContentSection = pageContentForm?.closest('.editor-section');
@@ -36,6 +37,14 @@ const SECTION_LABELS = {
   little_proof: 'Little Proofs',
   thing_i_love: 'Things I Love',
   still_being_written: 'Still Being Written',
+  whisper: 'Whispers',
+};
+
+const SECTION_BODY_MAX_LENGTHS = {
+  little_proof: 20000,
+  thing_i_love: 20000,
+  still_being_written: 20000,
+  whisper: 15000,
 };
 
 const EMPTY_CONTENT = {
@@ -58,6 +67,7 @@ const EMPTY_CONTENT = {
     little_proof: '',
     thing_i_love: '',
     still_being_written: '',
+    whisper: '',
   },
   tally: {
     title: '',
@@ -139,6 +149,7 @@ function populateContentForm(contentValue) {
   setField(pageContentForm, 'intro_little_proof', content.section_intros.little_proof);
   setField(pageContentForm, 'intro_thing_i_love', content.section_intros.thing_i_love);
   setField(pageContentForm, 'intro_still_being_written', content.section_intros.still_being_written);
+  setField(pageContentForm, 'intro_whisper', content.section_intros.whisper);
   setField(pageContentForm, 'tally_title', content.tally.title);
   setField(pageContentForm, 'tally_intro', content.tally.intro);
   setField(pageContentForm, 'tally_thoughts_label', content.tally.thoughts_label);
@@ -188,6 +199,7 @@ function collectPageContent() {
       little_proof: getFormValue(pageContentForm, 'intro_little_proof'),
       thing_i_love: getFormValue(pageContentForm, 'intro_thing_i_love'),
       still_being_written: getFormValue(pageContentForm, 'intro_still_being_written'),
+      whisper: getFormValue(pageContentForm, 'intro_whisper'),
     },
     tally: {
       title: getFormValue(pageContentForm, 'tally_title'),
@@ -210,7 +222,16 @@ function flattenEntries(groups = {}) {
     ...(groups.little_proof || []),
     ...(groups.thing_i_love || []),
     ...(groups.still_being_written || []),
+    ...(groups.whisper || []),
   ];
+}
+
+function getSelectedSectionType() {
+  return String(sectionSelect?.value || '');
+}
+
+function getCurrentBodyMaxLength() {
+  return SECTION_BODY_MAX_LENGTHS[getSelectedSectionType()] || 20000;
 }
 
 function setSectionOptions(sections = []) {
@@ -279,7 +300,15 @@ function renderEntryList(entries) {
 
 function updateBodyCount() {
   const body = entryForm.elements.namedItem('body');
+  const maxLength = getCurrentBodyMaxLength();
+  if (body) {
+    body.maxLength = maxLength;
+  }
+
   bodyCount.textContent = String(body?.value?.length || 0);
+  if (bodyMax) {
+    bodyMax.textContent = String(maxLength);
+  }
 }
 
 function resetEntryForm() {
@@ -464,6 +493,7 @@ async function bootstrap() {
 pageContentForm?.addEventListener('submit', handlePageContentSubmit);
 entryForm?.addEventListener('submit', handleEntrySubmit);
 entryForm?.elements.namedItem('body')?.addEventListener('input', updateBodyCount);
+sectionSelect?.addEventListener('change', updateBodyCount);
 newEntryButton?.addEventListener('click', resetEntryForm);
 archiveEntryButton?.addEventListener('click', handleArchiveEntry);
 
