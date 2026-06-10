@@ -405,6 +405,10 @@ summary:focus-visible {
   gap: 0.45rem;
 }
 
+.section-actions .section-action {
+  margin-top: 0;
+}
+
 .prose,
 .section-intro,
 .quiet-closing,
@@ -1024,27 +1028,27 @@ textarea {
   }
 
   .section-rail {
-    position: sticky;
-    top: 0.35rem;
-    z-index: 4;
-    flex-direction: row;
-    gap: 0.3rem;
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
     width: 100%;
     margin-bottom: 0.85rem;
-    overflow-x: auto;
-    padding: 0.42rem;
-    scrollbar-width: none;
-  }
-
-  .section-rail::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
+    padding: 0.5rem;
   }
 
   .section-rail a {
-    flex: 0 0 auto;
-    padding: 0.46rem 0.6rem;
-    white-space: nowrap;
+    min-width: 0;
+    min-height: 2.45rem;
+    padding: 0.52rem 0.6rem;
+    white-space: normal;
     font-size: 0.78rem;
+    line-height: 1.2;
+  }
+
+  .section-rail a span:last-child {
+    min-width: 0;
   }
 
   .rail-quote {
@@ -1061,18 +1065,25 @@ textarea {
   }
 
   .section-heading {
-    flex-wrap: wrap;
     align-items: flex-start;
+    gap: 0.75rem;
   }
 
   .section-heading > div:first-child {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
   .section-actions {
-    justify-content: flex-start;
-    margin-top: 0.1rem;
+    align-self: flex-start;
+    justify-content: flex-end;
+    margin-top: 0.05rem;
+  }
+
+  .section-actions .quiet-button {
+    min-height: 2.35rem;
+    padding: 0.58rem 0.72rem;
+    font-size: 0.8rem;
   }
 
   .field-grid > label:nth-child(3):last-child {
@@ -1127,6 +1138,21 @@ textarea {
   .thing-love-group + .thing-love-group {
     margin-top: 0.75rem;
     padding-top: 0.75rem;
+  }
+
+  .section-rail {
+    gap: 0.35rem;
+    padding: 0.42rem;
+  }
+
+  .section-rail a {
+    padding: 0.5rem 0.52rem;
+    font-size: 0.74rem;
+  }
+
+  .section-rail a .quiet-icon {
+    width: 0.95rem;
+    height: 0.95rem;
   }
 
   .ask-section {
@@ -1189,6 +1215,21 @@ textarea {
 
   .poem-reader__segment {
     margin-top: 1.55rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .section-heading {
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  .section-heading > div:first-child {
+    flex-basis: 100%;
+  }
+
+  .section-actions {
+    justify-content: flex-start;
   }
 }
 
