@@ -68,6 +68,7 @@ const KNOWN_USER_LABELS = {
 let sessionToken = '';
 let currentPageData = null;
 let readerTrigger = null;
+let finalAskQuestionRevealed = false;
 
 const EMPTY_CONTENT = {
   hero: {
@@ -894,6 +895,7 @@ function renderFinalAskDetail(content, finalAsk = {}) {
   if (!finalAsk.visible || finalAsk.status === 'hidden') return false;
 
   const copy = getFinalAskContent(content);
+  finalAskQuestionRevealed = false;
   setDetailMode(true);
   readingDetail.innerHTML = '';
   readingDetail.classList.remove('detail-section--reader');
@@ -930,6 +932,23 @@ function renderFinalAskDetail(content, finalAsk = {}) {
 
   body.textContent = copy.body || 'This protected part is waiting.';
 
+  const revealActions = document.createElement('div');
+  revealActions.className = 'entry-card__actions detail-actions final-ask-reveal-actions';
+
+  const revealButton = document.createElement('button');
+  revealButton.className = 'quiet-button quiet-button--soft final-ask-reveal-button';
+  revealButton.type = 'button';
+  revealButton.textContent = 'Reveal the question';
+  revealButton.setAttribute('aria-expanded', 'false');
+  revealButton.setAttribute('aria-controls', 'finalAskRevealedPanel');
+
+  const questionPanel = document.createElement('section');
+  questionPanel.id = 'finalAskRevealedPanel';
+  questionPanel.className = 'final-ask-revealed-panel';
+  questionPanel.hidden = !finalAskQuestionRevealed;
+  questionPanel.tabIndex = -1;
+  questionPanel.setAttribute('aria-live', 'polite');
+
   const question = document.createElement('p');
   question.className = 'final-ask-question';
   question.textContent = copy.question;
@@ -942,23 +961,37 @@ function renderFinalAskDetail(content, finalAsk = {}) {
 
   if (finalAsk.can_respond) {
     const yesButton = document.createElement('button');
-    yesButton.className = 'quiet-button quiet-button--soft';
+    yesButton.className = 'quiet-button quiet-button--soft final-ask-response-button final-ask-response-button--yes';
     yesButton.type = 'button';
     yesButton.textContent = copy.yesLabel;
     yesButton.addEventListener('click', () => handleFinalAskResponse('yes'));
 
     const talkFirstButton = document.createElement('button');
-    talkFirstButton.className = 'quiet-button quiet-button--ghost';
+    talkFirstButton.className = 'quiet-button quiet-button--ghost final-ask-response-button final-ask-response-button--talk';
     talkFirstButton.type = 'button';
     talkFirstButton.textContent = copy.talkFirstLabel;
     talkFirstButton.addEventListener('click', () => handleFinalAskResponse('talk_first'));
 
-    actions.append(yesButton, talkFirstButton, renderBackLink());
-  } else {
-    actions.appendChild(renderBackLink());
+    actions.append(yesButton, talkFirstButton);
   }
 
-  readingDetail.append(label, heading, body, question, actions, message);
+  actions.appendChild(renderBackLink());
+  questionPanel.append(question, actions);
+
+  revealButton.addEventListener('click', () => {
+    finalAskQuestionRevealed = true;
+    revealButton.setAttribute('aria-expanded', 'true');
+    revealActions.hidden = true;
+    questionPanel.hidden = false;
+    questionPanel.classList.add('final-ask-revealed-panel--visible');
+    window.requestAnimationFrame(() => {
+      (copy.question ? questionPanel : actions.querySelector('button'))?.focus();
+    });
+  });
+
+  revealActions.append(revealButton, renderBackLink());
+  revealActions.hidden = finalAskQuestionRevealed;
+  readingDetail.append(label, heading, body, revealActions, questionPanel, message);
   return true;
 }
 
@@ -968,6 +1001,8 @@ function renderDetail(content, entries, people, finalAsk) {
   if (params.get('finalAsk') === '1') {
     if (renderFinalAskDetail(content, finalAsk)) return;
   }
+
+  finalAskQuestionRevealed = false;
 
   if (params.get('read') === 'constantia') {
     openPoemReader(content);
