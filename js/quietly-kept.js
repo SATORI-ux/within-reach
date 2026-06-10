@@ -15,6 +15,8 @@ const heroOpening = document.querySelector('#heroOpening');
 const openingTitle = document.querySelector('#openingTitle');
 const openingPreview = document.querySelector('#openingPreview');
 const openingReadLink = document.querySelector('#openingReadLink');
+const littleProofSection = document.querySelector('#little-proof');
+const littleProofRailLink = document.querySelector('#littleProofRailLink');
 const poemTitle = document.querySelector('#poemTitle');
 const poemSubtitle = document.querySelector('#poemSubtitle');
 const poemPreview = document.querySelector('#poemPreview');
@@ -102,7 +104,14 @@ const EMPTY_CONTENT = {
     title: 'Protected content waits here.',
     opening: 'Add the protected page content from the editor.',
   },
-  opening_note: '',
+  opening_note: {
+    title: '',
+    preview: '',
+    body: '',
+  },
+  section_visibility: {
+    little_proof: true,
+  },
   poem: {
     title: 'Untitled',
     subtitle: 'A poem for you.',
@@ -165,6 +174,10 @@ function mergeContent(content) {
     hero: {
       ...EMPTY_CONTENT.hero,
       ...(content?.hero || {}),
+    },
+    section_visibility: {
+      ...EMPTY_CONTENT.section_visibility,
+      ...asObject(content?.section_visibility),
     },
     poem: {
       ...EMPTY_CONTENT.poem,
@@ -265,10 +278,15 @@ function getOpeningContent(content) {
   const openingObject = asObject(opening);
 
   return {
-    title: text(openingObject.title, text(content.opening_note_title, 'A protected note.')),
+    title: text(openingObject.title, text(content.opening_note_title, 'What was behind the door')),
     body: text(openingObject.body, text(content.opening_note_body, text(opening))),
     preview: text(openingObject.preview, text(content.opening_note_preview)),
   };
+}
+
+function isSectionVisible(content, sectionType) {
+  const visibility = asObject(content.section_visibility);
+  return visibility[sectionType] !== false;
 }
 
 function getPoemContent(content) {
@@ -409,7 +427,7 @@ function flattenEntries(groups = {}) {
 
 function setDetailMode(isDetail) {
   overviewSections.forEach((section) => {
-    section.hidden = isDetail;
+    section.hidden = isDetail || section.dataset.sectionVisible === 'false';
   });
 
   if (readingDetail) {
@@ -852,7 +870,7 @@ function openOpeningReader(content, trigger) {
 
   const heading = document.createElement('h2');
   heading.className = 'reader-heading';
-  heading.textContent = opening.title || 'A protected note.';
+  heading.textContent = opening.title || 'What was behind the door';
 
   const body = document.createElement('div');
   body.className = 'prose preserve-lines';
@@ -1104,7 +1122,12 @@ function renderPage(data) {
   currentPageData = data;
   const content = mergeContent(data.content);
   const entries = data.entries || {};
-  const allEntries = flattenEntries(entries);
+  const littleProofVisible = isSectionVisible(content, 'little_proof');
+  const visibleEntryGroups = {
+    ...entries,
+    little_proof: littleProofVisible ? entries.little_proof || [] : [],
+  };
+  const allEntries = flattenEntries(visibleEntryGroups);
   const people = getPeopleBySlug(data);
   const allowedEntrySections = Array.isArray(data.viewer?.allowed_entry_sections)
     ? data.viewer.allowed_entry_sections
@@ -1116,7 +1139,7 @@ function renderPage(data) {
   heroOpening.textContent = text(content.hero.opening);
 
   const opening = getOpeningContent(content);
-  openingTitle.textContent = opening.title || 'A protected note.';
+  openingTitle.textContent = opening.title || 'What was behind the door';
   openingPreview.textContent = opening.preview || makePreview(opening.body);
   openingReadLink.href = getPageHref({ section: 'opening' });
   openingReadLink.hidden = !opening.body;
@@ -1130,6 +1153,11 @@ function renderPage(data) {
 
   renderNames(content);
 
+  if (littleProofSection) {
+    littleProofSection.dataset.sectionVisible = littleProofVisible ? 'true' : 'false';
+    littleProofSection.hidden = !littleProofVisible;
+  }
+  if (littleProofRailLink) littleProofRailLink.hidden = !littleProofVisible;
   littleProofIntro.textContent = text(content.section_intros.little_proof);
   thingsIntro.textContent = text(
     content.section_intros.thing_i_love,
@@ -1145,7 +1173,11 @@ function renderPage(data) {
   renderSectionAction(whisperActions, allowedEntrySections, 'whisper', 'Add a whisper');
 
   const onRead = (entry, trigger) => openEntryReader(entry, people, trigger);
-  renderEntries(littleProofEntries, entries.little_proof || [], { onRead });
+  if (littleProofVisible) {
+    renderEntries(littleProofEntries, entries.little_proof || [], { onRead });
+  } else {
+    littleProofEntries.innerHTML = '';
+  }
   renderThingLoveGroups(thingsEntries, entries.thing_i_love || [], people, onRead);
   renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people, onRead });
   renderEntries(whisperEntries, entries.whisper || [], { limit: 2, onRead });

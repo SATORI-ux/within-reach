@@ -62,7 +62,14 @@ const EMPTY_CONTENT = {
     title: '',
     opening: '',
   },
-  opening_note: '',
+  opening_note: {
+    title: '',
+    preview: '',
+    body: '',
+  },
+  section_visibility: {
+    little_proof: true,
+  },
   poem: {
     title: '',
     body: '',
@@ -120,6 +127,10 @@ function mergeContent(content) {
       ...EMPTY_CONTENT.hero,
       ...(content?.hero || {}),
     },
+    section_visibility: {
+      ...EMPTY_CONTENT.section_visibility,
+      ...asObject(content?.section_visibility),
+    },
     poem: {
       ...EMPTY_CONTENT.poem,
       ...(content?.poem || {}),
@@ -149,19 +160,48 @@ function setField(form, name, value) {
   field.value = value || '';
 }
 
+function setChecked(form, name, value) {
+  const field = form.elements.namedItem(name);
+  if (!field) return;
+  field.checked = Boolean(value);
+}
+
+function text(value, fallback = '') {
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function asObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function getOpeningContent(content) {
+  const opening = content.opening_note;
+  const openingObject = asObject(opening);
+
+  return {
+    title: text(openingObject.title, text(content.opening_note_title)),
+    preview: text(openingObject.preview, text(content.opening_note_preview)),
+    body: text(openingObject.body, text(content.opening_note_body, text(opening))),
+  };
+}
+
 function populateContentForm(contentValue) {
   const content = mergeContent(contentValue);
+  const opening = getOpeningContent(content);
 
   setField(pageContentForm, 'hero_eyebrow', content.hero.eyebrow);
   setField(pageContentForm, 'hero_title', content.hero.title);
   setField(pageContentForm, 'hero_opening', content.hero.opening);
-  setField(pageContentForm, 'opening_note', content.opening_note);
+  setField(pageContentForm, 'opening_note_title', opening.title);
+  setField(pageContentForm, 'opening_note_preview', opening.preview);
+  setField(pageContentForm, 'opening_note_body', opening.body);
   setField(pageContentForm, 'poem_title', content.poem.title);
   setField(pageContentForm, 'poem_body', content.poem.body);
   setField(pageContentForm, 'two_names_title', content.two_names.title);
   setField(pageContentForm, 'two_names_cards', JSON.stringify(content.two_names.cards || [], null, 2));
   setField(pageContentForm, 'two_names_closing', content.two_names.closing);
   setField(pageContentForm, 'intro_little_proof', content.section_intros.little_proof);
+  setChecked(pageContentForm, 'show_little_proof', content.section_visibility.little_proof !== false);
   setField(pageContentForm, 'intro_thing_i_love', content.section_intros.thing_i_love);
   setField(pageContentForm, 'intro_still_being_written', content.section_intros.still_being_written);
   setField(pageContentForm, 'intro_whisper', content.section_intros.whisper);
@@ -206,7 +246,14 @@ function collectPageContent() {
       title: getFormValue(pageContentForm, 'hero_title'),
       opening: getFormValue(pageContentForm, 'hero_opening'),
     },
-    opening_note: getFormValue(pageContentForm, 'opening_note'),
+    opening_note: {
+      title: getFormValue(pageContentForm, 'opening_note_title'),
+      preview: getFormValue(pageContentForm, 'opening_note_preview'),
+      body: getFormValue(pageContentForm, 'opening_note_body'),
+    },
+    section_visibility: {
+      little_proof: Boolean(new FormData(pageContentForm).get('show_little_proof')),
+    },
     poem: {
       title: getFormValue(pageContentForm, 'poem_title'),
       body: getFormValue(pageContentForm, 'poem_body'),

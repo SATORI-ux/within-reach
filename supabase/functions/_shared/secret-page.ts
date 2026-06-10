@@ -104,7 +104,14 @@ export const EMPTY_SECRET_PAGE_CONTENT = {
     title: 'Protected content waits here.',
     opening: 'Add the protected page content from the editor.',
   },
-  opening_note: '',
+  opening_note: {
+    title: '',
+    preview: '',
+    body: '',
+  },
+  section_visibility: {
+    little_proof: true,
+  },
   poem: {
     title: 'Untitled',
     body: '',
