@@ -723,7 +723,7 @@ function getFinalAskOutcomeContent(copy, finalAsk = {}) {
   if (finalAsk.response === 'yes') {
     return {
       title: 'The part that became ours',
-      body: copy.acceptedMemoryCopy || copy.yesScreenCopy || FINAL_ASK_ACCEPTED_FALLBACK,
+      body: copy.yesScreenCopy || FINAL_ASK_ACCEPTED_FALLBACK,
       variant: 'yes',
     };
   }
@@ -770,8 +770,8 @@ function renderFinalAskPreview(content, finalAsk = {}) {
     askTitle.textContent = outcome.title;
     askSummary.classList.add('ask-section__outcome-summary');
     askSummary.textContent = outcome.variant === 'yes'
-      ? 'This part is kept as ours.'
-      : 'This part is being held gently.';
+      ? (copy.acceptedMemoryCopy || 'This part is kept as ours.')
+      : (copy.talkFirstScreenCopy || 'This part is being held gently.');
     askStatus.textContent = finalAsk.accepted_at ? formatDateTime(finalAsk.accepted_at) : '';
     if (!askStatus.textContent && finalAsk.responded_at) askStatus.textContent = formatDateTime(finalAsk.responded_at);
     return;
