@@ -12,6 +12,14 @@ import {
   normalizeFinalAskResponse,
   respondSecretFinalAsk,
 } from '../_shared/secret-page.ts';
+import {
+  sendSecretPageNotification,
+  type SecretNotificationResult,
+} from '../_shared/secret-notification.ts';
+import {
+  getSecretAlwaysUnlockUserSlug,
+  getSecretTargetUserSlug,
+} from '../_shared/secret.ts';
 
 type Payload = {
   tile_key?: string;
@@ -34,9 +42,75 @@ Deno.serve(async (req) => {
     const response = normalizeFinalAskResponse(body.response);
     const finalAsk = await respondSecretFinalAsk(client, visitor, response);
 
+    const ownerSlug = getSecretAlwaysUnlockUserSlug();
+    const respondentSlug = getSecretTargetUserSlug();
+
+    const notifications: Record<string, SecretNotificationResult> = {};
+
+    if (response === 'yes') {
+      notifications.yes_owner = await sendSecretPageNotification(client, {
+        type: 'final_ask_yes_owner',
+        intendedRecipientSlug: ownerSlug,
+        fromUserSlug: respondentSlug,
+        kind: 'gentle',
+        title: 'She said yes.',
+        body: 'Open Within Reach to see her answer.',
+        tag: 'final-ask-yes',
+        data: { response: 'yes' },
+      });
+      notifications.yes_respondent = await sendSecretPageNotification(client, {
+        type: 'final_ask_yes_respondent',
+        intendedRecipientSlug: respondentSlug,
+        fromUserSlug: respondentSlug,
+        kind: 'gentle',
+        title: 'Your answer was saved.',
+        body: 'Open Within Reach to see what happens next.',
+        tag: 'final-ask-yes-confirm',
+        data: { response: 'yes' },
+      });
+    } else {
+      notifications.talk_first_owner = await sendSecretPageNotification(client, {
+        type: 'final_ask_talk_first',
+        intendedRecipientSlug: ownerSlug,
+        fromUserSlug: respondentSlug,
+        kind: 'gentle',
+        title: 'She wants to talk first.',
+        body: 'Open Within Reach to see her answer.',
+        tag: 'final-ask-talk-first',
+        data: { response: 'talk_first' },
+      });
+    }
+
+    // Mark notification flags only when the intended recipient actually received it (not rerouted away)
+    const yesOwnerResult = notifications.yes_owner;
+    const talkFirstOwnerResult = notifications.talk_first_owner;
+    const shouldMarkYes = yesOwnerResult?.sent === true && yesOwnerResult?.rerouted === false;
+    const shouldMarkTalkFirst = talkFirstOwnerResult?.sent === true && talkFirstOwnerResult?.rerouted === false;
+
+    if (shouldMarkYes || shouldMarkTalkFirst) {
+      const now = new Date().toISOString();
+      const updates: Record<string, string> = { updated_at: now };
+      if (shouldMarkYes) {
+        updates.yes_notification_sent_at = now;
+        finalAsk.yes_notification_sent_at = now;
+      }
+      if (shouldMarkTalkFirst) {
+        updates.talk_first_notification_sent_at = now;
+        finalAsk.talk_first_notification_sent_at = now;
+      }
+      const { error: updateError } = await client
+        .from('secret_final_ask')
+        .update(updates)
+        .eq('id', finalAsk.id);
+      if (updateError) {
+        console.error('[respond-final-ask] notification flag update failed', { message: updateError.message });
+      }
+    }
+
     return json({
       ok: true,
       final_ask: getSecretFinalAskForViewer(finalAsk, visitor),
+      notifications,
     }, 200, { req });
   } catch (error) {
     return json({

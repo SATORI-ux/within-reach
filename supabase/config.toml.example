@@ -63,3 +63,12 @@ verify_jwt = false
 
 [functions.presence-heartbeat]
 verify_jwt = false
+
+[functions.reveal-final-ask]
+verify_jwt = false
+
+[functions.respond-final-ask]
+verify_jwt = false
+
+[functions.reset-final-ask]
+verify_jwt = false

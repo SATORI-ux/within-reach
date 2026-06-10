@@ -703,7 +703,7 @@ function formatDateTime(value) {
   }).format(date);
 }
 
-function renderAsk(content, finalAsk = {}) {
+function renderFinalAskPreview(content, finalAsk = {}) {
   const copy = getFinalAskContent(content);
   const isVisible = Boolean(finalAsk.visible);
 
@@ -712,13 +712,14 @@ function renderAsk(content, finalAsk = {}) {
   if (askRailLink) askRailLink.hidden = !isVisible;
   if (!isVisible) return;
 
-  askTitle.textContent = finalAsk.status === 'answered'
-    ? copy.hiddenTitle
-    : copy.revealedTitle;
+  askTitle.textContent = finalAsk.status === 'revealed'
+    ? copy.revealedTitle
+    : copy.hiddenTitle;
   askIntro.textContent = copy.intro;
   askOpenLink.href = getPageHref({ finalAsk: '1' });
   askOpenLink.textContent = copy.openLabel;
   askOpenLink.hidden = finalAsk.status === 'answered';
+  askSummary.classList.remove('ask-section__sealed');
 
   if (finalAsk.status === 'answered' && finalAsk.response === 'yes') {
     askSummary.textContent = copy.acceptedMemoryCopy || 'This part is kept.';
@@ -732,7 +733,8 @@ function renderAsk(content, finalAsk = {}) {
     return;
   }
 
-  askSummary.textContent = copy.question || copy.body;
+  askSummary.classList.add('ask-section__sealed');
+  askSummary.innerHTML = '<span class="quiet-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 4l10 8 10-8"/><circle cx="12" cy="15" r="1.5"/></svg></span>';
   askStatus.textContent = '';
 }
 
@@ -1039,7 +1041,7 @@ function renderPage(data) {
   renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people, onRead });
   renderEntries(whisperEntries, entries.whisper || [], { limit: 2, onRead });
   renderTally(content, data.tally || []);
-  renderAsk(content, data.final_ask || {});
+  renderFinalAskPreview(content, data.final_ask || {});
   renderDetail(content, allEntries, people, data.final_ask || {});
 
   statusCard.hidden = true;

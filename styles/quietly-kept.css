@@ -678,6 +678,20 @@ summary:focus-visible {
   line-height: 1.1;
 }
 
+.ask-section__question p.ask-section__sealed {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: color-mix(in srgb, var(--accent-warm) 54%, var(--text-faint));
+  font-size: 1rem;
+}
+
+.ask-section__question p.ask-section__sealed .quiet-icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  opacity: 0.68;
+}
+
 .final-ask-question {
   max-width: 36rem;
   margin: 1.2rem 0 0;
