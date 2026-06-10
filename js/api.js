@@ -183,6 +183,12 @@ export function respondFinalAsk(tileKey, response) {
   });
 }
 
+export function markFinalAskCelebrationSeen(tileKey) {
+  return callFunction('mark-final-ask-celebration-seen', {
+    tile_key: tileKey,
+  });
+}
+
 export function resetFinalAsk(tileKey) {
   return callFunction('reset-final-ask', {
     tile_key: tileKey,

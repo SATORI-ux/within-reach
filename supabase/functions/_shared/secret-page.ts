@@ -91,6 +91,8 @@ export type SecretFinalAskForViewer = Omit<SecretFinalAskRow, 'id'> & {
   can_reset: boolean;
 };
 
+type SecretFinalAskCelebrationField = 'joey_celebration_seen_at' | 'jeszi_celebration_seen_at';
+
 type TallyCounts = {
   user_slug: string;
   display_name: string;
@@ -548,6 +550,8 @@ export async function resetSecretFinalAsk(
       responded_at: null,
       responded_by: null,
       accepted_at: null,
+      joey_celebration_seen_at: null,
+      jeszi_celebration_seen_at: null,
       reset_at: now,
       reset_by: visitor.user_slug,
       updated_at: now,
@@ -558,6 +562,50 @@ export async function resetSecretFinalAsk(
 
   if (error || !data) {
     throw new Error(error?.message || 'Could not reset the Final Ask.');
+  }
+
+  return data;
+}
+
+export async function markSecretFinalAskCelebrationSeen(
+  client: SupabaseClient,
+  visitor: VisitorRow,
+): Promise<SecretFinalAskRow> {
+  await requireSecretPageView(client, visitor);
+
+  const state = await getSecretFinalAskState(client);
+  if (!state.id || state.status !== 'answered' || state.response !== 'yes') {
+    throw new Error('There is no accepted Final Ask celebration to mark.');
+  }
+
+  let field: SecretFinalAskCelebrationField | null = null;
+  if (isSecretOwnerUser(visitor.user_slug)) {
+    field = 'joey_celebration_seen_at';
+  } else if (isSecretTargetUser(visitor.user_slug)) {
+    field = 'jeszi_celebration_seen_at';
+  }
+
+  if (!field) {
+    throw new Error('This session cannot mark the Final Ask celebration.');
+  }
+
+  if (state[field]) return state;
+
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('secret_final_ask')
+    .update({
+      [field]: now,
+      updated_at: now,
+    })
+    .eq('id', state.id)
+    .eq('status', 'answered')
+    .eq('response', 'yes')
+    .select('*')
+    .single<SecretFinalAskRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Could not mark the Final Ask celebration seen.');
   }
 
   return data;

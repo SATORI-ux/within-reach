@@ -1,4 +1,4 @@
-import { getSecretPage, respondFinalAsk } from './api.js';
+import { getSecretPage, markFinalAskCelebrationSeen, respondFinalAsk } from './api.js';
 import { IS_PRIVATE_BUILD } from './config.js';
 import { resolveQuietSession } from './quiet-session.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
@@ -97,6 +97,7 @@ let sessionToken = '';
 let currentPageData = null;
 let readerTrigger = null;
 let finalAskQuestionRevealed = false;
+const finalAskCelebrationsStarted = new Set();
 
 const EMPTY_CONTENT = {
   hero: {
@@ -753,6 +754,128 @@ function getFinalAskOutcomeContent(copy, finalAsk = {}) {
   };
 }
 
+function getCelebrationSeenAt(finalAsk = {}, viewerSlug = '') {
+  if (viewerSlug === 'joey') return finalAsk.joey_celebration_seen_at;
+  if (viewerSlug === 'jeszi') return finalAsk.jeszi_celebration_seen_at;
+  return null;
+}
+
+function shouldShowFinalAskCelebration(data = {}) {
+  const finalAsk = data.final_ask || {};
+  const viewerSlug = data.viewer?.user_slug || '';
+
+  return finalAsk.status === 'answered' &&
+    finalAsk.response === 'yes' &&
+    (viewerSlug === 'joey' || viewerSlug === 'jeszi') &&
+    !getCelebrationSeenAt(finalAsk, viewerSlug);
+}
+
+function getFinalAskCelebrationAnchor(viewerSlug) {
+  if (window.location.search.includes('finalAsk=1')) {
+    return readingDetail?.querySelector('.final-ask-outcome') || readingDetail;
+  }
+
+  if (viewerSlug === 'joey') return askSection;
+  return readingDetail?.querySelector('.final-ask-outcome') || askSection;
+}
+
+function createFinalAskParticle(index) {
+  const particle = document.createElement('span');
+  const variants = ['heart', 'dot', 'petal'];
+  const variant = variants[index % variants.length];
+  particle.className = `final-ask-heart-particle final-ask-heart-particle--${variant}`;
+  particle.setAttribute('aria-hidden', 'true');
+  if (variant === 'heart') particle.textContent = '\u2665';
+
+  const x = ((index * 37) % 23) - 11;
+  const drift = ((index * 19) % 15) - 7;
+  const scale = 0.72 + ((index * 11) % 7) / 10;
+  particle.style.setProperty('--x', String(x));
+  particle.style.setProperty('--drift', String(drift));
+  particle.style.setProperty('--scale', String(scale));
+  particle.style.setProperty('--delay', `${(index % 8) * 70}ms`);
+  particle.style.setProperty('--duration', `${1700 + (index % 5) * 150}ms`);
+  return particle;
+}
+
+function showFinalAskCelebration({ viewerSlug, anchor }) {
+  return new Promise((resolve) => {
+    if (!anchor) {
+      resolve();
+      return;
+    }
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    anchor.classList.add('final-ask-outcome--celebrating');
+
+    const celebration = document.createElement('div');
+    celebration.className = 'final-ask-celebration';
+
+    const message = document.createElement('div');
+    message.className = 'final-ask-celebration__message';
+    message.setAttribute('role', 'status');
+
+    const title = document.createElement('strong');
+    title.textContent = viewerSlug === 'joey' ? 'She said yes.' : 'Yes.';
+
+    const detail = document.createElement('span');
+    detail.textContent = viewerSlug === 'joey' ? "It's official." : 'This part is kept.';
+
+    message.append(title, detail);
+    celebration.appendChild(message);
+
+    if (!reducedMotion) {
+      const particles = document.createElement('div');
+      particles.className = 'final-ask-celebration__particles';
+      for (let index = 0; index < 21; index += 1) {
+        particles.appendChild(createFinalAskParticle(index));
+      }
+      celebration.appendChild(particles);
+    }
+
+    anchor.appendChild(celebration);
+
+    window.setTimeout(() => {
+      celebration.classList.add('final-ask-celebration--leaving');
+    }, reducedMotion ? 950 : 2300);
+
+    window.setTimeout(() => {
+      celebration.remove();
+      anchor.classList.remove('final-ask-outcome--celebrating');
+    }, reducedMotion ? 1250 : 2800);
+
+    window.setTimeout(resolve, reducedMotion ? 250 : 650);
+  });
+}
+
+async function runFinalAskCelebrationIfNeeded(data = {}) {
+  if (!sessionToken || !shouldShowFinalAskCelebration(data)) return;
+
+  const finalAsk = data.final_ask || {};
+  const viewerSlug = data.viewer?.user_slug || '';
+  const celebrationKey = [
+    viewerSlug,
+    finalAsk.accepted_at || finalAsk.responded_at || finalAsk.updated_at || 'answered',
+  ].join(':');
+
+  if (finalAskCelebrationsStarted.has(celebrationKey)) return;
+  finalAskCelebrationsStarted.add(celebrationKey);
+
+  try {
+    await showFinalAskCelebration({
+      viewerSlug,
+      anchor: getFinalAskCelebrationAnchor(viewerSlug),
+    });
+
+    const result = await markFinalAskCelebrationSeen(sessionToken);
+    if (currentPageData && result?.final_ask) {
+      currentPageData.final_ask = result.final_ask;
+    }
+  } catch (error) {
+    console.warn('Could not mark Final Ask celebration seen.', error);
+  }
+}
+
 function formatDateTime(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -1187,6 +1310,7 @@ function renderPage(data) {
 
   statusCard.hidden = true;
   secretPage.hidden = false;
+  void runFinalAskCelebrationIfNeeded(data);
 }
 
 async function bootstrap() {
