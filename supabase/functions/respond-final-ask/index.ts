@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
 
     const client = getAdminClient();
     const body = await readJson<Payload>(req);
+
     const visitor = await validateTileKey(client, body.tile_key ?? '');
     const response = normalizeFinalAskResponse(body.response);
     const finalAsk = await respondSecretFinalAsk(client, visitor, response);
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
         tag: 'final-ask-yes',
         data: { response: 'yes' },
       });
+
       notifications.yes_respondent = await sendSecretPageNotification(client, {
         type: 'final_ask_yes_respondent',
         intendedRecipientSlug: respondentSlug,
@@ -81,29 +83,46 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Mark notification flags only when the intended recipient actually received it (not rerouted away)
+    /*
+      Mark production notification flags only when the notification was sent in live mode.
+
+      Important:
+      - dry_run must never mark sent flags.
+      - reroute must never mark sent flags, even when Joey is both intended and actual recipient.
+      - live mode already requires WITHIN_REACH_FINAL_ASK_LIVE_ARMED=true inside the notification safety layer.
+    */
     const yesOwnerResult = notifications.yes_owner;
     const talkFirstOwnerResult = notifications.talk_first_owner;
-    const shouldMarkYes = yesOwnerResult?.sent === true && yesOwnerResult?.rerouted === false;
-    const shouldMarkTalkFirst = talkFirstOwnerResult?.sent === true && talkFirstOwnerResult?.rerouted === false;
+
+    const shouldMarkYes =
+      yesOwnerResult?.mode === 'live' && yesOwnerResult?.sent === true;
+
+    const shouldMarkTalkFirst =
+      talkFirstOwnerResult?.mode === 'live' && talkFirstOwnerResult?.sent === true;
 
     if (shouldMarkYes || shouldMarkTalkFirst) {
       const now = new Date().toISOString();
       const updates: Record<string, string> = { updated_at: now };
+
       if (shouldMarkYes) {
         updates.yes_notification_sent_at = now;
         finalAsk.yes_notification_sent_at = now;
       }
+
       if (shouldMarkTalkFirst) {
         updates.talk_first_notification_sent_at = now;
         finalAsk.talk_first_notification_sent_at = now;
       }
+
       const { error: updateError } = await client
         .from('secret_final_ask')
         .update(updates)
         .eq('id', finalAsk.id);
+
       if (updateError) {
-        console.error('[respond-final-ask] notification flag update failed', { message: updateError.message });
+        console.error('[respond-final-ask] notification flag update failed', {
+          message: updateError.message,
+        });
       }
     }
 
@@ -115,7 +134,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     return json({
       ok: false,
-      error: error instanceof Error ? error.message : 'Unable to save the Final Ask response.',
+      error: error instanceof Error
+        ? error.message
+        : 'Unable to save the Final Ask response.',
     }, 400, { req });
   }
 });
+

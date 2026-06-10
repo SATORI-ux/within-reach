@@ -65,6 +65,32 @@ const KNOWN_USER_LABELS = {
   jeszi: 'Jeszi',
 };
 
+const FINAL_ASK_ACCEPTED_FALLBACK = `Okay.
+
+I am smiling so hard right now.
+
+This page gets to remember that you said yes.
+
+Not because everything started here. It did not. We have been becoming for a long time.
+
+But because this is the moment the thing we kept circling finally got a name.
+
+You are my girlfriend.
+
+I get to say that now.
+
+And I am so, so happy I do.`;
+
+const FINAL_ASK_TALK_FIRST_FALLBACK = `Okay.
+
+Then we talk first.
+
+No pressure. No punishment. No door closing.
+
+Just us, doing this the way it deserves to be done: honestly, carefully, and together.
+
+I am here.`;
+
 let sessionToken = '';
 let currentPageData = null;
 let readerTrigger = null;
@@ -693,6 +719,22 @@ function getFinalAskContent(content) {
   };
 }
 
+function getFinalAskOutcomeContent(copy, finalAsk = {}) {
+  if (finalAsk.response === 'yes') {
+    return {
+      title: 'The part that became ours',
+      body: copy.acceptedMemoryCopy || copy.yesScreenCopy || FINAL_ASK_ACCEPTED_FALLBACK,
+      variant: 'yes',
+    };
+  }
+
+  return {
+    title: 'Then we talk first',
+    body: copy.talkFirstScreenCopy || FINAL_ASK_TALK_FIRST_FALLBACK,
+    variant: 'talk-first',
+  };
+}
+
 function formatDateTime(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -712,6 +754,7 @@ function renderFinalAskPreview(content, finalAsk = {}) {
   askSection.hidden = !isVisible;
   if (askRailLink) askRailLink.hidden = !isVisible;
   if (!isVisible) return;
+  askSection.classList.toggle('ask-section--answered', finalAsk.status === 'answered');
 
   askTitle.textContent = finalAsk.status === 'revealed'
     ? copy.revealedTitle
@@ -720,17 +763,17 @@ function renderFinalAskPreview(content, finalAsk = {}) {
   askOpenLink.href = getPageHref({ finalAsk: '1' });
   askOpenLink.textContent = copy.openLabel;
   askOpenLink.hidden = finalAsk.status === 'answered';
-  askSummary.classList.remove('ask-section__sealed');
+  askSummary.classList.remove('ask-section__sealed', 'ask-section__outcome-summary');
 
-  if (finalAsk.status === 'answered' && finalAsk.response === 'yes') {
-    askSummary.textContent = copy.acceptedMemoryCopy || 'This part is kept.';
+  if (finalAsk.status === 'answered') {
+    const outcome = getFinalAskOutcomeContent(copy, finalAsk);
+    askTitle.textContent = outcome.title;
+    askSummary.classList.add('ask-section__outcome-summary');
+    askSummary.textContent = outcome.variant === 'yes'
+      ? 'This part is kept as ours.'
+      : 'This part is being held gently.';
     askStatus.textContent = finalAsk.accepted_at ? formatDateTime(finalAsk.accepted_at) : '';
-    return;
-  }
-
-  if (finalAsk.status === 'answered' && finalAsk.response === 'talk_first') {
-    askSummary.textContent = copy.talkFirstScreenCopy || 'This answer is safely kept.';
-    askStatus.textContent = finalAsk.responded_at ? formatDateTime(finalAsk.responded_at) : '';
+    if (!askStatus.textContent && finalAsk.responded_at) askStatus.textContent = formatDateTime(finalAsk.responded_at);
     return;
   }
 
@@ -745,6 +788,50 @@ function renderBackLink(label = 'Back to Quietly Kept') {
   back.href = getPageHref();
   back.textContent = label;
   return back;
+}
+
+function renderFinalAskOutcome(content, finalAsk = {}) {
+  const copy = getFinalAskContent(content);
+  const outcome = getFinalAskOutcomeContent(copy, finalAsk);
+  const rememberedAt = finalAsk.accepted_at || finalAsk.responded_at;
+
+  setDetailMode(true);
+  readingDetail.innerHTML = '';
+  readingDetail.classList.remove('detail-section--reader');
+  readingDetail.classList.add('detail-section--outcome');
+
+  const article = document.createElement('article');
+  article.className = `final-ask-outcome final-ask-outcome--${outcome.variant}`;
+
+  const icon = document.createElement('span');
+  icon.className = 'final-ask-outcome__icon quiet-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
+  const label = document.createElement('p');
+  label.className = 'section-label';
+  label.textContent = 'A protected part';
+
+  const title = document.createElement('h1');
+  title.className = 'final-ask-outcome__title';
+  title.textContent = outcome.title;
+
+  const body = document.createElement('div');
+  body.className = 'final-ask-outcome__body preserve-lines';
+  body.textContent = outcome.body;
+
+  const meta = document.createElement('p');
+  meta.className = 'final-ask-outcome__meta';
+  meta.textContent = rememberedAt ? `Remembered ${formatDateTime(rememberedAt)}` : '';
+  meta.hidden = !meta.textContent;
+
+  const actions = document.createElement('div');
+  actions.className = 'final-ask-outcome__actions';
+  actions.appendChild(renderBackLink());
+
+  article.append(icon, label, title, body, meta, actions);
+  readingDetail.appendChild(article);
+  return true;
 }
 
 function openReader(trigger) {
@@ -894,11 +981,15 @@ async function handleFinalAskResponse(response) {
 function renderFinalAskDetail(content, finalAsk = {}) {
   if (!finalAsk.visible || finalAsk.status === 'hidden') return false;
 
+  if (finalAsk.status === 'answered') {
+    return renderFinalAskOutcome(content, finalAsk);
+  }
+
   const copy = getFinalAskContent(content);
   finalAskQuestionRevealed = false;
   setDetailMode(true);
   readingDetail.innerHTML = '';
-  readingDetail.classList.remove('detail-section--reader');
+  readingDetail.classList.remove('detail-section--reader', 'detail-section--outcome');
 
   const label = document.createElement('p');
   label.className = 'section-label';
@@ -912,23 +1003,6 @@ function renderFinalAskDetail(content, finalAsk = {}) {
 
   const actions = document.createElement('div');
   actions.className = 'entry-card__actions detail-actions';
-
-  if (finalAsk.status === 'answered') {
-    body.textContent = finalAsk.response === 'yes'
-      ? (copy.acceptedMemoryCopy || copy.yesScreenCopy || 'This part is kept.')
-      : (copy.talkFirstScreenCopy || 'This answer is safely kept.');
-
-    const date = document.createElement('p');
-    date.className = 'quiet-note';
-    date.textContent = finalAsk.accepted_at || finalAsk.responded_at
-      ? formatDateTime(finalAsk.accepted_at || finalAsk.responded_at)
-      : '';
-    date.hidden = !date.textContent;
-
-    actions.appendChild(renderBackLink());
-    readingDetail.append(label, heading, body, date, actions);
-    return true;
-  }
 
   body.textContent = copy.body || 'This protected part is waiting.';
 
