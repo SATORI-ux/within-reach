@@ -9,10 +9,12 @@ import {
 import {
   assertPrivatePagesEnabled,
   getSecretFinalAskForViewer,
+  getSecretFinalAskNotificationCopy,
   normalizeFinalAskResponse,
   respondSecretFinalAsk,
 } from '../_shared/secret-page.ts';
 import {
+  buildBlockedSecretNotificationResult,
   sendSecretPageNotification,
   type SecretNotificationResult,
 } from '../_shared/secret-notification.ts';
@@ -49,38 +51,100 @@ Deno.serve(async (req) => {
     const notifications: Record<string, SecretNotificationResult> = {};
 
     if (response === 'yes') {
-      notifications.yes_owner = await sendSecretPageNotification(client, {
-        type: 'final_ask_yes_owner',
-        intendedRecipientSlug: ownerSlug,
-        fromUserSlug: respondentSlug,
-        kind: 'gentle',
-        title: 'She said yes.',
-        body: 'Open Within Reach to see her answer.',
-        tag: 'final-ask-yes',
-        data: { response: 'yes' },
-      });
+      const ownerCopy = await getSecretFinalAskNotificationCopy(
+        client,
+        [
+          'final_ask.joey_yes_push_title',
+          'final_ask.joey_push_title',
+          'final_ask_joey_yes_push_title',
+          'final_ask_joey_push_title',
+        ],
+        [
+          'final_ask.joey_yes_push_body',
+          'final_ask.joey_push_body',
+          'final_ask_joey_yes_push_body',
+          'final_ask_joey_push_body',
+        ],
+      );
 
-      notifications.yes_respondent = await sendSecretPageNotification(client, {
-        type: 'final_ask_yes_respondent',
-        intendedRecipientSlug: respondentSlug,
-        fromUserSlug: respondentSlug,
-        kind: 'gentle',
-        title: 'Your answer was saved.',
-        body: 'Open Within Reach to see what happens next.',
-        tag: 'final-ask-yes-confirm',
-        data: { response: 'yes' },
-      });
+      notifications.yes_owner = ownerCopy
+        ? await sendSecretPageNotification(client, {
+          type: 'final_ask_yes_owner',
+          intendedRecipientSlug: ownerSlug,
+          fromUserSlug: respondentSlug,
+          kind: 'gentle',
+          title: ownerCopy.title,
+          body: ownerCopy.body,
+          tag: 'final-ask-yes',
+          data: { response: 'yes' },
+        })
+        : buildBlockedSecretNotificationResult(
+          'final_ask_yes_owner',
+          ownerSlug,
+          'missing_protected_copy',
+        );
+
+      const respondentCopy = await getSecretFinalAskNotificationCopy(
+        client,
+        [
+          'final_ask.jeszi_yes_push_title',
+          'final_ask.jeszi_push_title',
+          'final_ask_jeszi_yes_push_title',
+          'final_ask_jeszi_push_title',
+        ],
+        [
+          'final_ask.jeszi_yes_push_body',
+          'final_ask.jeszi_push_body',
+          'final_ask_jeszi_yes_push_body',
+          'final_ask_jeszi_push_body',
+        ],
+      );
+
+      notifications.yes_respondent = respondentCopy
+        ? await sendSecretPageNotification(client, {
+          type: 'final_ask_yes_respondent',
+          intendedRecipientSlug: respondentSlug,
+          fromUserSlug: respondentSlug,
+          kind: 'gentle',
+          title: respondentCopy.title,
+          body: respondentCopy.body,
+          tag: 'final-ask-yes-confirm',
+          data: { response: 'yes' },
+        })
+        : buildBlockedSecretNotificationResult(
+          'final_ask_yes_respondent',
+          respondentSlug,
+          'missing_protected_copy',
+        );
     } else {
-      notifications.talk_first_owner = await sendSecretPageNotification(client, {
-        type: 'final_ask_talk_first',
-        intendedRecipientSlug: ownerSlug,
-        fromUserSlug: respondentSlug,
-        kind: 'gentle',
-        title: 'She wants to talk first.',
-        body: 'Open Within Reach to see her answer.',
-        tag: 'final-ask-talk-first',
-        data: { response: 'talk_first' },
-      });
+      const talkFirstCopy = await getSecretFinalAskNotificationCopy(
+        client,
+        [
+          'final_ask.talk_first_push_title',
+          'final_ask_talk_first_push_title',
+        ],
+        [
+          'final_ask.talk_first_push_body',
+          'final_ask_talk_first_push_body',
+        ],
+      );
+
+      notifications.talk_first_owner = talkFirstCopy
+        ? await sendSecretPageNotification(client, {
+          type: 'final_ask_talk_first',
+          intendedRecipientSlug: ownerSlug,
+          fromUserSlug: respondentSlug,
+          kind: 'gentle',
+          title: talkFirstCopy.title,
+          body: talkFirstCopy.body,
+          tag: 'final-ask-talk-first',
+          data: { response: 'talk_first' },
+        })
+        : buildBlockedSecretNotificationResult(
+          'final_ask_talk_first',
+          ownerSlug,
+          'missing_protected_copy',
+        );
     }
 
     /*
@@ -140,4 +204,3 @@ Deno.serve(async (req) => {
     }, 400, { req });
   }
 });
-

@@ -302,6 +302,8 @@ Delivery caveat:
 
 - Push delivery is best-effort.
 - Exact-time delivery cannot be guaranteed to the second due to browser/device/network behavior.
+- The scheduled check cadence determines how close the reminder is to the local anniversary day. Run it at least daily, and preferably hourly, if tighter delivery is desired.
+- `anniversary_timezone` controls the local anniversary date when present. If it is absent, the scheduled sender may fall back to UTC.
 
 Suggested notification intent:
 

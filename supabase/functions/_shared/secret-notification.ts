@@ -31,6 +31,22 @@ export function getSecretNotificationMode(): SecretNotificationMode {
   return 'dry_run';
 }
 
+export function buildBlockedSecretNotificationResult(
+  type: string,
+  intendedRecipientSlug: string,
+  blockedReason: string,
+): SecretNotificationResult {
+  return {
+    mode: getSecretNotificationMode(),
+    notification_type: type,
+    intended_recipient_slug: intendedRecipientSlug,
+    actual_recipient_slug: null,
+    sent: false,
+    rerouted: false,
+    blocked_reason: blockedReason,
+  };
+}
+
 function getSecretNotificationTestRecipientSlug(): string {
   return (Deno.env.get('WITHIN_REACH_SECRET_NOTIFICATION_TEST_RECIPIENT_SLUG') ?? '').trim();
 }
@@ -67,7 +83,11 @@ async function dispatchPushToRecipient(
       {
         tag: params.tag,
         androidChannelId: 'gentle',
-        data: { from_user_slug: fromUserSlug, type: 'final_ask', ...(params.data ?? {}) },
+        data: {
+          from_user_slug: fromUserSlug,
+          type: 'final_ask',
+          ...(params.data ?? {}),
+        },
       },
     );
     return result.success;
@@ -96,12 +116,22 @@ export async function sendSecretPageNotification(
   };
 
   if (mode === 'dry_run') {
-    return { ...base, actual_recipient_slug: null, sent: false, blocked_reason: 'dry_run' };
+    return {
+      ...base,
+      actual_recipient_slug: null,
+      sent: false,
+      blocked_reason: 'dry_run',
+    };
   }
 
   if (mode === 'live') {
     if (!isFinalAskLiveArmed()) {
-      return { ...base, actual_recipient_slug: null, sent: false, blocked_reason: 'live_not_armed' };
+      return {
+        ...base,
+        actual_recipient_slug: null,
+        sent: false,
+        blocked_reason: 'live_not_armed',
+      };
     }
     const sent = await dispatchPushToRecipient(client, intendedRecipientSlug, params.fromUserSlug, params);
     return { ...base, actual_recipient_slug: intendedRecipientSlug, sent };
@@ -110,7 +140,12 @@ export async function sendSecretPageNotification(
   // reroute mode
   const testSlug = getSecretNotificationTestRecipientSlug();
   if (!testSlug) {
-    return { ...base, actual_recipient_slug: null, sent: false, blocked_reason: 'reroute_no_test_recipient' };
+    return {
+      ...base,
+      actual_recipient_slug: null,
+      sent: false,
+      blocked_reason: 'reroute_no_test_recipient',
+    };
   }
   const rerouted = testSlug !== intendedRecipientSlug;
   const sent = await dispatchPushToRecipient(client, testSlug, params.fromUserSlug, params);

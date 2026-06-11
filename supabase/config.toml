@@ -456,6 +456,9 @@ verify_jwt = false
 [functions.mark-final-ask-celebration-seen]
 verify_jwt = false
 
+[functions.send-final-ask-anniversary]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

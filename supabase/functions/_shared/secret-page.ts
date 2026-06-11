@@ -157,6 +157,14 @@ export const EMPTY_SECRET_PAGE_CONTENT = {
     yes_screen_copy: '',
     talk_first_screen_copy: '',
     accepted_memory_copy: '',
+    joey_yes_push_title: '',
+    joey_yes_push_body: '',
+    jeszi_yes_push_title: '',
+    jeszi_yes_push_body: '',
+    talk_first_push_title: '',
+    talk_first_push_body: '',
+    anniversary_push_title: '',
+    anniversary_push_body: '',
   },
 };
 
@@ -343,6 +351,53 @@ export async function getSecretPageContent(
     content: normalizeSecretPageContent(data?.content),
     updated_at: data?.updated_at ?? null,
   };
+}
+
+function getContentPathText(
+  content: Record<string, unknown>,
+  path: string,
+): string {
+  const value = path.split('.').reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      return undefined;
+    }
+    return (current as Record<string, unknown>)[segment];
+  }, content);
+
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getFirstContentText(
+  content: Record<string, unknown>,
+  paths: string[],
+): string {
+  for (const path of paths) {
+    const text = getContentPathText(content, path);
+    if (text) return text;
+  }
+
+  return '';
+}
+
+export type SecretFinalAskNotificationCopy = {
+  title: string;
+  body: string;
+};
+
+export async function getSecretFinalAskNotificationCopy(
+  client: SupabaseClient,
+  titlePaths: string[],
+  bodyPaths: string[],
+): Promise<SecretFinalAskNotificationCopy | null> {
+  const { content } = await getSecretPageContent(client);
+  const title = getFirstContentText(content, titlePaths);
+  const body = getFirstContentText(content, bodyPaths);
+
+  if (!title || !body) {
+    return null;
+  }
+
+  return { title, body };
 }
 
 function getEmptySecretFinalAskRow(): SecretFinalAskRow {
