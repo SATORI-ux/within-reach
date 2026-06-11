@@ -418,7 +418,7 @@ summary:focus-visible {
 }
 
 .preserve-lines {
-  white-space: pre-line;
+  white-space: pre-wrap;
 }
 
 .opening-section {
@@ -439,6 +439,13 @@ summary:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
   background:
     radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 30%),
+    var(--surface);
+}
+
+.poems-section {
+  border-color: color-mix(in srgb, var(--accent-warm) 18%, var(--line));
+  background:
+    radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--accent-warm) 7%, transparent), transparent 30%),
     var(--surface);
 }
 
@@ -489,6 +496,10 @@ summary:focus-visible {
 
 .entry-grid--wide {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.entry-grid--poems {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .name-card,
@@ -552,6 +563,19 @@ summary:focus-visible {
 
 .entry-preview {
   margin-bottom: 0;
+}
+
+.poem-entry-card {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 68%, transparent), color-mix(in srgb, var(--surface) 80%, transparent));
+}
+
+.poem-entry-card h3 {
+  color: color-mix(in srgb, var(--accent-warm) 64%, var(--text));
+}
+
+.poem-entry-card .entry-preview {
+  color: var(--text-soft);
 }
 
 .entry-card__actions {
@@ -1203,6 +1227,7 @@ textarea {
   }
 
   .entry-grid,
+  .entry-grid--poems,
   .entry-grid--wide,
   .name-grid,
   .field-grid,

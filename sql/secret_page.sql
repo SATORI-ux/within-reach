@@ -15,7 +15,8 @@ create table if not exists public.secret_entries (
       'little_proof',
       'thing_i_love',
       'still_being_written',
-      'whisper'
+      'whisper',
+      'poem'
     )
   ),
   title text not null,

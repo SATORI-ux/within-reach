@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     await requireSecretEntryManage(client, visitor, existing);
 
-    const NO_IMAGE_SECTIONS = new Set(['thing_i_love', 'whisper']);
+    const NO_IMAGE_SECTIONS = new Set(['thing_i_love', 'whisper', 'poem']);
     if (NO_IMAGE_SECTIONS.has(existing.section_type)) {
       throw new Error('This section does not support image uploads.');
     }

@@ -1,5 +1,5 @@
 import { getSecretPage, markFinalAskCelebrationSeen, respondFinalAsk } from './api.js';
-import { IS_PRIVATE_BUILD } from './config.js';
+import { IS_PRIVATE_BUILD, QUIET_POEMS_SECTION_TITLE } from './config.js';
 import { resolveQuietSession } from './quiet-session.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
@@ -33,6 +33,10 @@ const thingsActions = document.querySelector('#thingsActions');
 const stillIntro = document.querySelector('#stillIntro');
 const stillEntries = document.querySelector('#stillEntries');
 const stillActions = document.querySelector('#stillActions');
+const quietPoemsTitle = document.querySelector('#quietPoemsTitle');
+const quietPoemsIntro = document.querySelector('#quietPoemsIntro');
+const quietPoemEntries = document.querySelector('#quietPoemEntries');
+const quietPoemsActions = document.querySelector('#quietPoemsActions');
 const whispersIntro = document.querySelector('#whispersIntro');
 const whisperEntries = document.querySelector('#whisperEntries');
 const whisperActions = document.querySelector('#whisperActions');
@@ -48,6 +52,7 @@ const readingDetail = document.querySelector('#readingDetail');
 const readerDialog = document.querySelector('#readerDialog');
 const readerDialogInner = document.querySelector('#readerDialogInner');
 const sectionRail = document.querySelector('.section-rail');
+const quietPoemsRailLabel = document.querySelector('#quietPoemsRailLabel');
 const overviewSections = Array.from(document.querySelectorAll('[data-overview-section]'));
 const askSection = document.querySelector('#ask');
 const askRailLink = document.querySelector('#askRailLink');
@@ -130,6 +135,7 @@ const EMPTY_CONTENT = {
     thing_i_love: '',
     still_being_written: '',
     whisper: '',
+    poem: '',
   },
   tally: {
     title: 'Private tally',
@@ -422,6 +428,7 @@ function flattenEntries(groups = {}) {
     ...(groups.little_proof || []),
     ...(groups.thing_i_love || []),
     ...(groups.still_being_written || []),
+    ...(groups.poem || []),
     ...(groups.whisper || []),
   ];
 }
@@ -488,10 +495,12 @@ function renderEntryCard(entry, options = {}) {
   article.className = 'entry-card';
   if (options.compact) article.classList.add('entry-card--compact');
   if (entry.section_type === 'whisper') article.classList.add('whisper-card');
+  if (entry.section_type === 'poem') article.classList.add('poem-entry-card');
 
   const isWhisperCard = entry.section_type === 'whisper';
+  const isPoemCard = entry.section_type === 'poem';
 
-  if (entry.image_url && !isWhisperCard) {
+  if (entry.image_url && !isWhisperCard && !isPoemCard) {
     const img = document.createElement('img');
     img.src = entry.image_url;
     img.alt = entry.image_alt || '';
@@ -506,11 +515,14 @@ function renderEntryCard(entry, options = {}) {
     article.appendChild(title);
   }
 
-  if (entry.display_date || entry.subtitle) {
+  if (entry.display_date || entry.subtitle || isPoemCard) {
     const meta = document.createElement('p');
     meta.className = 'entry-meta';
     meta.textContent = [entry.display_date, entry.subtitle].filter(Boolean).join(' · ');
-    article.appendChild(meta);
+    if (isPoemCard && !meta.textContent) {
+      meta.textContent = formatDateTime(entry.created_at);
+    }
+    if (meta.textContent) article.appendChild(meta);
   }
 
   if (options.showAuthor && entry.created_by) {
@@ -528,7 +540,11 @@ function renderEntryCard(entry, options = {}) {
   const detailLink = document.createElement('a');
   detailLink.className = 'quiet-link section-action';
   detailLink.href = getPageHref({ entry: entry.id });
-  detailLink.textContent = entry.section_type === 'whisper' ? 'Read whisper' : 'Read the rest';
+  detailLink.textContent = entry.section_type === 'whisper'
+    ? 'Read whisper'
+    : entry.section_type === 'poem'
+      ? 'Read poem'
+      : 'Read the rest';
   if (options.onRead) {
     detailLink.addEventListener('click', (e) => {
       if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
@@ -562,7 +578,7 @@ function renderEntries(container, entries = [], options = {}) {
   if (!entries.length) {
     const empty = document.createElement('p');
     empty.className = 'quiet-note';
-    empty.textContent = 'Nothing has been added here yet.';
+    empty.textContent = options.emptyText || 'Nothing has been added here yet.';
     container.appendChild(empty);
     return;
   }
@@ -1053,11 +1069,13 @@ function openEntryReader(entry, people = {}, trigger) {
 
   const isThingLove = entry.section_type === 'thing_i_love';
   const isWhisper = entry.section_type === 'whisper';
+  const isPoem = entry.section_type === 'poem';
 
   const label = document.createElement('p');
   label.className = 'section-label';
   if (isThingLove) label.textContent = 'A detail that stayed';
   else if (isWhisper) label.textContent = 'Whisper';
+  else if (isPoem) label.textContent = 'Poem';
   else label.textContent = 'Entry';
 
   const nodes = [label];
@@ -1073,6 +1091,10 @@ function openEntryReader(entry, people = {}, trigger) {
   }
 
   const metaParts = [!isWhisper && entry.display_date, entry.subtitle].filter(Boolean);
+  if (isPoem && !metaParts.length) {
+    const createdAt = formatDateTime(entry.created_at);
+    if (createdAt) metaParts.push(createdAt);
+  }
   if (metaParts.length) {
     const meta = document.createElement('p');
     meta.className = 'entry-meta';
@@ -1087,7 +1109,7 @@ function openEntryReader(entry, people = {}, trigger) {
     nodes.push(author);
   }
 
-  if (entry.image_url && !isThingLove && !isWhisper) {
+  if (entry.image_url && !isThingLove && !isWhisper && !isPoem) {
     const img = document.createElement('img');
     img.src = entry.image_url;
     img.alt = entry.image_alt || '';
@@ -1287,12 +1309,18 @@ function renderPage(data) {
     'For the little things we noticed once and somehow never put down.',
   );
   stillIntro.textContent = text(content.section_intros.still_being_written);
+  if (quietPoemsTitle) quietPoemsTitle.textContent = QUIET_POEMS_SECTION_TITLE;
+  if (quietPoemsRailLabel) quietPoemsRailLabel.textContent = QUIET_POEMS_SECTION_TITLE;
+  if (quietPoemsIntro) {
+    quietPoemsIntro.textContent = text(content.section_intros.poem, 'A place for the longer things.');
+  }
   whispersIntro.textContent = text(
     content.section_intros.whisper,
     'Traces translated from skin to ink.\n\nSmall thoughts left in the moment, then returned to later with the words they were waiting for.',
   );
   renderSectionAction(stillActions, allowedEntrySections, 'still_being_written', 'Add a memory');
   renderSectionAction(thingsActions, allowedEntrySections, 'thing_i_love', 'Add what stayed');
+  renderSectionAction(quietPoemsActions, allowedEntrySections, 'poem', 'Keep a poem');
   renderSectionAction(whisperActions, allowedEntrySections, 'whisper', 'Add a whisper');
 
   const onRead = (entry, trigger) => openEntryReader(entry, people, trigger);
@@ -1303,6 +1331,7 @@ function renderPage(data) {
   }
   renderThingLoveGroups(thingsEntries, entries.thing_i_love || [], people, onRead);
   renderEntries(stillEntries, entries.still_being_written || [], { showAuthor: true, people, onRead });
+  renderEntries(quietPoemEntries, entries.poem || [], { emptyText: 'Nothing tucked here yet.', onRead });
   renderEntries(whisperEntries, entries.whisper || [], { limit: 2, onRead });
   renderTally(content, data.tally || []);
   renderFinalAskPreview(content, data.final_ask || {});

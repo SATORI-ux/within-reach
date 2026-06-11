@@ -6,12 +6,14 @@ export const SECRET_PAGE_SLUG = 'quietly-kept';
 export const SECRET_PAGE_MEDIA_BUCKET = 'secret-page-media';
 export const SECRET_ENTRY_BODY_MAX_LENGTH = 20000;
 export const SECRET_WHISPER_BODY_MAX_LENGTH = 15000;
+export const SECRET_POEM_BODY_MAX_LENGTH = 10000;
 
 const SECTION_TYPES = new Set([
   'little_proof',
   'thing_i_love',
   'still_being_written',
   'whisper',
+  'poem',
 ]);
 
 const SECTION_BODY_MAX_LENGTHS: Record<string, number> = {
@@ -19,6 +21,7 @@ const SECTION_BODY_MAX_LENGTHS: Record<string, number> = {
   thing_i_love: SECRET_ENTRY_BODY_MAX_LENGTH,
   still_being_written: SECRET_ENTRY_BODY_MAX_LENGTH,
   whisper: SECRET_WHISPER_BODY_MAX_LENGTH,
+  poem: SECRET_POEM_BODY_MAX_LENGTH,
 };
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
@@ -128,6 +131,7 @@ export const EMPTY_SECRET_PAGE_CONTENT = {
     thing_i_love: '',
     still_being_written: '',
     whisper: '',
+    poem: '',
   },
   tally: {
     title: 'Private tally',
@@ -700,7 +704,8 @@ export async function getSecretEntries(client: SupabaseClient) {
     .eq('is_archived', false)
     .order('is_pinned', { ascending: false })
     .order('display_order', { ascending: true })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: true });
 
   if (error) {
     throw new Error(error.message);
@@ -711,11 +716,24 @@ export async function getSecretEntries(client: SupabaseClient) {
     rows.map((entry) => withSignedSecretImage(client, entry)),
   );
 
+  const byOriginalPostingOrder = (left: SecretEntryRow, right: SecretEntryRow) => {
+    const leftTime = new Date(left.created_at).getTime();
+    const rightTime = new Date(right.created_at).getTime();
+
+    if (leftTime !== rightTime) return leftTime - rightTime;
+    return left.id.localeCompare(right.id);
+  };
+
   return {
     little_proof: entries.filter((entry) => entry.section_type === 'little_proof'),
     thing_i_love: entries.filter((entry) => entry.section_type === 'thing_i_love'),
     still_being_written: entries.filter((entry) => entry.section_type === 'still_being_written'),
-    whisper: entries.filter((entry) => entry.section_type === 'whisper'),
+    whisper: entries
+      .filter((entry) => entry.section_type === 'whisper')
+      .sort(byOriginalPostingOrder),
+    poem: entries
+      .filter((entry) => entry.section_type === 'poem')
+      .sort(byOriginalPostingOrder),
   };
 }
 
@@ -727,6 +745,7 @@ export async function getSecretEntriesForViewer(
   thing_i_love: SecretEntryWithPermissions[];
   still_being_written: SecretEntryWithPermissions[];
   whisper: SecretEntryWithPermissions[];
+  poem: SecretEntryWithPermissions[];
 }> {
   const access = await requireSecretPageView(client, visitor);
   const groups = await getSecretEntries(client);
@@ -742,6 +761,7 @@ export async function getSecretEntriesForViewer(
     thing_i_love: markPermissions(groups.thing_i_love),
     still_being_written: markPermissions(groups.still_being_written),
     whisper: markPermissions(groups.whisper),
+    poem: markPermissions(groups.poem),
   };
 }
 

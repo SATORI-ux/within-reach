@@ -20,6 +20,8 @@ export const ENABLE_FUNNY_FACTS = true;
 export const ARRIVAL_REVEAL_DELAY_MS = 2600;
 export const MAX_NOTE_LENGTH = 300;
 export const DEBUG_UI_MESSAGES = false;
+export const QUIET_POEMS_SECTION_TITLE = 'More Than Just Words';
+export const QUIET_POEMS_BODY_MAX_LENGTH = 10000;
 
 export const ACCENT_BY_USER = {
   joey: '#678a5b',

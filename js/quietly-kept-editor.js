@@ -7,7 +7,7 @@ import {
   upsertSecretEntry,
   upsertSecretPageContent,
 } from './api.js';
-import { IS_PRIVATE_BUILD } from './config.js';
+import { IS_PRIVATE_BUILD, QUIET_POEMS_BODY_MAX_LENGTH, QUIET_POEMS_SECTION_TITLE } from './config.js';
 import { resolveQuietSession } from './quiet-session.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
@@ -47,6 +47,7 @@ const SECTION_LABELS = {
   thing_i_love: 'Things I Love',
   still_being_written: 'Still Being Written',
   whisper: 'Whispers',
+  poem: QUIET_POEMS_SECTION_TITLE,
 };
 
 const SECTION_BODY_MAX_LENGTHS = {
@@ -54,6 +55,7 @@ const SECTION_BODY_MAX_LENGTHS = {
   thing_i_love: 20000,
   still_being_written: 20000,
   whisper: 15000,
+  poem: QUIET_POEMS_BODY_MAX_LENGTH,
 };
 
 const EMPTY_CONTENT = {
@@ -84,6 +86,7 @@ const EMPTY_CONTENT = {
     thing_i_love: '',
     still_being_written: '',
     whisper: '',
+    poem: '',
   },
   tally: {
     title: '',
@@ -296,6 +299,7 @@ function flattenEntries(groups = {}) {
     ...(groups.little_proof || []),
     ...(groups.thing_i_love || []),
     ...(groups.still_being_written || []),
+    ...(groups.poem || []),
     ...(groups.whisper || []),
   ];
 }

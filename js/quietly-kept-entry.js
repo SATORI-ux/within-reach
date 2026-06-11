@@ -4,7 +4,7 @@ import {
   uploadSecretMedia,
   upsertSecretEntry,
 } from './api.js';
-import { IS_PRIVATE_BUILD } from './config.js';
+import { IS_PRIVATE_BUILD, QUIET_POEMS_BODY_MAX_LENGTH, QUIET_POEMS_SECTION_TITLE } from './config.js';
 import { resolveQuietSession } from './quiet-session.js';
 import { initializeThemeToggle, setDocumentTheme } from './theme.js';
 
@@ -78,6 +78,24 @@ const SECTION_CONFIG = {
     titleRequired: false,
     returnHash: 'whispers',
   },
+  poem: {
+    label: 'Poem',
+    createTitle: `Add to ${QUIET_POEMS_SECTION_TITLE}.`,
+    editTitle: 'Edit this poem.',
+    description: 'A place for the longer things.',
+    bodyLabel: 'Poem',
+    titlePlaceholder: 'Title',
+    bodyPlaceholder: 'Write it how it should breathe.',
+    bodyMax: QUIET_POEMS_BODY_MAX_LENGTH,
+    bodyRows: 14,
+    showMemoryDate: false,
+    showTitle: true,
+    showSubtitle: false,
+    showPreview: false,
+    showImage: false,
+    titleRequired: true,
+    returnHash: 'more-than-words',
+  },
   little_proof: {
     label: 'Little Proof',
     createTitle: 'Add a little proof.',
@@ -132,6 +150,7 @@ function flattenEntries(groups = {}) {
     ...(groups.little_proof || []),
     ...(groups.thing_i_love || []),
     ...(groups.still_being_written || []),
+    ...(groups.poem || []),
     ...(groups.whisper || []),
   ];
 }
@@ -193,12 +212,16 @@ function renderShell() {
   if (imageFields) imageFields.hidden = !config.showImage;
 
   const titleInput = entryForm?.elements.namedItem('title');
-  if (titleInput) titleInput.required = Boolean(config.titleRequired);
+  if (titleInput) {
+    titleInput.required = Boolean(config.titleRequired);
+    titleInput.placeholder = config.titlePlaceholder || '';
+  }
 
   const bodyTextarea = entryForm?.elements.namedItem('body');
   if (bodyTextarea) {
     bodyTextarea.rows = config.bodyRows || 12;
     bodyTextarea.maxLength = config.bodyMax;
+    bodyTextarea.placeholder = config.bodyPlaceholder || '';
   }
 
   archiveEntryButton.hidden = mode !== 'edit';

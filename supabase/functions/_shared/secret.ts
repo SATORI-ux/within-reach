@@ -286,6 +286,7 @@ export async function getSecretPageAccess(
         'thing_i_love',
         'still_being_written',
         'whisper',
+        'poem',
       ],
       secret_unlocked_at: targetState.unlocked_at,
     };
@@ -299,6 +300,7 @@ export async function getSecretPageAccess(
         'thing_i_love',
         'still_being_written',
         'whisper',
+        'poem',
       ],
       secret_unlocked_at: targetState.unlocked_at,
     };
