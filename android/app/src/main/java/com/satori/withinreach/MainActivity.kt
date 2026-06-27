@@ -1,8 +1,10 @@
 package com.satori.withinreach
 
 import android.Manifest
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,6 +12,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -22,8 +26,24 @@ import org.json.JSONObject
 class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
 
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
+    private val fileChooserLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val callback = filePathCallback
+            filePathCallback = null
+
+            val uris = if (result.resultCode == Activity.RESULT_OK) {
+                WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+            } else {
+                null
+            }
+
+            callback?.onReceiveValue(uris)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +52,7 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermission()
 
         webView = WebView(this)
+
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val target = request.url.toString()
@@ -46,9 +67,47 @@ class MainActivity : ComponentActivity() {
                 emitTokenToWeb()
             }
         }
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                this@MainActivity.filePathCallback?.onReceiveValue(null)
+                this@MainActivity.filePathCallback = filePathCallback
+
+                val intent = try {
+                    fileChooserParams?.createIntent()
+                        ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "image/*"
+                        }
+                } catch (_: Exception) {
+                    Intent(Intent.ACTION_GET_CONTENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "image/*"
+                    }
+                }
+
+                return try {
+                    fileChooserLauncher.launch(intent)
+                    true
+                } catch (_: ActivityNotFoundException) {
+                    this@MainActivity.filePathCallback?.onReceiveValue(null)
+                    this@MainActivity.filePathCallback = null
+                    false
+                }
+            }
+        }
+
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.settings.databaseEnabled = true
+        webView.settings.useWideViewPort = false
+        webView.settings.loadWithOverviewMode = false
+        webView.settings.textZoom = 100
+
         webView.addJavascriptInterface(AndroidBridge(this), "WithinReachAndroid")
         setContentView(webView)
 
@@ -63,9 +122,13 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        filePathCallback?.onReceiveValue(null)
+        filePathCallback = null
+
         if (activeActivity === this) {
             activeActivity = null
         }
+
         super.onDestroy()
     }
 
@@ -95,6 +158,7 @@ class MainActivity : ComponentActivity() {
 
         val script =
             "window.dispatchEvent(new CustomEvent('withinreach:fcm-token',{detail:{token:${JSONObject.quote(token)}}}));"
+
         webView.post {
             webView.evaluateJavascript(script, null)
         }
@@ -103,6 +167,7 @@ class MainActivity : ComponentActivity() {
     private fun resolveLaunchUrl(intent: Intent?): String {
         val extraUrl = intent?.getStringExtra(EXTRA_URL)
         val dataUrl = intent?.data?.toString()
+
         return safeWithinReachUrl(extraUrl ?: dataUrl)
             ?: safeWithinReachUrl(BuildConfig.WITHIN_REACH_START_URL)
             ?: BuildConfig.WITHIN_REACH_APP_URL
@@ -114,6 +179,7 @@ class MainActivity : ComponentActivity() {
         val base = Uri.parse(BuildConfig.WITHIN_REACH_APP_URL)
         val url = Uri.parse(candidate)
         val sameHost = url.scheme == "https" && url.host == base.host
+
         return if (sameHost) url.toString() else null
     }
 
@@ -160,6 +226,7 @@ class MainActivity : ComponentActivity() {
 
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
             val gentle = NotificationChannel(
                 "gentle",
                 context.getString(R.string.gentle_channel_name),
@@ -168,6 +235,7 @@ class MainActivity : ComponentActivity() {
                 description = context.getString(R.string.gentle_channel_description)
                 setShowBadge(false)
             }
+
             val urgent = NotificationChannel(
                 "urgent",
                 context.getString(R.string.urgent_channel_name),

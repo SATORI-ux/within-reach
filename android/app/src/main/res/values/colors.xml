@@ -1,4 +1,5 @@
 <resources>
     <color name="notification_accent">#8661A9</color>
     <color name="icon_background">#F0E7DA</color>
+    <color name="icon_adaptive_background">#00000000</color>
 </resources>

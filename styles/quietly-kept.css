@@ -74,12 +74,20 @@
 
 html {
   min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   scroll-behavior: smooth;
   background: var(--browser-chrome-bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   min-height: 100vh;
   min-height: 100dvh;
   font-family: Georgia, 'Times New Roman', serif;
@@ -419,6 +427,27 @@ summary:focus-visible {
 
 .preserve-lines {
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.quiet-section p,
+.quiet-section h1,
+.quiet-section h2,
+.quiet-section h3,
+.secret-hero p,
+.secret-hero h1,
+.name-card,
+.name-card p,
+.entry-card,
+.entry-card p,
+.entry-card h3,
+.poem-preview,
+.poem-body,
+.poem-closing-line,
+.prose {
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .opening-section {
